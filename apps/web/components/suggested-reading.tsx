@@ -44,7 +44,7 @@ export function SuggestedReading({
         Suggested reading
       </h2>
       <ScrollArea className="**:data-[slot=scroll-area-viewport]:max-h-80 **:data-[slot=scroll-area-viewport]:overscroll-contain">
-        <ul className="space-y-3 pr-3">
+        <ul className="space-y-3 py-1 pl-1 pr-3">
           {items.map((item) => {
             const href = withLessonFrom(`/articles/${item.slug}`, from);
 
