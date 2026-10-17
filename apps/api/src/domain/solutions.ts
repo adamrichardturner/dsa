@@ -3,7 +3,13 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { NotFound, Unexpected } from "./errors.js";
 import type { SubmissionView } from "./models.js";
-import { runSolution, type RunTest } from "./runner.js";
+import {
+  previewSolution,
+  runSolution,
+  type PreviewCase,
+  type PreviewLine,
+  type RunTest,
+} from "./runner.js";
 
 const ProblemRow = Schema.Struct({
   id: Schema.String,
@@ -53,6 +59,10 @@ export class Solutions extends Context.Service<
       problemId: string,
       code: string,
     ): Effect.Effect<SubmissionView, NotFound | Unexpected>;
+    run(
+      problemId: string,
+      code: string,
+    ): Effect.Effect<{ readonly lines: readonly PreviewLine[] }, NotFound | Unexpected>;
   }
 >()("app/Solutions") {
   static readonly layer = Layer.effect(
@@ -135,6 +145,54 @@ export class Solutions extends Context.Service<
           `,
       });
 
+      const loadExercise = (problemId: string) =>
+        Effect.gen(function* () {
+          const problems = yield* findProblem({ problemId }).pipe(
+            failUnexpected("Could not load that exercise."),
+          );
+          const problem = problems[0];
+          if (problem === undefined) {
+            return yield* new NotFound({ message: "That exercise does not exist." });
+          }
+
+          const parsedTests = yield* Effect.try({
+            try: () => parseJson(problem.testsJson),
+            catch: () => new Unexpected({ message: "Could not read the tests." }),
+          });
+          const parsedDisallow = yield* Effect.try({
+            try: () => parseJson(problem.disallowJson),
+            catch: () => new Unexpected({ message: "Could not read the tests." }),
+          });
+          const storedTests = yield* Schema.decodeUnknownEffect(Schema.Array(StoredTest))(
+            parsedTests,
+          ).pipe(Effect.mapError(() => new Unexpected({ message: "Could not read the tests." })));
+          const disallow = yield* Schema.decodeUnknownEffect(Schema.Array(Schema.String))(
+            parsedDisallow,
+          ).pipe(Effect.mapError(() => new Unexpected({ message: "Could not read the tests." })));
+
+          const tests: RunTest[] = [];
+          const cases: PreviewCase[] = [];
+          for (const test of storedTests) {
+            tests.push({
+              name: test.name,
+              args: test.args,
+              expected: test.expected,
+              compare: test.compare ?? "exact",
+            });
+            if (!test.public) {
+              continue;
+            }
+            cases.push({ args: test.args });
+          }
+
+          return {
+            functionName: problem.functionName,
+            tests,
+            cases,
+            disallow,
+          };
+        });
+
       const submit = Effect.fn("Solutions.submit")(function* (
         userId: string,
         problemId: string,
@@ -144,37 +202,8 @@ export class Solutions extends Context.Service<
           return yield* new Unexpected({ message: "Write a solution before submitting." });
         }
 
-        const problems = yield* findProblem({ problemId }).pipe(
-          failUnexpected("Could not load that exercise."),
-        );
-        const problem = problems[0];
-        if (problem === undefined) {
-          return yield* new NotFound({ message: "That exercise does not exist." });
-        }
-
-        const parsedTests = yield* Effect.try({
-          try: () => parseJson(problem.testsJson),
-          catch: () => new Unexpected({ message: "Could not read the tests." }),
-        });
-        const parsedDisallow = yield* Effect.try({
-          try: () => parseJson(problem.disallowJson),
-          catch: () => new Unexpected({ message: "Could not read the tests." }),
-        });
-        const storedTests = yield* Schema.decodeUnknownEffect(Schema.Array(StoredTest))(
-          parsedTests,
-        ).pipe(Effect.mapError(() => new Unexpected({ message: "Could not read the tests." })));
-        const disallow = yield* Schema.decodeUnknownEffect(Schema.Array(Schema.String))(
-          parsedDisallow,
-        ).pipe(Effect.mapError(() => new Unexpected({ message: "Could not read the tests." })));
-
-        const tests: RunTest[] = storedTests.map((test) => ({
-          name: test.name,
-          args: test.args,
-          expected: test.expected,
-          compare: test.compare ?? "exact",
-        }));
-
-        const outcome = runSolution(code, problem.functionName, tests, disallow);
+        const exercise = yield* loadExercise(problemId);
+        const outcome = runSolution(code, exercise.functionName, exercise.tests, exercise.disallow);
         const counts = yield* countAttempts({ userId, problemId }).pipe(
           failUnexpected("Could not save the submission."),
         );
@@ -209,7 +238,25 @@ export class Solutions extends Context.Service<
         };
       });
 
-      return Solutions.of({ submit });
+      const run = Effect.fn("Solutions.run")(function* (problemId: string, code: string) {
+        if (code.trim().length === 0) {
+          const lines: PreviewLine[] = [
+            { kind: "error", text: "Write some code before running it." },
+          ];
+          return { lines };
+        }
+
+        const exercise = yield* loadExercise(problemId);
+        const lines = previewSolution(
+          code,
+          exercise.functionName,
+          exercise.cases,
+          exercise.disallow,
+        );
+        return { lines };
+      });
+
+      return Solutions.of({ submit, run });
     }),
   );
 }

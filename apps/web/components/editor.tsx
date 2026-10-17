@@ -42,7 +42,12 @@ const prepareEditor: BeforeMount = (monaco) => {
     esModuleInterop: true,
     noEmit: true,
     allowNonTsExtensions: true,
+    lib: ["es2022"],
   });
+  monaco.languages.typescript.typescriptDefaults.addExtraLib(
+    "declare const console: { log(...data: readonly unknown[]): void };",
+    "ts:console.d.ts",
+  );
   defineEditorThemes(monaco);
 };
 
@@ -50,10 +55,12 @@ export function CodeEditor({
   value,
   onChange,
   themeId,
+  autoFocus = true,
 }: {
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly themeId: EditorThemeId;
+  readonly autoFocus?: boolean;
 }) {
   const theme = getEditorTheme(themeId);
 
@@ -69,6 +76,9 @@ export function CodeEditor({
       loading={<EditorSkeleton />}
       beforeMount={prepareEditor}
       onMount={(editor) => {
+        if (!autoFocus) {
+          return;
+        }
         editor.focus();
       }}
       options={{

@@ -77,6 +77,13 @@ export interface TestResultView {
   readonly error: string | null;
 }
 
+export type RunLineKind = "log" | "prompt" | "result" | "error";
+
+export interface RunLineView {
+  readonly kind: RunLineKind;
+  readonly text: string;
+}
+
 export interface SubmissionView {
   readonly id: string;
   readonly passed: boolean;

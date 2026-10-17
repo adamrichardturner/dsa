@@ -88,6 +88,17 @@ const canonical = (value: unknown, compare: CompareMode): string => {
   return JSON.stringify(normalize(value)) ?? "undefined";
 };
 
+export interface PreviewCase {
+  readonly args: readonly unknown[];
+}
+
+export type PreviewLineKind = "log" | "prompt" | "result" | "error";
+
+export interface PreviewLine {
+  readonly kind: PreviewLineKind;
+  readonly text: string;
+}
+
 const failed = (tests: readonly RunTest[], feedback: string): RunOutput => {
   return {
     passed: false,
@@ -104,6 +115,93 @@ const failed = (tests: readonly RunTest[], feedback: string): RunOutput => {
   };
 };
 
+const formatLog = (args: readonly unknown[]): string => {
+  const parts: string[] = [];
+  for (const arg of args) {
+    if (typeof arg === "string") {
+      parts.push(arg);
+      continue;
+    }
+    parts.push(preview(arg));
+  }
+  return parts.join(" ");
+};
+
+const formatCall = (functionName: string, args: readonly unknown[]): string => {
+  const rendered = args.map((arg) => JSON.stringify(arg) ?? "undefined").join(", ");
+  return `${functionName}(${rendered})`;
+};
+
+const rejection = (code: string, disallow: readonly string[]): string | null => {
+  if (code.length > 20_000) {
+    return "The solution is too long to run.";
+  }
+
+  for (const blocked of blockedPatterns) {
+    if (blocked.pattern.test(code)) {
+      return blocked.reason;
+    }
+  }
+
+  for (const snippet of disallow) {
+    if (code.includes(snippet)) {
+      return `This exercise asks you not to use ${snippet}. Use the approach from the lesson.`;
+    }
+  }
+
+  return null;
+};
+
+const compileSolution = (
+  code: string,
+): { readonly compiled: string } | { readonly message: string } => {
+  try {
+    return {
+      compiled: transform(code, {
+        transforms: ["typescript", "imports"],
+        production: true,
+      }).code,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The solution failed to compile.";
+    return { message };
+  }
+};
+
+const createContext = (onLog: (args: readonly unknown[]) => void): RunnerContext => {
+  const exportsObject: Record<string, unknown> = {};
+  return {
+    exports: exportsObject,
+    module: { exports: exportsObject },
+    console: {
+      log: (...args: readonly unknown[]) => {
+        onLog(args);
+      },
+    },
+  };
+};
+
+const errorText = (error: unknown, fallback: string): string => {
+  if (typeof error === "string" && error.length > 0) {
+    return error;
+  }
+  if (error instanceof Error && error.message.length > 0) {
+    return error.message;
+  }
+  if (isRecord(error) && typeof error.message === "string" && error.message.length > 0) {
+    return error.message;
+  }
+  return fallback;
+};
+
+const takeLogs = (lines: PreviewLine[], logs: readonly string[], cursor: { index: number }) => {
+  while (cursor.index < logs.length) {
+    const text = logs[cursor.index] ?? "";
+    cursor.index += 1;
+    lines.push({ kind: "log", text });
+  }
+};
+
 /**
  * Transpiles a student solution and runs each test in a fresh `node:vm` context.
  * The context has no `require`, and each script is killed after one second.
@@ -115,47 +213,24 @@ export const runSolution = (
   tests: readonly RunTest[],
   disallow: readonly string[],
 ): RunOutput => {
-  if (code.length > 20_000) {
-    return failed(tests, "The solution is too long to run.");
+  const reason = rejection(code, disallow);
+  if (reason !== null) {
+    return failed(tests, reason);
   }
 
-  for (const blocked of blockedPatterns) {
-    if (blocked.pattern.test(code)) {
-      return failed(tests, blocked.reason);
-    }
+  const compiled = compileSolution(code);
+  if ("message" in compiled) {
+    return failed(tests, compiled.message);
   }
 
-  for (const snippet of disallow) {
-    if (code.includes(snippet)) {
-      return failed(
-        tests,
-        `This exercise asks you not to use ${snippet}. Use the approach from the lesson.`,
-      );
-    }
-  }
-
-  const compiled = transform(code, {
-    transforms: ["typescript", "imports"],
-    production: true,
-  }).code;
-
-  const exportsObject: Record<string, unknown> = {};
-  const context: RunnerContext = {
-    exports: exportsObject,
-    module: { exports: exportsObject },
-    console: {
-      log: () => undefined,
-    },
-  };
-
+  const context = createContext(() => undefined);
   vm.createContext(context);
 
   try {
-    const script = new vm.Script(compiled, { filename: "solution.ts" });
+    const script = new vm.Script(compiled.compiled, { filename: "solution.ts" });
     script.runInContext(context, { timeout: 1000 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "The solution failed to run.";
-    return failed(tests, message);
+    return failed(tests, errorText(error, "The solution failed to run."));
   }
 
   const exported = context.module.exports[functionName];
@@ -210,4 +285,130 @@ export const runSolution = (
     feedback,
     results,
   };
+};
+
+/**
+ * Runs a solution against the public examples and returns a terminal transcript.
+ * Console output from the student code is included. Nothing is saved.
+ */
+export const previewSolution = (
+  code: string,
+  functionName: string,
+  cases: readonly PreviewCase[],
+  disallow: readonly string[],
+): readonly PreviewLine[] => {
+  const reason = rejection(code, disallow);
+  if (reason !== null) {
+    return [{ kind: "error", text: reason }];
+  }
+
+  const compiled = compileSolution(code);
+  if ("message" in compiled) {
+    return [{ kind: "error", text: compiled.message }];
+  }
+
+  const logs: string[] = [];
+  const cursor = { index: 0 };
+  const context = createContext((args) => {
+    logs.push(formatLog(args));
+  });
+  vm.createContext(context);
+
+  try {
+    const script = new vm.Script(compiled.compiled, { filename: "solution.ts" });
+    script.runInContext(context, { timeout: 1000 });
+  } catch (error) {
+    const lines: PreviewLine[] = [];
+    takeLogs(lines, logs, cursor);
+    lines.push({ kind: "error", text: errorText(error, "The solution failed to run.") });
+    return lines;
+  }
+
+  const exported = context.module.exports[functionName];
+  if (!isFunction(exported)) {
+    const lines: PreviewLine[] = [];
+    takeLogs(lines, logs, cursor);
+    lines.push({ kind: "error", text: `Export a function named ${functionName}.` });
+    return lines;
+  }
+
+  const lines: PreviewLine[] = [];
+  takeLogs(lines, logs, cursor);
+
+  for (const testCase of cases) {
+    lines.push({ kind: "prompt", text: formatCall(functionName, testCase.args) });
+    context.__fn = exported;
+    context.__args = testCase.args;
+    context.__result = undefined;
+
+    try {
+      const call = new vm.Script("__result = __fn(...__args);", { filename: "call.js" });
+      call.runInContext(context, { timeout: 1000 });
+      takeLogs(lines, logs, cursor);
+      lines.push({ kind: "result", text: preview(context.__result) });
+    } catch (error) {
+      takeLogs(lines, logs, cursor);
+      lines.push({ kind: "error", text: errorText(error, "The call threw.") });
+    }
+  }
+
+  if (lines.length > 0) {
+    return lines;
+  }
+
+  return [{ kind: "log", text: "The code ran. This exercise has no public examples." }];
+};
+
+const logLimit = 100;
+
+/**
+ * Runs a TypeScript snippet in the same sandbox as a lesson.
+ * Returns console output. Nothing is saved, and there is no exercise to grade.
+ */
+export const runSnippet = (code: string): readonly PreviewLine[] => {
+  if (code.trim().length === 0) {
+    return [{ kind: "error", text: "Write some code before running it." }];
+  }
+
+  const reason = rejection(code, []);
+  if (reason !== null) {
+    return [{ kind: "error", text: reason }];
+  }
+
+  const compiled = compileSolution(code);
+  if ("message" in compiled) {
+    return [{ kind: "error", text: compiled.message }];
+  }
+
+  const logs: string[] = [];
+  let truncated = false;
+  const context = createContext((args) => {
+    if (logs.length >= logLimit) {
+      truncated = true;
+      return;
+    }
+    logs.push(formatLog(args));
+  });
+  vm.createContext(context);
+
+  try {
+    const script = new vm.Script(compiled.compiled, { filename: "example.ts" });
+    script.runInContext(context, { timeout: 1000 });
+  } catch (error) {
+    const lines: PreviewLine[] = [];
+    takeLogs(lines, logs, { index: 0 });
+    lines.push({ kind: "error", text: errorText(error, "The code failed to run.") });
+    return lines;
+  }
+
+  if (logs.length === 0) {
+    return [{ kind: "log", text: "The code ran. Nothing was printed." }];
+  }
+
+  const lines: PreviewLine[] = [];
+  takeLogs(lines, logs, { index: 0 });
+  if (truncated) {
+    lines.push({ kind: "log", text: "Further logs were omitted." });
+  }
+  return lines;
 };

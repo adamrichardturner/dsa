@@ -14,6 +14,7 @@ import { Auth } from "../domain/auth.js";
 import { OAuth } from "../domain/oauth.js";
 import { Catalog } from "../domain/catalog.js";
 import { Insights } from "../domain/insights.js";
+import { runSnippet } from "../domain/runner.js";
 import { Solutions } from "../domain/solutions.js";
 import { execute } from "./execute.js";
 
@@ -119,6 +120,21 @@ const TestResultType = new GraphQLObjectType({
     expected: { type: new GraphQLNonNull(GraphQLString) },
     received: { type: new GraphQLNonNull(GraphQLString) },
     error: { type: GraphQLString },
+  },
+});
+
+const RunLineType = new GraphQLObjectType({
+  name: "RunLine",
+  fields: {
+    kind: { type: new GraphQLNonNull(GraphQLString) },
+    text: { type: new GraphQLNonNull(GraphQLString) },
+  },
+});
+
+const CodeRunType = new GraphQLObjectType({
+  name: "CodeRun",
+  fields: {
+    lines: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(RunLineType))) },
   },
 });
 
@@ -433,6 +449,42 @@ export const schema = new GraphQLSchema({
               );
             }),
           ),
+      },
+      runCode: {
+        type: new GraphQLNonNull(CodeRunType),
+        args: {
+          problemId: { type: new GraphQLNonNull(GraphQLID) },
+          code: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (
+          _parent,
+          args: { problemId?: unknown; code?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const catalog = yield* Catalog;
+              const solutions = yield* Solutions;
+              const user = yield* auth.currentUser;
+              const problemId = requireString(args.problemId, "Missing exercise.");
+              yield* catalog.assertProblemOpen(user.id, problemId);
+              return yield* solutions.run(
+                problemId,
+                requireString(args.code, "Missing solution."),
+              );
+            }),
+          ),
+      },
+      runSnippet: {
+        type: new GraphQLNonNull(CodeRunType),
+        args: {
+          code: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (_parent, args: { code?: unknown }) => ({
+          lines: runSnippet(requireString(args.code, "Missing code.")),
+        }),
       },
     },
   }),

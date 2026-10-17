@@ -164,6 +164,28 @@ export const SIGN_OUT = `
   }
 `;
 
+export const RUN_SNIPPET = `
+  mutation RunSnippet($code: String!) {
+    runSnippet(code: $code) {
+      lines {
+        kind
+        text
+      }
+    }
+  }
+`;
+
+export const RUN_CODE = `
+  mutation RunCode($problemId: ID!, $code: String!) {
+    runCode(problemId: $problemId, code: $code) {
+      lines {
+        kind
+        text
+      }
+    }
+  }
+`;
+
 export const SUBMIT_SOLUTION = `
   mutation Submit($problemId: ID!, $code: String!) {
     submitSolution(problemId: $problemId, code: $code) {

@@ -161,6 +161,37 @@
   font-size: 1.6rem;
 }
 
+.lesson-copy h2 {
+  margin-top: 2.1rem;
+  font-size: 1.5rem;
+}
+
+.lesson-copy h3 {
+  margin-top: 1.35rem;
+  font-size: 1.15rem;
+}
+
+.mermaid-frame {
+  margin-top: 1.25rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: oklch(0.985 0 0);
+  padding: 1rem 1.1rem;
+  min-height: 6rem;
+}
+
+.mermaid-frame svg {
+  display: block;
+  height: auto;
+  max-width: none;
+  margin-inline: auto;
+}
+
+.mermaid-frame p {
+  margin-top: 0;
+}
+
 .lesson-copy p,
 .lesson-copy ul,
 .lesson-copy ol,
@@ -287,6 +318,18 @@
   background: transparent;
   padding: 0;
   color: inherit;
+}
+
+.lesson-copy .code-runner {
+  margin-top: 1.25rem;
+}
+
+.lesson-copy .code-runner p {
+  margin-top: 0;
+}
+
+.lesson-copy .code-runner p.terminal-gap {
+  margin-top: 0.75rem;
 }
 
 .lesson-copy table {

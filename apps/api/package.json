@@ -6,7 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/domain/oauth-plan.test.ts src/domain/mail.test.ts"
+    "test": "tsx --test src/domain/oauth-plan.test.ts src/domain/mail.test.ts src/domain/runner.test.ts"
   },
   "dependencies": {
     "@effect/sql-pg": "latest",

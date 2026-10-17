@@ -1,10 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { cn } from "cn";
 import { CodeEditor } from "@/components/editor";
+import {
+  CodeTerminal,
+  readRunLines,
+  type CodeTerminalState,
+} from "@/components/code-terminal";
 import {
   EditorThemeSelect,
   useEditorTheme,
@@ -18,6 +24,14 @@ import {
 } from "@/components/solution-notice";
 import { CompletionTick } from "@/components/completion-tick";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogClose,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -31,8 +45,9 @@ import {
 } from "@/components/split-toggle";
 import { getEditorTheme, type EditorThemeId } from "@/lib/editor-themes";
 import { annotateLesson } from "@/lib/lesson-keywords";
+import { currentLessonFrom } from "@/lib/lesson-return";
 import { useRequireUser } from "@/lib/auth";
-import { LESSON_QUERY, SUBMIT_SOLUTION } from "@/lib/operations";
+import { LESSON_QUERY, RUN_CODE, SUBMIT_SOLUTION } from "@/lib/operations";
 import type { LessonView, SubmissionView } from "@/lib/types";
 
 interface PassedSolution {
@@ -85,6 +100,9 @@ function WorkspaceBar({
 }
 
 export function Workspace({ slug }: { readonly slug: string }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const articleFrom = currentLessonFrom(pathname, searchParams.toString());
   const auth = useRequireUser();
   const [result, reexecute] = useQuery<{ lesson: LessonView | null }>({
     query: LESSON_QUERY,
@@ -94,11 +112,16 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [submitState, submit] = useMutation<{ submitSolution: SubmissionView }>(
     SUBMIT_SOLUTION,
   );
+  const [runState, runCode] = useMutation<{
+    runCode: { readonly lines: readonly { readonly kind: string; readonly text: string }[] };
+  }>(RUN_CODE);
   const lesson = result.data?.lesson ?? null;
   const problem = lesson?.problems[0];
   const [code, setCode] = useState("");
   const [outcome, setOutcome] = useState<SubmissionView | null>(null);
   const [notice, setNotice] = useState<SolutionNoticeState | null>(null);
+  const [terminal, setTerminal] = useState<CodeTerminalState>({ kind: "idle" });
+  const [resetOpen, setResetOpen] = useState(false);
   const [passedCode, setPassedCode] = useState<PassedSolution | null>(null);
   const [orientation, setOrientation] = useSplitOrientation();
   const [themeId, setThemeId] = useEditorTheme();
@@ -115,6 +138,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
     setCode(problem.latestCode ?? problem.starterCode);
     setOutcome(null);
     setNotice(null);
+    setTerminal({ kind: "idle" });
     if (problem.solved && problem.latestCode !== null) {
       setPassedCode({ problemId: problem.id, code: problem.latestCode });
       return;
@@ -185,6 +209,32 @@ export function Workspace({ slug }: { readonly slug: string }) {
     reexecute({ requestPolicy: "network-only" });
   };
 
+  const onRun = async () => {
+    const problemId = problem.id;
+    setTerminal({ kind: "running" });
+    const response = await runCode({ problemId, code });
+    if (loadedProblemId.current !== problemId) {
+      return;
+    }
+    const next = response.data?.runCode;
+    if (next === undefined) {
+      setTerminal({
+        kind: "failed",
+        message: response.error?.message ?? "Could not run that code.",
+      });
+      return;
+    }
+    setTerminal({ kind: "ready", lines: readRunLines(next.lines) });
+  };
+
+  const onReset = () => {
+    setCode(problem.starterCode);
+    setOutcome(null);
+    setNotice(null);
+    setTerminal({ kind: "idle" });
+    setResetOpen(false);
+  };
+
   const chrome = theme.light
     ? {
         reset: "text-zinc-700 hover:bg-black/5 hover:text-zinc-950",
@@ -197,6 +247,8 @@ export function Workspace({ slug }: { readonly slug: string }) {
         rule: editorRuleColor(false),
       };
   const checking = submitState.fetching;
+  const running = runState.fetching;
+  const busy = checking || running;
   const editorReady = loadedProblemId.current === problem.id;
   const rememberedPass =
     passedCode !== null && passedCode.problemId === problem.id
@@ -259,7 +311,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 {lesson.estimatedMinutes} minutes
               </p>
             </div>
-            <LessonMarkdown content={annotated.contentMd} />
+            <LessonMarkdown
+              content={annotated.contentMd}
+              articleFrom={articleFrom}
+            />
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between gap-3">
@@ -276,7 +331,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <LessonMarkdown content={annotated.promptMd} />
+                <LessonMarkdown
+                  content={annotated.promptMd}
+                  articleFrom={articleFrom}
+                />
                 <div className="space-y-2">
                   {problem.examples.map((example) => (
                     <pre
@@ -295,7 +353,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 </p>
               </CardContent>
             </Card>
-            <SuggestedReading slugs={annotated.articleSlugs} />
+            <SuggestedReading
+              slugs={annotated.articleSlugs}
+              from={articleFrom}
+            />
             <div className="flex gap-3">
               {lesson.previousSlug !== null ? (
                 <Link
@@ -348,27 +409,48 @@ export function Workspace({ slug }: { readonly slug: string }) {
             </Badge>
           </div>
           <Separator style={{ backgroundColor: chrome.rule }} />
-          <div className="min-h-0 flex-1">
+          <div className="relative min-h-0 flex-1">
             <CodeEditor value={code} onChange={setCode} themeId={themeId} />
+            {notice !== null ? (
+              <SolutionNotice notice={notice} onDismiss={() => setNotice(null)} />
+            ) : null}
           </div>
-          <Separator style={{ backgroundColor: chrome.rule }} />
-          {notice !== null ? (
-            <SolutionNotice notice={notice} onDismiss={() => setNotice(null)} />
-          ) : null}
+          <CodeTerminal
+            state={terminal}
+            light={theme.light}
+            foreground={theme.foreground}
+            borderColor={chrome.rule}
+          />
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Button
-              variant="ghost"
+              type="button"
+              variant="outline"
               size="lg"
-              disabled={checking}
-              className={cn("h-10 px-4", chrome.reset)}
+              disabled={busy}
+              className="h-10 px-4 text-foreground"
               onClick={() => {
-                setCode(problem.starterCode);
-                setOutcome(null);
-                setNotice(null);
+                setResetOpen(true);
               }}
             >
-              Reset starter
+              Reset
             </Button>
+            <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+              <AlertDialogContent>
+                <AlertDialogTitle>Reset the workspace?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will reset the workspace to the original starter code. The solution in the
+                  editor will be replaced.
+                </AlertDialogDescription>
+                <AlertDialogFooter>
+                  <AlertDialogClose className={cn(buttonVariants({ variant: "outline" }))}>
+                    Cancel
+                  </AlertDialogClose>
+                  <Button type="button" variant="destructive" onClick={onReset}>
+                    Reset workspace
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <div className="flex items-center gap-2">
               {showLastLessonNote ? (
                 <span className="text-xs opacity-70">
@@ -377,8 +459,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
               ) : null}
               {nextIsPrimary ? (
                 <Button
+                  type="button"
                   variant="ghost"
                   size="lg"
+                  disabled={running}
                   className={cn("h-10 px-4", chrome.reset)}
                   onClick={() => {
                     void onSubmit();
@@ -402,6 +486,19 @@ export function Workspace({ slug }: { readonly slug: string }) {
                   Next lesson
                 </Link>
               ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                disabled={busy}
+                className="h-10 px-4 text-foreground"
+                onClick={() => {
+                  void onRun();
+                }}
+              >
+                {running ? <Spinner data-icon="inline-start" /> : null}
+                {running ? "Running" : "Run"}
+              </Button>
               {checking ? (
                 <Button
                   size="lg"
@@ -425,7 +522,9 @@ export function Workspace({ slug }: { readonly slug: string }) {
               ) : null}
               {!checking && !nextIsPrimary ? (
                 <Button
+                  type="button"
                   size="lg"
+                  disabled={running}
                   className={cn("h-10 px-5", chrome.submit)}
                   onClick={() => {
                     void onSubmit();

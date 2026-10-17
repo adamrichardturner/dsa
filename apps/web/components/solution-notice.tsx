@@ -152,7 +152,7 @@ export function SolutionNotice({
 
 function NoticeFrame({ children }: { readonly children: ReactNode }) {
   return (
-    <div className="pointer-events-none absolute inset-x-4 bottom-16 z-20 flex justify-end">
+    <div className="pointer-events-none absolute inset-x-4 bottom-4 z-20 flex justify-end">
       <div
         className="pointer-events-auto w-full max-w-sm animate-in fade-in-0 slide-in-from-bottom-3 shadow-xl duration-200"
         role="status"
