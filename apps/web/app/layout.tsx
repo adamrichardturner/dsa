@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Geist, JetBrains_Mono } from "next/font/google";
 import { Shell } from "@/components/shell";
 import { AuthProvider } from "@/lib/auth";
-import { siteDescription, siteName, siteUrl } from "@/lib/site";
+import { creatorName, siteDescription, siteName, siteUrl } from "@/lib/site";
 import { themeBootScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import "./globals.css";
@@ -40,8 +40,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
   },
-  authors: [{ name: siteName, url: siteUrl }],
-  creator: siteName,
+  authors: [{ name: creatorName, url: siteUrl }],
+  creator: creatorName,
   alternates: {
     canonical: "/",
   },

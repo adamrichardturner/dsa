@@ -95,6 +95,19 @@ export function AuthForm({ mode }: { readonly mode: "sign-in" | "sign-up" }) {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
+            {mode === "sign-up" ? (
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                The course is free. Creating an account means you agree to the{" "}
+                <Link href="/terms" className="text-foreground underline underline-offset-4">
+                  Terms
+                </Link>{" "}
+                and have read the{" "}
+                <Link href="/privacy" className="text-foreground underline underline-offset-4">
+                  Privacy policy
+                </Link>
+                . You need to be 16 or older.
+              </p>
+            ) : null}
             <Button type="submit" className="h-10 w-full" disabled={pending}>
               {pending ? "Working…" : mode === "sign-up" ? "Create account" : "Sign in"}
             </Button>

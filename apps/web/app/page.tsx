@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LandingActions, LandingCloseCopy } from "@/components/landing-actions";
 import { LandingMotion, Reveal, RevealGroup, RevealItem } from "@/components/reveal";
-import { siteDescription, siteDomain, siteName, siteUrl } from "@/lib/site";
+import { creatorName, siteDescription, siteDomain, siteName, siteUrl } from "@/lib/site";
 
 const weeks = [
   {
@@ -147,8 +147,8 @@ const structuredData = {
         availability: "https://schema.org/InStock",
       },
       provider: {
-        "@type": "Organization",
-        name: siteName,
+        "@type": "Person",
+        name: creatorName,
         url: siteUrl,
       },
     },

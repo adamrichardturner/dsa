@@ -79,6 +79,21 @@ export function Shell({ children }: { readonly children: ReactNode }) {
       >
         {children}
       </div>
+      {workspace ? null : (
+        <footer className="mt-auto border-t px-6 py-6">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <p>{siteName}</p>
+            <nav className="flex gap-4" aria-label="Legal">
+              <Link href="/privacy" className="underline-offset-4 hover:text-foreground hover:underline">
+                Privacy
+              </Link>
+              <Link href="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
+                Terms
+              </Link>
+            </nav>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }
