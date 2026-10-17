@@ -1,22 +1,40 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
-import { editorThemes, readEditorThemeId, type EditorThemeId } from "@/lib/editor-themes";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  editorThemes,
+  readEditorThemeId,
+  type EditorThemeId,
+} from "@/lib/editor-themes";
 
 export const editorThemeStorageKey = "dsa.editor-theme";
 export const editorThemeEvent = "dsa-editor-theme";
 
-export function useEditorTheme(): readonly [EditorThemeId, (themeId: EditorThemeId) => void] {
+export function useEditorTheme(): readonly [
+  EditorThemeId,
+  (themeId: EditorThemeId) => void,
+] {
   const [themeId, setThemeId] = useState<EditorThemeId>("kiln");
 
   useLayoutEffect(() => {
-    setThemeId(readEditorThemeId(window.localStorage.getItem(editorThemeStorageKey)));
+    setThemeId(
+      readEditorThemeId(window.localStorage.getItem(editorThemeStorageKey)),
+    );
   }, []);
 
   useEffect(() => {
     const sync = () => {
-      setThemeId(readEditorThemeId(window.localStorage.getItem(editorThemeStorageKey)));
+      setThemeId(
+        readEditorThemeId(window.localStorage.getItem(editorThemeStorageKey)),
+      );
     };
     window.addEventListener(editorThemeEvent, sync);
     window.addEventListener("storage", sync);
@@ -35,6 +53,14 @@ export function useEditorTheme(): readonly [EditorThemeId, (themeId: EditorTheme
   return [themeId, update];
 }
 
+const themeItems: readonly {
+  readonly label: string;
+  readonly value: EditorThemeId;
+}[] = editorThemes.map((theme) => ({
+  label: theme.label,
+  value: theme.id,
+}));
+
 export function EditorThemeSelect({
   themeId,
   onChange,
@@ -43,20 +69,38 @@ export function EditorThemeSelect({
   readonly onChange: (themeId: EditorThemeId) => void;
 }) {
   return (
-    <NativeSelect
-      size="sm"
-      className="w-40"
-      aria-label="Editor theme"
+    <Select
+      items={themeItems}
       value={themeId}
-      onChange={(event) => {
-        onChange(readEditorThemeId(event.currentTarget.value));
+      onValueChange={(value) => {
+        if (typeof value !== "string") {
+          return;
+        }
+        onChange(readEditorThemeId(value));
       }}
     >
-      {editorThemes.map((theme) => (
-        <NativeSelectOption key={theme.id} value={theme.id}>
-          {theme.label}
-        </NativeSelectOption>
-      ))}
-    </NativeSelect>
+      <SelectTrigger size="sm" className="w-40" aria-label="Editor theme">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent
+        side="bottom"
+        align="start"
+        alignItemWithTrigger={false}
+        collisionAvoidance={{
+          side: "none",
+          align: "none",
+          fallbackAxisSide: "none",
+        }}
+        className="max-h-none"
+      >
+        <SelectGroup>
+          {themeItems.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 }
