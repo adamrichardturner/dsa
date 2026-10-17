@@ -3,10 +3,17 @@
 import { useLayoutEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { themeStorageKey } from "@/lib/theme";
+import { applyFavicon, themeStorageKey } from "@/lib/theme";
 
 const readDark = (): boolean => {
-  return document.documentElement.classList.contains("dark");
+  const stored = window.localStorage.getItem(themeStorageKey);
+  if (stored === "dark") {
+    return true;
+  }
+  if (stored === "light") {
+    return false;
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
 };
 
 const applyTheme = (dark: boolean) => {
@@ -14,6 +21,7 @@ const applyTheme = (dark: boolean) => {
   root.classList.add("theme-transition");
   root.classList.toggle("dark", dark);
   window.localStorage.setItem(themeStorageKey, dark ? "dark" : "light");
+  applyFavicon(dark);
   window.setTimeout(() => {
     root.classList.remove("theme-transition");
   }, 260);
@@ -23,7 +31,10 @@ export function ThemeSwitch() {
   const [dark, setDark] = useState(false);
 
   useLayoutEffect(() => {
-    setDark(readDark());
+    const next = readDark();
+    setDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    applyFavicon(next);
   }, []);
 
   return (

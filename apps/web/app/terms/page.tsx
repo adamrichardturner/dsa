@@ -6,7 +6,7 @@ import {
   LegalSection,
   LegalSubheading,
 } from "@/components/legal-page";
-import { contactEmail, creatorName, legalUpdated, siteName, siteUrl } from "@/lib/site";
+import { contactEmail, creatorName, legalUpdated, siteName, siteUrl, socialImage } from "@/lib/site";
 
 const description = `The terms for ${siteName}. The course is free: no card, no trial, and no paid tier.`;
 
@@ -18,6 +18,7 @@ export const metadata: Metadata = {
     title: "Terms",
     description,
     url: "/terms",
+    images: [socialImage],
   },
 };
 

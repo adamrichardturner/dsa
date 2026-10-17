@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Fraunces, Geist, JetBrains_Mono } from "next/font/google";
 import { Shell } from "@/components/shell";
 import { AuthProvider } from "@/lib/auth";
-import { creatorName, siteDescription, siteName, siteUrl } from "@/lib/site";
-import { themeBootScript } from "@/lib/theme";
+import { creatorName, siteDescription, siteName, siteUrl, socialImage } from "@/lib/site";
+import { darkIconPath, lightIconPath, themeBootScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -38,7 +38,21 @@ export const metadata: Metadata = {
   ],
   applicationName: siteName,
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    icon: [
+      {
+        url: lightIconPath,
+        type: "image/svg+xml",
+        sizes: "any",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: darkIconPath,
+        type: "image/svg+xml",
+        sizes: "any",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   authors: [{ name: creatorName, url: siteUrl }],
   creator: creatorName,
@@ -52,11 +66,13 @@ export const metadata: Metadata = {
     title: siteName,
     description: siteDescription,
     locale: "en_US",
+    images: [socialImage],
   },
   twitter: {
     card: "summary_large_image",
     title: siteName,
     description: siteDescription,
+    images: [socialImage],
   },
   robots: {
     index: true,

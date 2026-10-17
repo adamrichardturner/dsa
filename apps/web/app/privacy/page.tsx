@@ -7,7 +7,7 @@ import {
   LegalSection,
   LegalSubheading,
 } from "@/components/legal-page";
-import { contactEmail, creatorName, legalUpdated, siteName, siteUrl } from "@/lib/site";
+import { contactEmail, creatorName, legalUpdated, siteName, siteUrl, socialImage } from "@/lib/site";
 
 const description = `How ${siteName} handles personal data. The course is free. We do not sell personal data or use it for advertising.`;
 
@@ -19,6 +19,7 @@ export const metadata: Metadata = {
     title: "Privacy",
     description,
     url: "/privacy",
+    images: [socialImage],
   },
 };
 
