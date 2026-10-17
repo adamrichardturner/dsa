@@ -9,11 +9,19 @@ import { DesktopNotice } from "@/components/desktop-notice";
 import { LandingFooter } from "@/components/landing-footer";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { buttonVariants } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
 import { siteName, siteShortName } from "@/lib/site";
 
-const links = [
-  { href: "/course", label: "Course" },
-  { href: "/progress", label: "Progress" },
+interface NavLink {
+  readonly href: string;
+  readonly label: string;
+  readonly signedInOnly: boolean;
+}
+
+const navLinks: readonly NavLink[] = [
+  { href: "/course", label: "Course", signedInOnly: true },
+  { href: "/progress", label: "Progress", signedInOnly: true },
+  { href: "/articles", label: "Articles", signedInOnly: false },
 ];
 
 function PageFooter({ home }: { readonly home: boolean }) {
@@ -26,10 +34,16 @@ function PageFooter({ home }: { readonly home: boolean }) {
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
         <p>{siteName}</p>
         <nav className="flex gap-4" aria-label="Legal">
-          <Link href="/privacy" className="underline-offset-4 hover:text-foreground hover:underline">
+          <Link
+            href="/privacy"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
             Privacy
           </Link>
-          <Link href="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
+          <Link
+            href="/terms"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
             Terms
           </Link>
         </nav>
@@ -40,8 +54,12 @@ function PageFooter({ home }: { readonly home: boolean }) {
 
 export function Shell({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const workspace = pathname.startsWith("/course/");
   const coursePage = pathname === "/course" || workspace;
+  const visibleLinks = navLinks.filter(
+    (link) => !link.signedInOnly || user !== null,
+  );
 
   return (
     <div
@@ -75,13 +93,19 @@ export function Shell({ children }: { readonly children: ReactNode }) {
             />
           </Link>
           <nav className="flex items-center">
-            {links.map((link) => {
-              const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+            {visibleLinks.map((link) => {
+              const active =
+                pathname === link.href || pathname.startsWith(`${link.href}/`);
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={cn(buttonVariants({ variant: active ? "secondary" : "ghost", size: "sm" }))}
+                  className={cn(
+                    buttonVariants({
+                      variant: active ? "secondary" : "ghost",
+                      size: "sm",
+                    }),
+                  )}
                 >
                   {link.label}
                 </Link>

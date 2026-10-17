@@ -194,6 +194,78 @@
   text-underline-offset: 0.15em;
 }
 
+.lesson-copy a.keyword-term {
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.keyword-tip {
+  position: relative;
+  display: inline;
+}
+
+.keyword-panel {
+  position: absolute;
+  z-index: 40;
+  top: 100%;
+  left: 0;
+  display: none;
+  width: 18rem;
+  max-width: min(18rem, 70vw);
+  padding-top: 0.35rem;
+  text-align: left;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.45;
+}
+
+.keyword-tip:hover > .keyword-panel,
+.keyword-tip:focus-within > .keyword-panel {
+  display: block;
+}
+
+.keyword-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  padding: 0.75rem 0.85rem;
+  box-shadow:
+    0 12px 32px oklch(0 0 0 / 12%),
+    0 1px 2px oklch(0 0 0 / 8%);
+}
+
+.keyword-kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.keyword-title {
+  font-family: var(--font-serif), serif;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.keyword-summary {
+  font-size: 0.82rem;
+  color: var(--muted-foreground);
+}
+
+.keyword-more {
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
 .lesson-copy code {
   border-radius: 0.3rem;
   background: var(--muted);
@@ -245,7 +317,8 @@
 .completion-tick-draw {
   stroke-dasharray: 20;
   stroke-dashoffset: 20;
-  animation: completion-tick-draw 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+  animation: completion-tick-draw 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.16s
+    both;
 }
 
 @keyframes completion-tick-pop {

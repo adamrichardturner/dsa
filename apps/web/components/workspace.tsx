@@ -10,6 +10,7 @@ import {
   useEditorTheme,
 } from "@/components/editor-theme-select";
 import { LessonMarkdown } from "@/components/markdown";
+import { SuggestedReading } from "@/components/suggested-reading";
 import { PageSpinner } from "@/components/page-spinner";
 import {
   SolutionNotice,
@@ -29,6 +30,7 @@ import {
   type SplitOrientation,
 } from "@/components/split-toggle";
 import { getEditorTheme, type EditorThemeId } from "@/lib/editor-themes";
+import { annotateLesson } from "@/lib/lesson-keywords";
 import { useRequireUser } from "@/lib/auth";
 import { LESSON_QUERY, SUBMIT_SOLUTION } from "@/lib/operations";
 import type { LessonView, SubmissionView } from "@/lib/types";
@@ -215,6 +217,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const nextIsSecondary =
     !checking && hasPassed && !nextIsPrimary && nextHref !== null;
   const showLastLessonNote = !checking && hasPassed && lesson.nextSlug === null;
+  const annotated = annotateLesson(lesson.contentMd, problem.promptMd);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -256,7 +259,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 {lesson.estimatedMinutes} minutes
               </p>
             </div>
-            <LessonMarkdown content={lesson.contentMd} />
+            <LessonMarkdown content={annotated.contentMd} />
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between gap-3">
@@ -273,7 +276,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <LessonMarkdown content={problem.promptMd} />
+                <LessonMarkdown content={annotated.promptMd} />
                 <div className="space-y-2">
                   {problem.examples.map((example) => (
                     <pre
@@ -292,6 +295,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 </p>
               </CardContent>
             </Card>
+            <SuggestedReading slugs={annotated.articleSlugs} />
             <div className="flex gap-3">
               {lesson.previousSlug !== null ? (
                 <Link
