@@ -17,12 +17,12 @@ import {
 } from "@/components/editor-theme-select";
 import { LessonMarkdown } from "@/components/markdown";
 import { SuggestedReading } from "@/components/suggested-reading";
-import { PageSpinner } from "@/components/page-spinner";
 import {
   SolutionNotice,
   type SolutionNoticeState,
 } from "@/components/solution-notice";
 import { CompletionTick } from "@/components/completion-tick";
+import { SyllabusTrigger, useRefreshSyllabus } from "@/components/lesson-sidebar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -81,7 +81,8 @@ function WorkspaceBar({
   readonly onOrientationChange: (orientation: SplitOrientation) => void;
 }) {
   return (
-    <div className="flex h-11 w-full shrink-0 items-center justify-end border-b px-3">
+    <div className="flex h-11 w-full shrink-0 items-center justify-between gap-3 border-b px-3">
+      <SyllabusTrigger />
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Theme</span>
@@ -125,6 +126,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [passedCode, setPassedCode] = useState<PassedSolution | null>(null);
   const [orientation, setOrientation] = useSplitOrientation();
   const [themeId, setThemeId] = useEditorTheme();
+  const refreshSyllabus = useRefreshSyllabus();
   const loadedProblemId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -149,39 +151,60 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const lessonReady = lesson !== null && lesson.slug === slug;
   const stacked = orientation === "horizontal";
   const theme = getEditorTheme(themeId);
+  const bar = (
+    <WorkspaceBar
+      themeId={themeId}
+      onThemeChange={setThemeId}
+      orientation={orientation}
+      onOrientationChange={setOrientation}
+    />
+  );
 
   if (auth.user === null || (!lessonReady && result.fetching)) {
-    return <PageSpinner />;
+    return (
+      <div className="flex h-full min-h-0 flex-1 flex-col">
+        {bar}
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <Spinner className="size-8 text-foreground" />
+        </div>
+      </div>
+    );
   }
 
   if (result.error !== undefined && !lessonReady) {
     return (
-      <div className="space-y-4 p-6">
-        <Alert>
-          <AlertDescription>{result.error.message}</AlertDescription>
-        </Alert>
-        <Link
-          href="/course"
-          className={cn(
-            buttonVariants({
-              variant: "outline",
-              size: "lg",
-              className: "h-10 px-4",
-            }),
-          )}
-        >
-          Back to the course
-        </Link>
+      <div className="flex h-full min-h-0 flex-1 flex-col">
+        {bar}
+        <div className="space-y-4 p-6">
+          <Alert>
+            <AlertDescription>{result.error.message}</AlertDescription>
+          </Alert>
+          <Link
+            href="/course"
+            className={cn(
+              buttonVariants({
+                variant: "outline",
+                size: "lg",
+                className: "h-10 px-4",
+              }),
+            )}
+          >
+            Back to the course
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (!lessonReady || problem === undefined || lesson === null) {
     return (
-      <div className="p-6">
-        <Alert>
-          <AlertDescription>That lesson is not on the path.</AlertDescription>
-        </Alert>
+      <div className="flex h-full min-h-0 flex-1 flex-col">
+        {bar}
+        <div className="p-6">
+          <Alert>
+            <AlertDescription>That lesson is not on the path.</AlertDescription>
+          </Alert>
+        </div>
       </div>
     );
   }
@@ -207,6 +230,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
       setPassedCode({ problemId, code });
     }
     reexecute({ requestPolicy: "network-only" });
+    refreshSyllabus();
   };
 
   const onRun = async () => {
@@ -272,13 +296,8 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const annotated = annotateLesson(lesson.contentMd, problem.promptMd);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <WorkspaceBar
-        themeId={themeId}
-        onThemeChange={setThemeId}
-        orientation={orientation}
-        onOrientationChange={setOrientation}
-      />
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      {bar}
       <div
         className={cn(
           "grid min-h-0 flex-1",

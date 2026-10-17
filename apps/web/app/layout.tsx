@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, JetBrains_Mono } from "next/font/google";
 import { Shell } from "@/components/shell";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
 import { creatorName, siteDescription, siteName, siteUrl, socialImage } from "@/lib/site";
 import { darkIconPath, lightIconPath, themeBootScript } from "@/lib/theme";
@@ -99,9 +100,11 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
-        <AuthProvider>
-          <Shell>{children}</Shell>
-        </AuthProvider>
+        <TooltipProvider delay={400}>
+          <AuthProvider>
+            <Shell>{children}</Shell>
+          </AuthProvider>
+        </TooltipProvider>
       </body>
     </html>
   );
