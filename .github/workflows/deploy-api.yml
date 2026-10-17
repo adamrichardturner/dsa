@@ -27,7 +27,6 @@ jobs:
           username: arty88
           key: ${{ secrets.VPS_SSH_KEY }}
           fingerprint: "SHA256:MnUMEbPqBrldUR1LJOy77Yd7wE3e9Rax333RVgkDNU8"
-          script_stop: true
           command_timeout: 20m
           script: |
             set -eu
