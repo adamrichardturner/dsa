@@ -1,0 +1,51 @@
+import { ConfigProvider, Effect, Layer, ManagedRuntime } from "effect";
+import { PgClient } from "@effect/sql-pg";
+import { AppConfig } from "./config.js";
+import { prepareDatabase } from "./db/prepare.js";
+import { Auth, RequestAuth } from "./domain/auth.js";
+import { OAuth } from "./domain/oauth.js";
+import { Catalog } from "./domain/catalog.js";
+import { Insights } from "./domain/insights.js";
+import { Solutions } from "./domain/solutions.js";
+
+const DbLive = Layer.unwrap(
+  Effect.gen(function* () {
+    const config = yield* AppConfig;
+    return PgClient.layer({
+      host: config.pgHost,
+      port: config.pgPort,
+      database: config.pgDatabase,
+      username: config.pgUser,
+      password: config.pgPassword,
+      maxConnections: 10,
+    });
+  }),
+);
+
+export const AppLayer = Layer.mergeAll(
+  Auth.layer,
+  OAuth.layer,
+  Catalog.layer,
+  Solutions.layer,
+  Insights.layer,
+  AppConfig.layer,
+).pipe(
+  Layer.provideMerge(DbLive),
+  Layer.provide(AppConfig.layer),
+  Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnv())),
+);
+
+export const runtime = ManagedRuntime.make(AppLayer);
+
+type AppRequirements = Auth | OAuth | Catalog | Solutions | Insights | AppConfig | RequestAuth;
+
+export const runEffect = <A, E>(
+  token: string | null,
+  effect: Effect.Effect<A, E, AppRequirements>,
+): Promise<A> =>
+  runtime.runPromise(effect.pipe(Effect.provideService(RequestAuth, { token })));
+
+export const boot = Effect.gen(function* () {
+  yield* prepareDatabase;
+  return yield* AppConfig;
+});

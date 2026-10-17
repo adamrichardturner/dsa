@@ -1,0 +1,215 @@
+import { randomUUID } from "node:crypto";
+import { Context, Effect, Layer, Schema } from "effect";
+import { SqlClient, SqlSchema } from "effect/sql";
+import { NotFound, Unexpected } from "./errors.js";
+import type { SubmissionView } from "./models.js";
+import { runSolution, type RunTest } from "./runner.js";
+
+const ProblemRow = Schema.Struct({
+  id: Schema.String,
+  functionName: Schema.String,
+  testsJson: Schema.String,
+  disallowJson: Schema.String,
+});
+
+const CountRow = Schema.Struct({
+  attempts: Schema.Number,
+});
+
+const StoredTest = Schema.Struct({
+  name: Schema.String,
+  args: Schema.Array(Schema.Unknown),
+  expected: Schema.Unknown,
+  public: Schema.Boolean,
+  compare: Schema.optional(Schema.Literals(["exact", "set"])),
+});
+
+const parseJson = (text: string): unknown => JSON.parse(text);
+
+const failUnexpected = (message: string) => <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+  effect.pipe(
+    Effect.tapError((error) => Effect.logError(message, error)),
+    Effect.mapError(() => new Unexpected({ message })),
+  );
+
+const starsFor = (passed: boolean, previousAttempts: number): number => {
+  if (!passed) {
+    return 0;
+  }
+  if (previousAttempts === 0) {
+    return 3;
+  }
+  if (previousAttempts < 3) {
+    return 2;
+  }
+  return 1;
+};
+
+export class Solutions extends Context.Service<
+  Solutions,
+  {
+    submit(
+      userId: string,
+      problemId: string,
+      code: string,
+    ): Effect.Effect<SubmissionView, NotFound | Unexpected>;
+  }
+>()("app/Solutions") {
+  static readonly layer = Layer.effect(
+    Solutions,
+    Effect.gen(function* () {
+      const sql = yield* SqlClient.SqlClient;
+
+      const findProblem = SqlSchema.findAll({
+        Request: Schema.Struct({ problemId: Schema.String }),
+        Result: ProblemRow,
+        execute: (request) =>
+          sql`
+            SELECT
+              id,
+              function_name AS "functionName",
+              tests_json AS "testsJson",
+              disallow_json AS "disallowJson"
+            FROM problems
+            WHERE id = ${request.problemId}
+          `,
+      });
+
+      const countAttempts = SqlSchema.findAll({
+        Request: Schema.Struct({
+          userId: Schema.String,
+          problemId: Schema.String,
+        }),
+        Result: CountRow,
+        execute: (request) =>
+          sql`
+            SELECT COUNT(*)::int AS "attempts"
+            FROM submissions
+            WHERE user_id = ${request.userId}
+              AND problem_id = ${request.problemId}
+          `,
+      });
+
+      const insertSubmission = SqlSchema.void({
+        Request: Schema.Struct({
+          id: Schema.String,
+          userId: Schema.String,
+          problemId: Schema.String,
+          code: Schema.String,
+          passed: Schema.Boolean,
+          stars: Schema.Number,
+          testsPassed: Schema.Number,
+          testsTotal: Schema.Number,
+          feedback: Schema.String,
+          resultsJson: Schema.String,
+          createdAt: Schema.String,
+        }),
+        execute: (request) =>
+          sql`
+            INSERT INTO submissions (
+              id,
+              user_id,
+              problem_id,
+              code,
+              passed,
+              stars,
+              tests_passed,
+              tests_total,
+              feedback,
+              results_json,
+              created_at
+            )
+            VALUES (
+              ${request.id},
+              ${request.userId},
+              ${request.problemId},
+              ${request.code},
+              ${request.passed},
+              ${request.stars},
+              ${request.testsPassed},
+              ${request.testsTotal},
+              ${request.feedback},
+              ${request.resultsJson},
+              ${request.createdAt}::timestamptz
+            )
+          `,
+      });
+
+      const submit = Effect.fn("Solutions.submit")(function* (
+        userId: string,
+        problemId: string,
+        code: string,
+      ) {
+        if (code.trim().length === 0) {
+          return yield* new Unexpected({ message: "Write a solution before submitting." });
+        }
+
+        const problems = yield* findProblem({ problemId }).pipe(
+          failUnexpected("Could not load that exercise."),
+        );
+        const problem = problems[0];
+        if (problem === undefined) {
+          return yield* new NotFound({ message: "That exercise does not exist." });
+        }
+
+        const parsedTests = yield* Effect.try({
+          try: () => parseJson(problem.testsJson),
+          catch: () => new Unexpected({ message: "Could not read the tests." }),
+        });
+        const parsedDisallow = yield* Effect.try({
+          try: () => parseJson(problem.disallowJson),
+          catch: () => new Unexpected({ message: "Could not read the tests." }),
+        });
+        const storedTests = yield* Schema.decodeUnknownEffect(Schema.Array(StoredTest))(
+          parsedTests,
+        ).pipe(Effect.mapError(() => new Unexpected({ message: "Could not read the tests." })));
+        const disallow = yield* Schema.decodeUnknownEffect(Schema.Array(Schema.String))(
+          parsedDisallow,
+        ).pipe(Effect.mapError(() => new Unexpected({ message: "Could not read the tests." })));
+
+        const tests: RunTest[] = storedTests.map((test) => ({
+          name: test.name,
+          args: test.args,
+          expected: test.expected,
+          compare: test.compare ?? "exact",
+        }));
+
+        const outcome = runSolution(code, problem.functionName, tests, disallow);
+        const counts = yield* countAttempts({ userId, problemId }).pipe(
+          failUnexpected("Could not save the submission."),
+        );
+        const previousAttempts = counts[0]?.attempts ?? 0;
+        const stars = starsFor(outcome.passed, previousAttempts);
+        const createdAt = new Date().toISOString();
+        const id = randomUUID();
+
+        yield* insertSubmission({
+          id,
+          userId,
+          problemId,
+          code,
+          passed: outcome.passed,
+          stars,
+          testsPassed: outcome.testsPassed,
+          testsTotal: outcome.testsTotal,
+          feedback: outcome.feedback,
+          resultsJson: JSON.stringify(outcome.results),
+          createdAt,
+        }).pipe(failUnexpected("Could not save the submission."));
+
+        return {
+          id,
+          passed: outcome.passed,
+          stars,
+          testsPassed: outcome.testsPassed,
+          testsTotal: outcome.testsTotal,
+          feedback: outcome.feedback,
+          results: outcome.results,
+          createdAt,
+        };
+      });
+
+      return Solutions.of({ submit });
+    }),
+  );
+}

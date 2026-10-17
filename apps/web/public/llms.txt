@@ -1,0 +1,24 @@
+# Data Structures and Algorithms
+
+> Data structures and algorithms, practiced in TypeScript, at https://datastructuresandalgorithms.com
+
+Data structures and algorithms are how a program stores values and the steps it uses to work on those values. This site is a free four-week TypeScript course: the lesson sits beside a code editor, tests run on submit, and progress stays on the account. There is no payment and no trial.
+
+## Canonical
+
+https://datastructuresandalgorithms.com
+
+## What the course covers
+
+- Week 1: complexity, arrays, hash maps, two pointers, sliding windows
+- Week 2: linked lists, stacks, queues, recursion, binary search, merge sort
+- Week 3: trees, binary search trees, heaps, graphs
+- Week 4: greedy choices, backtracking, dynamic programming, tries
+
+Nineteen lessons. One exercise each. Written for people who already write TypeScript.
+
+## Answers
+
+Data structures and algorithms are the arrangements of values (arrays, hash maps, trees, graphs) and the procedures that use them (search, sort, traversal, dynamic programming).
+
+The course is 100% free and takes four weeks. A first passing submission earns three stars.
