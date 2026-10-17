@@ -1,6 +1,6 @@
 # Data Structures and Algorithms
 
-A four-week TypeScript course at datastructuresandalgorithms.com. The lesson and the editor open in a vertical split, and the desk can switch to a horizontal split. Submissions, stars, and a short progress note are stored for each account.
+A four-week TypeScript course at datastructuresandalgorithms.com. The lesson and the editor open in a vertical split, and the desk can switch to a horizontal split. Submissions and a short progress note are stored for each account.
 
 ## Layout
 
@@ -8,7 +8,7 @@ A four-week TypeScript course at datastructuresandalgorithms.com. The lesson and
 - `apps/api` is an Express server with a GraphQL endpoint. The domain code is written with Effect: services, layers, schema decoding, and `@effect/sql-pg`.
 - Postgres holds users, sessions, OAuth identities, the course, and submissions.
 
-The course is nineteen lessons across four weeks: complexity and scanning patterns, lists through sorting, trees and graphs, then greedy search, backtracking, dynamic programming, and tries. Each lesson has one exercise. A first-try pass earns three stars, a pass within three attempts earns two, and a later pass earns one.
+The course is nineteen lessons across four weeks: complexity and scanning patterns, lists through sorting, trees and graphs, then greedy search, backtracking, dynamic programming, and tries. Each lesson has one exercise. A pass marks the lesson done.
 
 ## Local development
 

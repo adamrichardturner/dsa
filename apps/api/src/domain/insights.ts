@@ -37,12 +37,12 @@ const describe = (
     return "You have not submitted a solution yet. Start with The cost of a loop. The first exercises are short on purpose.";
   }
   if (problemsSolved === problemsTotal) {
-    return "You have solved every exercise. Stars below three mark the lessons worth a second pass. After that, the same patterns show up in longer problems.";
+    return "You have solved every exercise. The same patterns show up in longer problems.";
   }
   if (focusAreas.length === 0) {
     return "Everything you have attempted so far has passed. Move on to the next unsolved lesson while the previous pattern is still fresh.";
   }
-  return `Spend the next session on ${focusAreas.join(", ")}. Those topics have an attempt that has not passed, or a solution that took several tries.`;
+  return `Spend the next session on ${focusAreas.join(", ")}. Those topics have an attempt that has not passed.`;
 };
 
 export class Insights extends Context.Service<
@@ -168,11 +168,7 @@ export class Insights extends Context.Service<
         }
 
         const focusAreas = topicList
-          .filter((topic) => {
-            const unfinished = topic.attempted > 0 && topic.solved < topic.total;
-            const shaky = topic.solved === topic.total && topic.stars < topic.maxStars;
-            return unfinished || shaky;
-          })
+          .filter((topic) => topic.attempted > 0 && topic.solved < topic.total)
           .map((topic) => topic.topic);
 
         const attemptRow = totals[0];

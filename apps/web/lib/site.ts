@@ -1,7 +1,9 @@
 export const siteName = "Data Structures and Algorithms";
+export const siteShortName = "DSA";
 export const siteDomain = "datastructuresandalgorithms.com";
 export const siteUrl = `https://${siteDomain}`;
 export const creatorName = "Adam Richard Turner";
+export const creatorUrl = "https://adamrichardturner.dev";
 export const contactEmail = "hello@adamrichardturner.dev";
 export const legalUpdated = "17 October 2026";
 export const siteDescription =

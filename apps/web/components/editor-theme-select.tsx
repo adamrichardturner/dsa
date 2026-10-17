@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -20,7 +20,7 @@ const storageKey = "dsa.editor-theme";
 export function useEditorTheme(): readonly [EditorThemeId, (themeId: EditorThemeId) => void] {
   const [themeId, setThemeId] = useState<EditorThemeId>("kiln");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setThemeId(readEditorThemeId(window.localStorage.getItem(storageKey)));
   }, []);
 

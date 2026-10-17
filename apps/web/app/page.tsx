@@ -1,4 +1,4 @@
-import { BookOpen, Columns2, Gift, Moon, Star, Terminal } from "lucide-react";
+import { BookOpen, Check, Columns2, Gift, Moon, Terminal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LandingActions, LandingCloseCopy } from "@/components/landing-actions";
@@ -58,16 +58,16 @@ const features = [
       "Public examples show the shape of the answer. Hidden tests check the cases that are easy to forget. You see the result when you submit.",
   },
   {
-    icon: Star,
-    title: "Stars that mean something",
+    icon: Check,
+    title: "A tick when it passes",
     detail:
-      "Three stars if the first submission passes, two if it passes within three tries, one if it passes later. The best score stays on the lesson.",
+      "Pass the exercise and the lesson keeps a green tick. It stays on the path, so you can see what is finished.",
   },
   {
     icon: Moon,
     title: "Yours when you come back",
     detail:
-      "The account keeps your code, stars, and a note on the topics that still need a pass. Light and dark mode stay with the browser.",
+      "The account keeps your code and a note on the topics that still need a pass. Light and dark mode stay with the browser.",
   },
 ];
 
@@ -84,8 +84,8 @@ const steps = [
   },
   {
     step: "03",
-    title: "Submit and keep the score",
-    detail: "The tests run immediately. A pass marks the lesson done and stores the stars.",
+    title: "Submit",
+    detail: "The tests run immediately. A pass marks the lesson done.",
   },
 ];
 
@@ -103,7 +103,7 @@ const faqs = [
   {
     question: "How do I learn data structures and algorithms?",
     answer:
-      "Learn data structures and algorithms by writing them. This 100% free course is four weeks of TypeScript: read the lesson, implement one function, and submit it against tests. A first passing attempt earns three stars.",
+      "Learn data structures and algorithms by writing them. This 100% free course is four weeks of TypeScript: read the lesson, implement one function, and submit it against tests. A pass marks the lesson done.",
   },
   {
     question: "Which data structures and algorithms does the course cover?",
@@ -193,8 +193,8 @@ export default function HomePage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
             <p>
-              Nineteen lessons. One exercise each. An editor, tests, stars, and a progress page
-              that stays on your account.
+              Nineteen lessons. One exercise each. An editor, tests, and a progress page that stays
+              on your account.
             </p>
             <p>No trial period, no card, and no lesson held back for a paid plan.</p>
           </CardContent>

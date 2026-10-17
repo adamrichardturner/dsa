@@ -74,7 +74,7 @@ export default function TermsPage() {
       </LegalSection>
 
       <LegalSection id="free" title="The course is free">
-        <p>The nineteen lessons, the editor, the tests, the stars, and saved progress are free.</p>
+        <p>The nineteen lessons, the editor, the tests, and saved progress are free.</p>
         <LegalList>
           <li>We do not take a payment card to open an account.</li>
           <li>We do not start a trial that becomes a subscription.</li>
@@ -124,10 +124,8 @@ export default function TermsPage() {
       <LegalSection id="course" title="Using the course">
         <p>
           Lessons are meant to be taken in order. An exercise is complete when its tests pass.
-          Stars record how the pass went: three on a first passing submission, two if it passes
-          within the first three submissions, and one after that. The best score stays on the
-          lesson. Stars are a learning record for you. They are not a qualification, a
-          certificate, or a reference we give to an employer.
+          A green tick stays on that lesson. The tick is a learning record for you. It is not a
+          qualification, a certificate, or a reference we give to an employer.
         </p>
         <p>
           The editor runs in your browser. A submission runs on our server long enough for the
@@ -185,7 +183,7 @@ export default function TermsPage() {
           <li>Try to access an account that is not yours</li>
           <li>Upload malware, or code whose purpose is to harm the service or another person</li>
           <li>Use the course to harass, or to store unlawful material</li>
-          <li>Present stars or progress as a credential issued by us</li>
+          <li>Present progress as a credential issued by us</li>
         </LegalList>
         <p>
           We may remove a submission or end a session that does this. For a mistake that does not

@@ -1,6 +1,6 @@
 "use client";
 
-import { PageSkeleton } from "@/components/page-skeleton";
+import { PageSpinner } from "@/components/page-spinner";
 import { ProfileSettings } from "@/components/profile-settings";
 import { useRequireUser } from "@/lib/auth";
 
@@ -8,7 +8,7 @@ export default function SettingsPage() {
   const auth = useRequireUser();
 
   if (auth.user === null) {
-    return <PageSkeleton />;
+    return <PageSpinner />;
   }
 
   return (

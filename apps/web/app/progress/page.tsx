@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useQuery } from "urql";
 import { cn } from "cn";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { Stars } from "@/components/stars";
+import { PageSpinner } from "@/components/page-spinner";
+import { CompletionTick } from "@/components/completion-tick";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -21,8 +21,8 @@ export default function ProgressPage() {
     pause: auth.user === null,
   });
 
-  if (auth.user === null || result.fetching) {
-    return <PageSkeleton />;
+  if (auth.user === null || (result.fetching && result.data === undefined)) {
+    return <PageSpinner />;
   }
 
   if (result.error !== undefined || result.data === undefined) {
@@ -49,7 +49,7 @@ export default function ProgressPage() {
         <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground">{analytics.summary}</p>
       </div>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2">
         <Card size="sm">
           <CardHeader>
             <CardDescription>Lessons</CardDescription>
@@ -60,24 +60,6 @@ export default function ProgressPage() {
           </CardHeader>
           <CardContent>
             <Progress value={lessonPercent} />
-          </CardContent>
-        </Card>
-        <Card size="sm">
-          <CardHeader>
-            <CardDescription>Stars</CardDescription>
-            <CardTitle className="font-serif text-3xl">
-              {analytics.stars}
-              <span className="text-muted-foreground">/{analytics.maxStars}</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Stars
-              value={
-                analytics.maxStars === 0
-                  ? 0
-                  : Math.round((analytics.stars / analytics.maxStars) * 3)
-              }
-            />
           </CardContent>
         </Card>
         <Card size="sm">
@@ -116,10 +98,15 @@ export default function ProgressPage() {
             const percent = topic.total === 0 ? 0 : Math.round((topic.solved / topic.total) * 100);
             return (
               <li key={topic.topic} className="space-y-2">
-                <div className="flex items-baseline justify-between text-sm">
-                  <span>{topic.topic}</span>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="flex items-center gap-2">
+                    {topic.solved === topic.total && topic.total > 0 ? (
+                      <CompletionTick label={`${topic.topic} complete`} className="size-4" />
+                    ) : null}
+                    {topic.topic}
+                  </span>
                   <span className="text-muted-foreground">
-                    {topic.stars}/{topic.maxStars} stars
+                    {topic.solved}/{topic.total}
                   </span>
                 </div>
                 <Progress value={percent} />

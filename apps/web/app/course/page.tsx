@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useQuery } from "urql";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { Stars } from "@/components/stars";
+import { PageSpinner } from "@/components/page-spinner";
+import { CompletionTick } from "@/components/completion-tick";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,8 +19,8 @@ export default function CoursePage() {
     requestPolicy: "cache-and-network",
   });
 
-  if (auth.user === null || result.fetching) {
-    return <PageSkeleton />;
+  if (auth.user === null) {
+    return <PageSpinner />;
   }
 
   if (result.error !== undefined) {
@@ -33,6 +33,10 @@ export default function CoursePage() {
     );
   }
 
+  if (result.data === undefined) {
+    return <PageSpinner />;
+  }
+
   const modules = result.data?.modules ?? [];
 
   return (
@@ -41,8 +45,7 @@ export default function CoursePage() {
         <Badge variant="secondary">The path</Badge>
         <h1 className="font-serif text-4xl tracking-tight">Four weeks, one desk.</h1>
         <p className="max-w-xl text-muted-foreground">
-          Work in order. The next lesson opens when this one passes. Stars reward a solution that
-          lands early.
+          Work in order. The next lesson opens when this one passes, and a green tick stays beside it.
         </p>
       </div>
       {modules.map((module) => (
@@ -57,14 +60,10 @@ export default function CoursePage() {
           <Card>
             <CardContent className="divide-y px-0">
               {module.lessons.map((lesson, index) => {
-                const label = `${String(index + 1).padStart(2, "0")}${lesson.completed ? " · Done" : ""}${lesson.available ? "" : " · Locked"} · ${lesson.estimatedMinutes} min`;
-                const stars = (
-                  <Stars
-                    value={
-                      lesson.maxStars === 0 ? 0 : Math.round((lesson.stars / lesson.maxStars) * 3)
-                    }
-                  />
-                );
+                const label = `${String(index + 1).padStart(2, "0")}${lesson.available ? "" : " · Locked"} · ${lesson.estimatedMinutes} min`;
+                const tick = lesson.completed ? (
+                  <CompletionTick label={`${lesson.title} complete`} />
+                ) : null;
                 if (!lesson.available) {
                   return (
                     <div
@@ -76,7 +75,7 @@ export default function CoursePage() {
                         <p className="text-xs">{label}</p>
                         <p className="mt-1 font-medium">{lesson.title}</p>
                       </div>
-                      {stars}
+                      {tick}
                     </div>
                   );
                 }
@@ -90,7 +89,7 @@ export default function CoursePage() {
                       <p className="text-xs text-muted-foreground">{label}</p>
                       <p className="mt-1 font-medium">{lesson.title}</p>
                     </div>
-                    {stars}
+                    {tick}
                   </Link>
                 );
               })}

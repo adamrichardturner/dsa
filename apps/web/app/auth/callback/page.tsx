@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { OAuthCallback } from "@/components/oauth-callback";
-import { PageSkeleton } from "@/components/page-skeleton";
+import { PageSpinner } from "@/components/page-spinner";
 
 export const metadata: Metadata = {
   title: "Signing in",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function OAuthCallbackPage() {
   return (
-    <Suspense fallback={<PageSkeleton />}>
+    <Suspense fallback={<PageSpinner />}>
       <OAuthCallback />
     </Suspense>
   );

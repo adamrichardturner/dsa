@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useMutation } from "urql";
+import { PageSpinner } from "@/components/page-spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +33,10 @@ export function AuthForm({
   const error = signUpResult.error?.message ?? signInResult.error?.message ?? null;
   const title = mode === "sign-up" ? "Create your account" : "Welcome back";
 
+  if (pending) {
+    return <PageSpinner />;
+  }
+
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const result =
@@ -39,10 +44,13 @@ export function AuthForm({
         ? await signUp({ email, name, password })
         : await signInMutation({ email, password });
     const data = result.data;
-    if (data === undefined) {
+    if (data == null) {
       return;
     }
     const payload = "signUp" in data ? data.signUp : data.signIn;
+    if (payload == null) {
+      return;
+    }
     signIn(payload.token, payload.user);
     router.push("/course");
   };
@@ -126,8 +134,8 @@ export function AuthForm({
                 . You need to be 16 or older.
               </p>
             ) : null}
-            <Button type="submit" className="h-10 w-full" disabled={pending}>
-              {pending ? "Working…" : mode === "sign-up" ? "Create account" : "Sign in"}
+            <Button type="submit" className="h-10 w-full">
+              {mode === "sign-up" ? "Create account" : "Sign in"}
             </Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground">

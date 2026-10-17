@@ -159,9 +159,9 @@ export default function PrivacyPage() {
         </p>
         <LegalSubheading>Course work</LegalSubheading>
         <p>
-          Each submission stores the code, whether it passed, the stars, how many tests passed,
-          the total, the feedback, the per-test results, and the time. The progress page is
-          calculated from those submissions: lessons completed, stars, pass rate, topics, and a
+          Each submission stores the code, whether it passed, how many tests passed, the total,
+          the feedback, the per-test results, and the time. The progress page is calculated from
+          those submissions: lessons completed, pass rate, topics, and a
           short note on what to practise next. That note is for you. It is not a profile we sell,
           and it is not used to decide anything outside the course.
         </p>
@@ -185,7 +185,7 @@ export default function PrivacyPage() {
         <LegalSubheading>Running the course</LegalSubheading>
         <p>
           Account details, sessions, and submissions are used to provide the lessons, the editor,
-          the tests, the stars, and the progress page. The basis is contract, Article 6(1)(b). You
+          the tests, and the progress page. The basis is contract, Article 6(1)(b). You
           ask for an account, and this is the data needed to provide it.
         </p>
         <LegalSubheading>Google or GitHub sign-in</LegalSubheading>
@@ -397,7 +397,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             Ask us not to make a decision about you based only on automated processing if that
-            decision has a legal effect, or a similar significant effect. Stars and the progress
+            decision has a legal effect, or a similar significant effect. A green tick and the progress
             note are feedback on exercises. They do not affect a job, credit, insurance, or a
             legal right. The course is not run under Article 22.
           </li>
@@ -432,7 +432,7 @@ export default function PrivacyPage() {
           Identifiers: name, email, account id, and, if you use them, a Google or GitHub user id.
           Account records: those identifiers, a password hash if you set a password, and a picture
           link if one is stored. Education information you create on the course: submitted code,
-          test results, stars, and the progress summary. Internet or network activity is limited
+          test results, and the progress summary. Internet or network activity is limited
           to requests to the site and host logs.
         </p>
         <p>

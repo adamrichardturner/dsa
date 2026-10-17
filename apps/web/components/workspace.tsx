@@ -5,21 +5,38 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { cn } from "cn";
 import { CodeEditor } from "@/components/editor";
-import { EditorThemeSelect, useEditorTheme } from "@/components/editor-theme-select";
+import {
+  EditorThemeSelect,
+  useEditorTheme,
+} from "@/components/editor-theme-select";
 import { LessonMarkdown } from "@/components/markdown";
-import { PageSkeleton } from "@/components/page-skeleton";
-import { Stars } from "@/components/stars";
+import { PageSpinner } from "@/components/page-spinner";
+import {
+  SolutionNotice,
+  type SolutionNoticeState,
+} from "@/components/solution-notice";
+import { CompletionTick } from "@/components/completion-tick";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { SplitToggle, useSplitOrientation } from "@/components/split-toggle";
-import { getEditorTheme } from "@/lib/editor-themes";
+import {
+  SplitToggle,
+  useSplitOrientation,
+  type SplitOrientation,
+} from "@/components/split-toggle";
+import { getEditorTheme, type EditorThemeId } from "@/lib/editor-themes";
 import { useRequireUser } from "@/lib/auth";
 import { LESSON_QUERY, SUBMIT_SOLUTION } from "@/lib/operations";
 import type { LessonView, SubmissionView } from "@/lib/types";
+
+interface PassedSolution {
+  readonly problemId: string;
+  readonly code: string;
+}
 
 const capitalize = (value: string): string => {
   if (value.length === 0) {
@@ -28,6 +45,43 @@ const capitalize = (value: string): string => {
   return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
 };
 
+const editorRuleColor = (light: boolean): string => {
+  if (light) {
+    return "rgba(0, 0, 0, 0.12)";
+  }
+  return "rgba(255, 255, 255, 0.12)";
+};
+
+function WorkspaceBar({
+  themeId,
+  onThemeChange,
+  orientation,
+  onOrientationChange,
+}: {
+  readonly themeId: EditorThemeId;
+  readonly onThemeChange: (themeId: EditorThemeId) => void;
+  readonly orientation: SplitOrientation;
+  readonly onOrientationChange: (orientation: SplitOrientation) => void;
+}) {
+  return (
+    <div className="flex h-11 w-full shrink-0 items-center justify-end border-b px-3">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Theme</span>
+          <EditorThemeSelect themeId={themeId} onChange={onThemeChange} />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Split</span>
+          <SplitToggle
+            orientation={orientation}
+            onChange={onOrientationChange}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Workspace({ slug }: { readonly slug: string }) {
   const auth = useRequireUser();
   const [result, reexecute] = useQuery<{ lesson: LessonView | null }>({
@@ -35,11 +89,15 @@ export function Workspace({ slug }: { readonly slug: string }) {
     variables: { slug },
     pause: auth.user === null || slug.length === 0,
   });
-  const [submitState, submit] = useMutation<{ submitSolution: SubmissionView }>(SUBMIT_SOLUTION);
+  const [submitState, submit] = useMutation<{ submitSolution: SubmissionView }>(
+    SUBMIT_SOLUTION,
+  );
   const lesson = result.data?.lesson ?? null;
   const problem = lesson?.problems[0];
   const [code, setCode] = useState("");
   const [outcome, setOutcome] = useState<SubmissionView | null>(null);
+  const [notice, setNotice] = useState<SolutionNoticeState | null>(null);
+  const [passedCode, setPassedCode] = useState<PassedSolution | null>(null);
   const [orientation, setOrientation] = useSplitOrientation();
   const [themeId, setThemeId] = useEditorTheme();
   const loadedProblemId = useRef<string | null>(null);
@@ -54,26 +112,45 @@ export function Workspace({ slug }: { readonly slug: string }) {
     loadedProblemId.current = problem.id;
     setCode(problem.latestCode ?? problem.starterCode);
     setOutcome(null);
+    setNotice(null);
+    if (problem.solved && problem.latestCode !== null) {
+      setPassedCode({ problemId: problem.id, code: problem.latestCode });
+      return;
+    }
+    setPassedCode(null);
   }, [problem]);
 
-  if (auth.user === null || result.fetching) {
-    return <PageSkeleton />;
+  const lessonReady = lesson !== null && lesson.slug === slug;
+  const stacked = orientation === "horizontal";
+  const theme = getEditorTheme(themeId);
+
+  if (auth.user === null || (!lessonReady && result.fetching)) {
+    return <PageSpinner />;
   }
 
-  if (result.error !== undefined) {
+  if (result.error !== undefined && !lessonReady) {
     return (
       <div className="space-y-4 p-6">
         <Alert>
           <AlertDescription>{result.error.message}</AlertDescription>
         </Alert>
-        <Link href="/course" className={cn(buttonVariants({ variant: "outline", size: "lg", className: "h-10 px-4" }))}>
+        <Link
+          href="/course"
+          className={cn(
+            buttonVariants({
+              variant: "outline",
+              size: "lg",
+              className: "h-10 px-4",
+            }),
+          )}
+        >
           Back to the course
         </Link>
       </div>
     );
   }
 
-  if (lesson === null || problem === undefined) {
+  if (!lessonReady || problem === undefined || lesson === null) {
     return (
       <div className="p-6">
         <Alert>
@@ -84,42 +161,69 @@ export function Workspace({ slug }: { readonly slug: string }) {
   }
 
   const onSubmit = async () => {
-    const response = await submit({ problemId: problem.id, code });
+    const problemId = problem.id;
+    setNotice({ kind: "checking" });
+    const response = await submit({ problemId, code });
+    if (loadedProblemId.current !== problemId) {
+      return;
+    }
     const next = response.data?.submitSolution;
     if (next === undefined) {
+      setNotice({
+        kind: "error",
+        message: response.error?.message ?? "Could not check that solution.",
+      });
       return;
     }
     setOutcome(next);
+    setNotice({ kind: "result", outcome: next });
+    if (next.passed) {
+      setPassedCode({ problemId, code });
+    }
     reexecute({ requestPolicy: "network-only" });
   };
 
-  const stars = outcome?.passed ? outcome.stars : problem.bestStars;
-  const stacked = orientation === "horizontal";
-  const theme = getEditorTheme(themeId);
   const chrome = theme.light
     ? {
         reset: "text-zinc-700 hover:bg-black/5 hover:text-zinc-950",
         submit: "bg-zinc-900 text-zinc-50 hover:bg-zinc-800",
-        rule: "rgba(0, 0, 0, 0.12)",
+        rule: editorRuleColor(true),
       }
     : {
         reset: "text-zinc-300 hover:bg-white/10 hover:text-white",
         submit: "bg-zinc-100 text-zinc-950 hover:bg-white",
-        rule: "rgba(255, 255, 255, 0.12)",
+        rule: editorRuleColor(false),
       };
+  const checking = submitState.fetching;
+  const editorReady = loadedProblemId.current === problem.id;
+  const rememberedPass =
+    passedCode !== null && passedCode.problemId === problem.id
+      ? passedCode.code
+      : null;
+  const passingCode =
+    rememberedPass ?? (problem.solved ? problem.latestCode : null);
+  const codeMatchesPass =
+    editorReady && passingCode !== null && code === passingCode;
+  const hasPassed =
+    editorReady &&
+    (problem.solved || (outcome?.passed ?? false) || rememberedPass !== null);
+  const nextHref =
+    lesson.nextSlug !== null && lesson.nextAvailable
+      ? `/course/${lesson.nextSlug}`
+      : null;
+  const nextIsPrimary = !checking && codeMatchesPass && nextHref !== null;
+  const nextIsSecondary =
+    !checking && hasPassed && !nextIsPrimary && nextHref !== null;
+  const showLastLessonNote = !checking && hasPassed && lesson.nextSlug === null;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-11 shrink-0 items-center justify-between gap-3 border-b px-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Theme</span>
-          <EditorThemeSelect themeId={themeId} onChange={setThemeId} />
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">Split</span>
-          <SplitToggle orientation={orientation} onChange={setOrientation} />
-        </div>
-      </div>
+      <WorkspaceBar
+        themeId={themeId}
+        onThemeChange={setThemeId}
+        orientation={orientation}
+        onOrientationChange={setOrientation}
+      />
       <div
         className={cn(
           "grid min-h-0 flex-1",
@@ -129,7 +233,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
         )}
       >
         <ScrollArea
-          className={cn("h-full min-h-0 min-w-0 bg-background", stacked ? "border-b" : "border-r")}
+          className={cn(
+            "h-full min-h-0 min-w-0 bg-background",
+            stacked ? "border-b" : "border-r",
+          )}
         >
           <div className="mx-auto max-w-xl space-y-6 px-6 py-8">
             <div className="space-y-3">
@@ -137,18 +244,32 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 <Badge variant="secondary">
                   Week {lesson.weekNumber} · {lesson.moduleTitle}
                 </Badge>
-                <Badge variant="outline">{capitalize(problem.difficulty)}</Badge>
+                <Badge variant="outline">
+                  {capitalize(problem.difficulty)}
+                </Badge>
                 <Badge variant="outline">{problem.topic}</Badge>
               </div>
-              <h1 className="font-serif text-4xl tracking-tight">{lesson.title}</h1>
-              <p className="text-sm text-muted-foreground">{lesson.estimatedMinutes} minutes</p>
+              <h1 className="font-serif text-4xl tracking-tight">
+                {lesson.title}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {lesson.estimatedMinutes} minutes
+              </p>
             </div>
             <LessonMarkdown content={lesson.contentMd} />
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between gap-3">
-                  <CardTitle className="font-serif text-2xl">{problem.title}</CardTitle>
-                  <Stars value={stars} />
+                  <CardTitle className="font-serif text-2xl">
+                    {problem.title}
+                  </CardTitle>
+                  {hasPassed ? (
+                    <CompletionTick
+                      animate={outcome?.passed === true}
+                      label="Lesson complete"
+                      className="mt-1 size-6"
+                    />
+                  ) : null}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -166,45 +287,22 @@ export function Workspace({ slug }: { readonly slug: string }) {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {problem.attempts} attempt{problem.attempts === 1 ? "" : "s"} so far.
+                  {problem.attempts} attempt{problem.attempts === 1 ? "" : "s"}{" "}
+                  so far.
                 </p>
-                {submitState.error !== undefined ? (
-                  <Alert variant="destructive">
-                    <AlertDescription>{submitState.error.message}</AlertDescription>
-                  </Alert>
-                ) : null}
-                {outcome !== null ? (
-                  <div className="space-y-2">
-                    <Alert variant={outcome.passed ? "default" : "destructive"}>
-                      <AlertDescription>{outcome.feedback}</AlertDescription>
-                    </Alert>
-                    <ul className="space-y-2">
-                      {outcome.results.map((test) => (
-                        <li key={test.name} className="rounded-lg border px-3 py-2 text-sm">
-                          <p>
-                            {test.passed ? "Passed" : "Failed"} · {capitalize(test.name)}
-                          </p>
-                          {test.error !== null ? (
-                            <p className="mt-1 text-muted-foreground">{test.error}</p>
-                          ) : null}
-                          {test.passed ? null : (
-                            <p className="mt-1 font-mono text-xs text-muted-foreground">
-                              Expected {test.expected || "—"}
-                              {test.received.length > 0 ? ` · Received ${test.received}` : ""}
-                            </p>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
               </CardContent>
             </Card>
             <div className="flex gap-3">
               {lesson.previousSlug !== null ? (
                 <Link
                   href={`/course/${lesson.previousSlug}`}
-                  className={cn(buttonVariants({ variant: "outline", size: "lg", className: "h-10 px-4" }))}
+                  className={cn(
+                    buttonVariants({
+                      variant: "outline",
+                      size: "lg",
+                      className: "h-10 px-4",
+                    }),
+                  )}
                 >
                   Previous
                 </Link>
@@ -212,7 +310,13 @@ export function Workspace({ slug }: { readonly slug: string }) {
               {lesson.nextSlug !== null && lesson.nextAvailable ? (
                 <Link
                   href={`/course/${lesson.nextSlug}`}
-                  className={cn(buttonVariants({ variant: "secondary", size: "lg", className: "h-10 px-4" }))}
+                  className={cn(
+                    buttonVariants({
+                      variant: "secondary",
+                      size: "lg",
+                      className: "h-10 px-4",
+                    }),
+                  )}
                 >
                   Next lesson
                 </Link>
@@ -226,7 +330,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
           </div>
         </ScrollArea>
         <section
-          className="flex h-full min-h-0 min-w-0 flex-col"
+          className="relative flex h-full min-h-0 min-w-0 flex-col"
           style={{ backgroundColor: theme.background, color: theme.foreground }}
         >
           <div className="flex items-center justify-between px-4 py-2 text-xs">
@@ -244,28 +348,89 @@ export function Workspace({ slug }: { readonly slug: string }) {
             <CodeEditor value={code} onChange={setCode} themeId={themeId} />
           </div>
           <Separator style={{ backgroundColor: chrome.rule }} />
+          {notice !== null ? (
+            <SolutionNotice notice={notice} onDismiss={() => setNotice(null)} />
+          ) : null}
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Button
               variant="ghost"
               size="lg"
+              disabled={checking}
               className={cn("h-10 px-4", chrome.reset)}
               onClick={() => {
                 setCode(problem.starterCode);
                 setOutcome(null);
+                setNotice(null);
               }}
             >
               Reset starter
             </Button>
-            <Button
-              size="lg"
-              disabled={submitState.fetching}
-              className={cn("h-10 px-5", chrome.submit)}
-              onClick={() => {
-                void onSubmit();
-              }}
-            >
-              {submitState.fetching ? "Running tests…" : "Submit"}
-            </Button>
+            <div className="flex items-center gap-2">
+              {showLastLessonNote ? (
+                <span className="text-xs opacity-70">
+                  This is the last lesson.
+                </span>
+              ) : null}
+              {nextIsPrimary ? (
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className={cn("h-10 px-4", chrome.reset)}
+                  onClick={() => {
+                    void onSubmit();
+                  }}
+                >
+                  Submit
+                </Button>
+              ) : null}
+              {nextIsSecondary && nextHref !== null ? (
+                <Link
+                  href={nextHref}
+                  className={cn(
+                    buttonVariants({
+                      variant: "ghost",
+                      size: "lg",
+                      className: "h-10 px-4",
+                    }),
+                    chrome.reset,
+                  )}
+                >
+                  Next lesson
+                </Link>
+              ) : null}
+              {checking ? (
+                <Button
+                  size="lg"
+                  disabled
+                  className={cn("h-10 px-5", chrome.submit)}
+                >
+                  <Spinner data-icon="inline-start" />
+                  Checking
+                </Button>
+              ) : null}
+              {!checking && nextIsPrimary && nextHref !== null ? (
+                <Link
+                  href={nextHref}
+                  className={cn(
+                    buttonVariants({ size: "lg", className: "h-10 px-5" }),
+                    chrome.submit,
+                  )}
+                >
+                  Next lesson
+                </Link>
+              ) : null}
+              {!checking && !nextIsPrimary ? (
+                <Button
+                  size="lg"
+                  className={cn("h-10 px-5", chrome.submit)}
+                  onClick={() => {
+                    void onSubmit();
+                  }}
+                >
+                  Submit
+                </Button>
+              ) : null}
+            </div>
           </div>
         </section>
       </div>

@@ -237,6 +237,58 @@
   color: var(--muted-foreground);
 }
 
+.completion-tick-pop {
+  transform-origin: center;
+  animation: completion-tick-pop 0.55s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+}
+
+.completion-tick-draw {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: completion-tick-draw 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+
+@keyframes completion-tick-pop {
+  0% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes completion-tick-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .completion-tick-pop,
+  .completion-tick-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+:target {
+  scroll-margin-top: 2rem;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html.theme-transition,
   html.theme-transition *,

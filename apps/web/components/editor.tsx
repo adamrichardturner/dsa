@@ -1,7 +1,38 @@
 "use client";
 
 import Editor, { type BeforeMount } from "@monaco-editor/react";
-import { defineEditorThemes, getEditorTheme, type EditorThemeId } from "@/lib/editor-themes";
+import { cn } from "cn";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  defineEditorThemes,
+  getEditorTheme,
+  type EditorThemeId,
+} from "@/lib/editor-themes";
+
+const editorLineWidths = [
+  "w-2/3",
+  "w-4/5",
+  "w-1/2",
+  "w-3/4",
+  "w-11/12",
+  "w-2/5",
+  "w-3/5",
+  "w-1/3",
+] as const;
+
+export function EditorSkeleton() {
+  return (
+    <div
+      className="flex h-full w-full flex-col gap-3 px-6 py-5"
+      role="status"
+      aria-label="Loading editor"
+    >
+      {editorLineWidths.map((width) => (
+        <Skeleton key={width} className={cn("h-3 bg-current/15", width)} />
+      ))}
+    </div>
+  );
+}
 
 const prepareEditor: BeforeMount = (monaco) => {
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -35,6 +66,7 @@ export function CodeEditor({
       onChange={(next) => {
         onChange(next ?? "");
       }}
+      loading={<EditorSkeleton />}
       beforeMount={prepareEditor}
       onMount={(editor) => {
         editor.focus();

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useMutation } from "urql";
+import { PageSpinner } from "@/components/page-spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,30 +68,24 @@ export function OAuthCallback() {
     });
   }, [code, errorCode, provider, redeem, returnTo, router, signIn]);
 
+  if (message === null) {
+    return <PageSpinner />;
+  }
+
   return (
     <main className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md items-center px-6 py-16">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="font-serif text-3xl">
-            {message === null ? "Signing you in" : "Could not sign in"}
-          </CardTitle>
-          <CardDescription>
-            {message === null
-              ? "Checking the sign-in link."
-              : "You can try again from the sign-in page."}
-          </CardDescription>
+          <CardTitle className="font-serif text-3xl">Could not sign in</CardTitle>
+          <CardDescription>You can try again from the sign-in page.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {message !== null ? (
-            <Alert variant="destructive">
-              <AlertDescription>{message}</AlertDescription>
-            </Alert>
-          ) : null}
-          {message !== null ? (
-            <Link href="/sign-in" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
-              Back to sign in
-            </Link>
-          ) : null}
+          <Alert variant="destructive">
+            <AlertDescription>{message}</AlertDescription>
+          </Alert>
+          <Link href="/sign-in" className={cn(buttonVariants({ variant: "outline" }), "w-full")}>
+            Back to sign in
+          </Link>
         </CardContent>
       </Card>
     </main>

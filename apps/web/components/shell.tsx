@@ -6,14 +6,37 @@ import type { ReactNode } from "react";
 import { cn } from "cn";
 import { AccountMenu } from "@/components/account-menu";
 import { DesktopNotice } from "@/components/desktop-notice";
+import { LandingFooter } from "@/components/landing-footer";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { buttonVariants } from "@/components/ui/button";
-import { siteName } from "@/lib/site";
+import { siteName, siteShortName } from "@/lib/site";
 
 const links = [
   { href: "/course", label: "Course" },
   { href: "/progress", label: "Progress" },
 ];
+
+function PageFooter({ home }: { readonly home: boolean }) {
+  if (home) {
+    return <LandingFooter />;
+  }
+
+  return (
+    <footer className="mt-auto border-t px-6 py-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+        <p>{siteName}</p>
+        <nav className="flex gap-4" aria-label="Legal">
+          <Link href="/privacy" className="underline-offset-4 hover:text-foreground hover:underline">
+            Privacy
+          </Link>
+          <Link href="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
+            Terms
+          </Link>
+        </nav>
+      </div>
+    </footer>
+  );
+}
 
 export function Shell({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
@@ -34,7 +57,8 @@ export function Shell({ children }: { readonly children: ReactNode }) {
             title={siteName}
             className="flex min-w-0 items-center gap-2 px-2 font-serif text-base leading-tight tracking-tight sm:text-lg"
           >
-            <span className="sm:truncate">{siteName}</span>
+            <span className="sm:hidden">{siteShortName}</span>
+            <span className="hidden truncate sm:inline">{siteName}</span>
             <span
               aria-hidden="true"
               className="inline-block size-9 shrink-0 bg-foreground"
@@ -79,21 +103,7 @@ export function Shell({ children }: { readonly children: ReactNode }) {
       >
         {children}
       </div>
-      {workspace ? null : (
-        <footer className="mt-auto border-t px-6 py-6">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-            <p>{siteName}</p>
-            <nav className="flex gap-4" aria-label="Legal">
-              <Link href="/privacy" className="underline-offset-4 hover:text-foreground hover:underline">
-                Privacy
-              </Link>
-              <Link href="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
-                Terms
-              </Link>
-            </nav>
-          </div>
-        </footer>
-      )}
+      {workspace ? null : <PageFooter home={pathname === "/"} />}
     </div>
   );
 }

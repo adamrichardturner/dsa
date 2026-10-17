@@ -21,7 +21,7 @@ export function LandingCloseCopy() {
           The course is open.
         </h2>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-primary-foreground/75">
-          Pick up the lesson you left. Your code, stars, and progress are already on the account.
+          Pick up the lesson you left. Your code and progress are already on the account.
         </p>
       </>
     );
