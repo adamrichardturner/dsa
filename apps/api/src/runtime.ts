@@ -3,6 +3,7 @@ import { PgClient } from "@effect/sql-pg";
 import { AppConfig } from "./config.js";
 import { prepareDatabase } from "./db/prepare.js";
 import { Auth, RequestAuth } from "./domain/auth.js";
+import { Mail } from "./domain/mail.js";
 import { OAuth } from "./domain/oauth.js";
 import { Catalog } from "./domain/catalog.js";
 import { Insights } from "./domain/insights.js";
@@ -22,8 +23,10 @@ const DbLive = Layer.unwrap(
   }),
 );
 
+const AuthLive = Auth.layer.pipe(Layer.provide(Mail.layer));
+
 export const AppLayer = Layer.mergeAll(
-  Auth.layer,
+  AuthLive,
   OAuth.layer,
   Catalog.layer,
   Solutions.layer,

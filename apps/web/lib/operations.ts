@@ -146,6 +146,18 @@ export const DELETE_ACCOUNT = `
   }
 `;
 
+export const REQUEST_PASSWORD_RESET = `
+  mutation RequestPasswordReset($email: String!) {
+    requestPasswordReset(email: $email)
+  }
+`;
+
+export const RESET_PASSWORD = `
+  mutation ResetPassword($token: String!, $password: String!) {
+    resetPassword(token: $token, password: $password)
+  }
+`;
+
 export const SIGN_OUT = `
   mutation SignOut {
     signOut

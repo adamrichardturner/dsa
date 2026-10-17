@@ -94,6 +94,13 @@ const statements: readonly string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS submissions_user_problem_idx
     ON submissions (user_id, problem_id, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS password_resets (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
 ];
 
 const reportDatabaseFailure = (message: string) => <A, E, R>(effect: Effect.Effect<A, E, R>) =>

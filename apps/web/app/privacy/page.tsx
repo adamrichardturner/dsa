@@ -122,6 +122,8 @@ export default function PrivacyPage() {
           The UK Privacy and Electronic Communications Regulations 2003, and the EU ePrivacy
           rules, cover cookies and similar storage. The section on your browser says what we
           store. We do not send marketing email, so there is no mailing list to opt out of.
+          Creating an account, resetting a password, and changing a password each send one
+          message about that account.
         </p>
         <LegalSubheading>United States and other countries</LegalSubheading>
         <p>
@@ -141,8 +143,9 @@ export default function PrivacyPage() {
         <LegalSubheading>Account</LegalSubheading>
         <p>
           Name, email address, and the time the account was created. If you set a password, we
-          store a scrypt hash and a salt. We do not store the password itself. You can save a
-          picture link. We store the link. We do not analyse the picture.
+          store a scrypt hash and a salt. We do not store the password itself. A password reset
+          stores a SHA-256 hash of a one-hour link. You can save a picture link. We store the
+          link. We do not analyse the picture.
         </p>
         <LegalSubheading>Google or GitHub</LegalSubheading>
         <p>
@@ -276,7 +279,8 @@ export default function PrivacyPage() {
           Vercel hosts the website and processes connection data, and the pages you request, to
           deliver the site. The API and the database run on a server we operate. The
           infrastructure provider for that server stores accounts, sessions, and submissions.
-          Those hosts act as our processors.
+          Those hosts act as our processors. Resend sends the account and password messages. It
+          receives the address, the name, and the content of that message.
         </p>
         <LegalSubheading>The data processing terms</LegalSubheading>
         <p>

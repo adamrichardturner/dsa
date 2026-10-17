@@ -1,7 +1,15 @@
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from "node:crypto";
-import { Context, Effect, Layer, Option, Schema } from "effect";
+import { Context, Effect, Layer, Option, Result, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
+import { AppConfig } from "../config.js";
 import { BadInput, EmailTaken, InvalidCredentials, Unauthorized, Unexpected } from "./errors.js";
+import {
+  accountCreatedMessage,
+  linkOrigin,
+  Mail,
+  passwordChangedMessage,
+  passwordResetMessage,
+} from "./mail.js";
 import type { AuthResult, OauthProvider, PublicUser } from "./models.js";
 import { isOauthProvider } from "./oauth-plan.js";
 
@@ -34,6 +42,11 @@ export interface ChangePasswordInput {
 export interface DeleteAccountInput {
   readonly password: string | null;
   readonly confirmation: string | null;
+}
+
+export interface ResetPasswordInput {
+  readonly token: string;
+  readonly password: string;
 }
 
 export class RequestAuth extends Context.Service<
@@ -192,12 +205,16 @@ export class Auth extends Context.Service<
     deleteAccount(
       input: DeleteAccountInput,
     ): Effect.Effect<boolean, BadInput | InvalidCredentials | Unauthorized | Unexpected, RequestAuth>;
+    requestPasswordReset(email: string): Effect.Effect<boolean, BadInput | Unexpected>;
+    resetPassword(input: ResetPasswordInput): Effect.Effect<boolean, BadInput | Unexpected>;
   }
 >()("app/Auth") {
   static readonly layer = Layer.effect(
     Auth,
     Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient;
+      const config = yield* AppConfig;
+      const mail = yield* Mail;
 
       const findByEmail = SqlSchema.findOneOption({
         Request: Schema.Struct({ email: Schema.String }),
@@ -340,6 +357,57 @@ export class Auth extends Context.Service<
         execute: (request) => sql`DELETE FROM users WHERE id = ${request.id}`,
       });
 
+      const deleteResets = SqlSchema.void({
+        Request: Schema.Struct({ userId: Schema.String }),
+        execute: (request) => sql`DELETE FROM password_resets WHERE user_id = ${request.userId}`,
+      });
+
+      const deleteSessions = SqlSchema.void({
+        Request: Schema.Struct({ userId: Schema.String }),
+        execute: (request) => sql`DELETE FROM sessions WHERE user_id = ${request.userId}`,
+      });
+
+      const insertReset = SqlSchema.void({
+        Request: Schema.Struct({
+          id: Schema.String,
+          userId: Schema.String,
+          tokenHash: Schema.String,
+          expiresAt: Schema.String,
+        }),
+        execute: (request) =>
+          sql`
+            INSERT INTO password_resets (id, user_id, token_hash, expires_at)
+            VALUES (
+              ${request.id},
+              ${request.userId},
+              ${request.tokenHash},
+              ${request.expiresAt}::timestamptz
+            )
+          `,
+      });
+
+      const ResetRow = Schema.Struct({
+        userId: Schema.String,
+        email: Schema.String,
+        name: Schema.String,
+      });
+
+      const findReset = SqlSchema.findOneOption({
+        Request: Schema.Struct({ tokenHash: Schema.String }),
+        Result: ResetRow,
+        execute: (request) =>
+          sql`
+            SELECT
+              pr.user_id AS "userId",
+              u.email,
+              u.name
+            FROM password_resets AS pr
+            JOIN users AS u ON u.id = pr.user_id
+            WHERE pr.token_hash = ${request.tokenHash}
+              AND pr.expires_at > NOW()
+          `,
+      });
+
       const withProviders = (row: {
         readonly id: string;
         readonly email: string;
@@ -412,6 +480,25 @@ export class Auth extends Context.Service<
             return new Unexpected({ message: "Could not create the account." });
           }),
         );
+
+        const origin = linkOrigin(config.webOrigins);
+        const sent = yield* mail
+          .send(
+            accountCreatedMessage({
+              name: user.name,
+              email: user.email,
+              courseUrl: `${origin}/course`,
+            }),
+          )
+          .pipe(Effect.result);
+        if (Result.isFailure(sent)) {
+          yield* deleteUser({ id: user.id }).pipe(
+            Effect.catch((error) =>
+              Effect.logError("Could not remove the account after the email failed.", error),
+            ),
+          );
+          return yield* sent.failure;
+        }
 
         return yield* openSession(
           yield* withProviders({
@@ -569,6 +656,89 @@ export class Auth extends Context.Service<
         return true;
       });
 
+      const requestPasswordReset = Effect.fn("Auth.requestPasswordReset")(function* (emailRaw: string) {
+        const email = normalizeEmail(emailRaw);
+        const problem = emailProblem(email);
+        if (problem !== null) {
+          return yield* problem;
+        }
+
+        const found = yield* findByEmail({ email }).pipe(
+          failUnexpected("Could not look up that account."),
+        );
+        const user = Option.getOrUndefined(found);
+        if (user === undefined || user.passwordHash === null) {
+          return true;
+        }
+
+        const token = randomBytes(32).toString("base64url");
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        yield* deleteResets({ userId: user.id }).pipe(
+          failUnexpected("Could not start a password reset."),
+        );
+        yield* insertReset({
+          id: randomUUID(),
+          userId: user.id,
+          tokenHash: hashToken(token),
+          expiresAt,
+        }).pipe(failUnexpected("Could not start a password reset."));
+
+        const origin = linkOrigin(config.webOrigins);
+        yield* mail.send(
+          passwordResetMessage({
+            name: user.name,
+            email: user.email,
+            resetUrl: `${origin}/reset-password?token=${encodeURIComponent(token)}`,
+          }),
+        );
+        return true;
+      });
+
+      const resetPassword = Effect.fn("Auth.resetPassword")(function* (input: ResetPasswordInput) {
+        const token = input.token.trim();
+        if (token.length < 20) {
+          return yield* new BadInput({ message: "That reset link is invalid or has expired." });
+        }
+        const nextError = passwordProblem(input.password);
+        if (nextError !== null) {
+          return yield* nextError;
+        }
+
+        const found = yield* findReset({ tokenHash: hashToken(token) }).pipe(
+          failUnexpected("Could not check that reset link."),
+        );
+        const reset = Option.getOrUndefined(found);
+        if (reset === undefined) {
+          return yield* new BadInput({ message: "That reset link is invalid or has expired." });
+        }
+
+        const passwordHash = yield* hashPassword(input.password);
+        yield* updatePassword({ id: reset.userId, passwordHash }).pipe(
+          failUnexpected("Could not update the password."),
+        );
+        yield* deleteSessions({ userId: reset.userId }).pipe(
+          failUnexpected("Could not update the password."),
+        );
+        yield* deleteResets({ userId: reset.userId }).pipe(
+          failUnexpected("Could not update the password."),
+        );
+        const origin = linkOrigin(config.webOrigins);
+        yield* mail
+          .send(
+            passwordChangedMessage({
+              name: reset.name,
+              email: reset.email,
+              signInUrl: `${origin}/sign-in`,
+            }),
+          )
+          .pipe(
+            Effect.catch((error) =>
+              Effect.logError("Could not send the password confirmation.", error),
+            ),
+          );
+        return true;
+      });
+
       return Auth.of({
         signUp,
         signIn,
@@ -577,6 +747,8 @@ export class Auth extends Context.Service<
         updateProfile,
         changePassword,
         deleteAccount,
+        requestPasswordReset,
+        resetPassword,
       });
     }),
   );

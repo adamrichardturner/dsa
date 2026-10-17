@@ -14,7 +14,13 @@ import { useAuth } from "@/lib/auth";
 import { SIGN_IN, SIGN_UP } from "@/lib/operations";
 import type { AuthPayload } from "@/lib/types";
 
-export function AuthForm({ mode }: { readonly mode: "sign-in" | "sign-up" }) {
+export function AuthForm({
+  mode,
+  notice = null,
+}: {
+  readonly mode: "sign-in" | "sign-up";
+  readonly notice?: string | null;
+}) {
   const router = useRouter();
   const { signIn } = useAuth();
   const [name, setName] = useState("");
@@ -89,7 +95,19 @@ export function AuthForm({ mode }: { readonly mode: "sign-in" | "sign-up" }) {
                 minLength={8}
                 required
               />
+              {mode === "sign-in" ? (
+                <p className="text-right text-sm">
+                  <Link href="/forgot-password" className="text-foreground underline underline-offset-4">
+                    Forgot password?
+                  </Link>
+                </p>
+              ) : null}
             </div>
+            {notice !== null ? (
+              <Alert>
+                <AlertDescription>{notice}</AlertDescription>
+              </Alert>
+            ) : null}
             {error !== null ? (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>

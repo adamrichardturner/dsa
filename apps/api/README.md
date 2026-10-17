@@ -36,9 +36,12 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
+RESEND_API_KEY=
 ```
 
 `WEB_ORIGIN` is a comma-separated list of browser origins allowed to call GraphQL. Add a Vercel preview origin here when that preview should be able to sign in.
+
+Account and password email is sent through Resend from `noreply@datastructuresandalgorithms.com`. That address is fixed in the API. `RESEND_API_KEY` is the only mail setting.
 
 OAuth callbacks, once the client ids and secrets are filled in:
 

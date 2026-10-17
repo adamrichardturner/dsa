@@ -351,6 +351,40 @@ export const schema = new GraphQLSchema({
             ),
           ),
       },
+      requestPasswordReset: {
+        type: new GraphQLNonNull(GraphQLBoolean),
+        args: {
+          email: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (_parent, args: { email?: unknown }, context: GraphQLContext) =>
+          execute(
+            context.token,
+            Auth.use((auth) =>
+              auth.requestPasswordReset(requireString(args.email, "Email is required.")),
+            ),
+          ),
+      },
+      resetPassword: {
+        type: new GraphQLNonNull(GraphQLBoolean),
+        args: {
+          token: { type: new GraphQLNonNull(GraphQLString) },
+          password: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (
+          _parent,
+          args: { token?: unknown; password?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Auth.use((auth) =>
+              auth.resetPassword({
+                token: requireString(args.token, "That reset link is invalid or has expired."),
+                password: requireString(args.password, "Password is required."),
+              }),
+            ),
+          ),
+      },
       deleteAccount: {
         type: new GraphQLNonNull(GraphQLBoolean),
         args: {

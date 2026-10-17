@@ -22,6 +22,7 @@ export class AppConfig extends Context.Service<
     readonly googleClientSecret: Redacted.Redacted<string>;
     readonly githubClientId: string;
     readonly githubClientSecret: Redacted.Redacted<string>;
+    readonly resendApiKey: Redacted.Redacted<string>;
   }
 >()("app/AppConfig") {
   static readonly layer = Layer.effect(
@@ -45,6 +46,7 @@ export class AppConfig extends Context.Service<
       const googleClientSecret = yield* optionalSecret("GOOGLE_CLIENT_SECRET");
       const githubClientId = yield* optionalString("GITHUB_CLIENT_ID");
       const githubClientSecret = yield* optionalSecret("GITHUB_CLIENT_SECRET");
+      const resendApiKey = yield* optionalSecret("RESEND_API_KEY");
       const webOrigins = webOrigin
         .split(",")
         .map((origin) => origin.trim())
@@ -63,6 +65,7 @@ export class AppConfig extends Context.Service<
         googleClientSecret,
         githubClientId: githubClientId.trim(),
         githubClientSecret,
+        resendApiKey,
       });
     }),
   );
