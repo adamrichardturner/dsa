@@ -6,6 +6,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useState,
   type ReactNode,
 } from "react";
 import { BookOpen, Lock, PanelLeft, PanelLeftClose } from "lucide-react";
@@ -37,6 +38,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/auth";
 import { MODULES_QUERY } from "@/lib/operations";
+import { readSidebarOpen } from "@/lib/sidebar-state";
 import type { LessonSummary, ModuleView } from "@/lib/types";
 
 const SyllabusRefreshContext = createContext<(() => void) | null>(null);
@@ -482,10 +484,13 @@ function LessonSidebar({
 }
 
 export function LessonSidebarFrame({
+  defaultOpen,
   children,
 }: {
+  readonly defaultOpen: boolean;
   readonly children: ReactNode;
 }) {
+  const [open, setOpen] = useState(() => readSidebarOpen(defaultOpen));
   const { user } = useAuth();
   const [result, reexecute] = useQuery<{ modules: readonly ModuleView[] }>({
     query: MODULES_QUERY,
@@ -502,7 +507,8 @@ export function LessonSidebarFrame({
   return (
     <SyllabusRefreshContext.Provider value={refresh}>
       <SidebarProvider
-        defaultOpen={false}
+        open={open}
+        onOpenChange={setOpen}
         className="relative h-full min-h-0 flex-1 overflow-hidden"
       >
         <LessonSidebar modules={modules} status={status} />
