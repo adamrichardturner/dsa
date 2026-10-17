@@ -1,0 +1,44 @@
+name: Deploy API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/api/**"
+      - "docker-compose.yml"
+      - "docker-compose.prod.yml"
+      - "deploy/**"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy on the VPS
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: 91.99.168.103
+          username: arty88
+          key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: "SHA256:PyV2ASuTxthuT3HUnhlASsTANOSb0NX3/6SSVkmdsAg"
+          script_stop: true
+          command_timeout: 20m
+          script: |
+            set -eu
+            if [ ! -d /var/www/dsa/.git ]; then
+              git clone git@github.com:adamrichardturner/dsa.git /var/www/dsa
+            fi
+            cd /var/www/dsa
+            git fetch origin main
+            git reset --hard origin/main
+            if [ ! -f .env ]; then
+              echo "Missing /var/www/dsa/.env"
+              exit 1
+            fi
+            sh deploy/vps.sh

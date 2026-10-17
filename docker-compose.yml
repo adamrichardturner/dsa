@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PUBLISH_PORT:-5432}:5432"
     volumes:
       - kiln-pg:/var/lib/postgresql/data
     healthcheck:
@@ -25,10 +25,22 @@ services:
     environment:
       POSTGRES_HOST: db
     ports:
-      - "${API_PORT:-4000}:4000"
+      - "127.0.0.1:${API_PUBLISH_PORT:-4000}:4000"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   kiln-pg:
