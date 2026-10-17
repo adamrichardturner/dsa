@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState, useSyncExternalStore } from "react";
+import type { CodeEditorInstance } from "@/components/editor";
+import { FormatCodeButton } from "@/components/format-code-button";
 import { useMutation } from "urql";
 import { cn } from "cn";
 import {
@@ -98,6 +100,7 @@ export function CodeRunner({ code }: { readonly code: string }) {
   const [terminal, setTerminal] = useState<CodeTerminalState>({ kind: "idle" });
   const [resetOpen, setResetOpen] = useState(false);
   const [themeId, setThemeId] = useRunnerTheme();
+  const editorRef = useRef<CodeEditorInstance | null>(null);
   const request = useRef(0);
   const [runState, runSnippet] = useMutation<{
     runSnippet: {
@@ -149,7 +152,10 @@ export function CodeRunner({ code }: { readonly code: string }) {
       aria-label="TypeScript example"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs">
-        <span className="font-mono opacity-70">example.ts</span>
+        <div className="flex items-center gap-1">
+          <span className="font-mono opacity-70">example.ts</span>
+          <FormatCodeButton editorRef={editorRef} />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="opacity-70">Theme</span>
           <EditorThemeSelect themeId={themeId} onChange={setThemeId} />
@@ -164,7 +170,13 @@ export function CodeRunner({ code }: { readonly code: string }) {
       </div>
       <Separator style={{ backgroundColor: border }} />
       <div style={{ height: editorHeight(source) }}>
-        <CodeEditor value={source} onChange={setSource} themeId={themeId} autoFocus={false} />
+        <CodeEditor
+          value={source}
+          onChange={setSource}
+          themeId={themeId}
+          autoFocus={false}
+          editorRef={editorRef}
+        />
       </div>
       <CodeTerminal
         state={terminal}

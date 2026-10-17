@@ -50,6 +50,7 @@ export interface ProblemView {
   readonly bestStars: number;
   readonly solved: boolean;
   readonly attempts: number;
+  readonly passingCode: string | null;
   readonly latestCode: string | null;
 }
 

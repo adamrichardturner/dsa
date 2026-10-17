@@ -160,8 +160,9 @@ export default function PrivacyPage() {
         <LegalSubheading>Course work</LegalSubheading>
         <p>
           Each submission stores the code, whether it passed, how many tests passed, the total,
-          the feedback, the per-test results, and the time. The progress page is calculated from
-          those submissions: lessons completed, pass rate, topics, and a
+          the feedback, the per-test results, and the time. While a lesson is open, the code in
+          the editor is also saved on the account so the lesson can be continued later. The
+          progress page is calculated from those submissions: lessons completed, pass rate, topics, and a
           short note on what to practise next. That note is for you. It is not a profile we sell,
           and it is not used to decide anything outside the course.
         </p>

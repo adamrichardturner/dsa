@@ -66,6 +66,7 @@ export const LESSON_QUERY = `
         bestStars
         solved
         attempts
+        passingCode
         latestCode
         examples {
           call
@@ -183,6 +184,12 @@ export const RUN_CODE = `
         text
       }
     }
+  }
+`;
+
+export const SAVE_PROGRESS = `
+  mutation SaveProgress($problemId: ID!, $code: String!) {
+    saveProgress(problemId: $problemId, code: $code)
   }
 `;
 

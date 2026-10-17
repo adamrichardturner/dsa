@@ -7,6 +7,7 @@ interface ProblemStat {
   readonly bestStars: number;
   readonly attempts: number;
   readonly solved: boolean;
+  readonly passingCode: string | null;
   readonly latestCode: string | null;
 }
 
@@ -50,6 +51,7 @@ const StatRow = Schema.Struct({
   bestStars: Schema.Number,
   attempts: Schema.Number,
   solved: Schema.Boolean,
+  passingCode: Schema.NullOr(Schema.String),
 });
 
 const CodeRow = Schema.Struct({
@@ -70,6 +72,7 @@ const emptyStat = (): ProblemStat => ({
   bestStars: 0,
   attempts: 0,
   solved: false,
+  passingCode: null,
   latestCode: null,
 });
 
@@ -227,7 +230,8 @@ export class Catalog extends Context.Service<
               problem_id AS "problemId",
               MAX(stars)::int AS "bestStars",
               COUNT(*)::int AS "attempts",
-              BOOL_OR(passed) AS "solved"
+              BOOL_OR(passed) AS "solved",
+              (ARRAY_AGG(code ORDER BY created_at DESC) FILTER (WHERE passed))[1] AS "passingCode"
             FROM submissions
             WHERE user_id = ${request.userId}
             GROUP BY problem_id
@@ -239,12 +243,19 @@ export class Catalog extends Context.Service<
         Result: CodeRow,
         execute: (request) =>
           sql`
-            SELECT DISTINCT ON (problem_id)
-              problem_id AS "problemId",
-              code
-            FROM submissions
-            WHERE user_id = ${request.userId}
-            ORDER BY problem_id, created_at DESC
+            SELECT DISTINCT ON (saved.problem_id)
+              saved.problem_id AS "problemId",
+              saved.code
+            FROM (
+              SELECT problem_id, code, created_at AS saved_at
+              FROM submissions
+              WHERE user_id = ${request.userId}
+              UNION ALL
+              SELECT problem_id, code, updated_at AS saved_at
+              FROM drafts
+              WHERE user_id = ${request.userId}
+            ) AS saved
+            ORDER BY saved.problem_id, saved.saved_at DESC
           `,
       });
 
@@ -303,6 +314,7 @@ export class Catalog extends Context.Service<
               bestStars: stat.bestStars,
               attempts: stat.attempts,
               solved: stat.solved,
+              passingCode: stat.passingCode,
               latestCode: null,
             };
           }
@@ -477,6 +489,7 @@ export class Catalog extends Context.Service<
             bestStars: stat.bestStars,
             solved: stat.solved,
             attempts: stat.attempts,
+            passingCode: stat.passingCode,
             latestCode: stat.latestCode,
           });
         }

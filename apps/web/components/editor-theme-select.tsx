@@ -1,19 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  editorThemeItems,
-  editorThemes,
-  readEditorThemeId,
-  type EditorThemeId,
-} from "@/lib/editor-themes";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
+import { editorThemes, readEditorThemeId, type EditorThemeId } from "@/lib/editor-themes";
 
 export const editorThemeStorageKey = "dsa.editor-theme";
 export const editorThemeEvent = "dsa-editor-theme";
@@ -54,26 +43,20 @@ export function EditorThemeSelect({
   readonly onChange: (themeId: EditorThemeId) => void;
 }) {
   return (
-    <Select
-      items={editorThemeItems}
+    <NativeSelect
+      size="sm"
+      className="w-40"
+      aria-label="Editor theme"
       value={themeId}
-      onValueChange={(value) => {
-        if (typeof value !== "string") {
-          return;
-        }
-        onChange(readEditorThemeId(value));
+      onChange={(event) => {
+        onChange(readEditorThemeId(event.currentTarget.value));
       }}
     >
-      <SelectTrigger size="sm" className="w-40" aria-label="Editor theme">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent align="start">
-        {editorThemes.map((theme) => (
-          <SelectItem key={theme.id} value={theme.id}>
-            {theme.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      {editorThemes.map((theme) => (
+        <NativeSelectOption key={theme.id} value={theme.id}>
+          {theme.label}
+        </NativeSelectOption>
+      ))}
+    </NativeSelect>
   );
 }

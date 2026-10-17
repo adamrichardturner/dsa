@@ -89,6 +89,7 @@ const ProblemType = new GraphQLObjectType({
     bestStars: { type: new GraphQLNonNull(GraphQLInt) },
     solved: { type: new GraphQLNonNull(GraphQLBoolean) },
     attempts: { type: new GraphQLNonNull(GraphQLInt) },
+    passingCode: { type: GraphQLString },
     latestCode: { type: GraphQLString },
   },
 });
@@ -420,6 +421,34 @@ export const schema = new GraphQLSchema({
                 confirmation: typeof args.confirmation === "string" ? args.confirmation : null,
               }),
             ),
+          ),
+      },
+      saveProgress: {
+        type: new GraphQLNonNull(GraphQLBoolean),
+        args: {
+          problemId: { type: new GraphQLNonNull(GraphQLID) },
+          code: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (
+          _parent,
+          args: { problemId?: unknown; code?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const catalog = yield* Catalog;
+              const solutions = yield* Solutions;
+              const user = yield* auth.currentUser;
+              const problemId = requireString(args.problemId, "Missing exercise.");
+              yield* catalog.assertProblemOpen(user.id, problemId);
+              return yield* solutions.saveDraft(
+                user.id,
+                problemId,
+                requireString(args.code, "Missing solution."),
+              );
+            }),
           ),
       },
       submitSolution: {

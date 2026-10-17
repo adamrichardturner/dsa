@@ -5,7 +5,9 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { cn } from "cn";
-import { CodeEditor } from "@/components/editor";
+import { CodeEditor, type CodeEditorInstance } from "@/components/editor";
+import { FormatCodeButton } from "@/components/format-code-button";
+import { LessonSplit } from "@/components/lesson-split";
 import {
   CodeTerminal,
   readRunLines,
@@ -22,6 +24,7 @@ import {
   type SolutionNoticeState,
 } from "@/components/solution-notice";
 import { CompletionTick } from "@/components/completion-tick";
+import { ProgressSaved } from "@/components/progress-saved";
 import { SyllabusTrigger, useRefreshSyllabus } from "@/components/lesson-sidebar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -46,6 +49,7 @@ import {
 import { getEditorTheme, type EditorThemeId } from "@/lib/editor-themes";
 import { annotateLesson } from "@/lib/lesson-keywords";
 import { currentLessonFrom } from "@/lib/lesson-return";
+import { useLessonDraft } from "@/hooks/use-lesson-draft";
 import { useRequireUser } from "@/lib/auth";
 import { LESSON_QUERY, RUN_CODE, SUBMIT_SOLUTION } from "@/lib/operations";
 import type { LessonView, SubmissionView } from "@/lib/types";
@@ -74,26 +78,31 @@ function WorkspaceBar({
   onThemeChange,
   orientation,
   onOrientationChange,
+  savedTick,
 }: {
   readonly themeId: EditorThemeId;
   readonly onThemeChange: (themeId: EditorThemeId) => void;
   readonly orientation: SplitOrientation;
   readonly onOrientationChange: (orientation: SplitOrientation) => void;
+  readonly savedTick: number;
 }) {
   return (
     <div className="flex h-11 w-full shrink-0 items-center justify-between gap-3 border-b px-3">
       <SyllabusTrigger />
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Theme</span>
-          <EditorThemeSelect themeId={themeId} onChange={onThemeChange} />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Split</span>
-          <SplitToggle
-            orientation={orientation}
-            onChange={onOrientationChange}
-          />
+      <div className="flex items-center">
+        <ProgressSaved tick={savedTick} />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Theme</span>
+            <EditorThemeSelect themeId={themeId} onChange={onThemeChange} />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Split</span>
+            <SplitToggle
+              orientation={orientation}
+              onChange={onOrientationChange}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -109,6 +118,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
     query: LESSON_QUERY,
     variables: { slug },
     pause: auth.user === null || slug.length === 0,
+    requestPolicy: "cache-and-network",
   });
   const [submitState, submit] = useMutation<{ submitSolution: SubmissionView }>(
     SUBMIT_SOLUTION,
@@ -128,28 +138,53 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [themeId, setThemeId] = useEditorTheme();
   const refreshSyllabus = useRefreshSyllabus();
   const loadedProblemId = useRef<string | null>(null);
+  const editorRef = useRef<CodeEditorInstance | null>(null);
+  const { tick, remember, track, isClean, readCode } = useLessonDraft({
+    problemId: problem?.id ?? null,
+    code,
+    armed: problem !== undefined && loadedProblemId.current === problem.id,
+  });
 
   useEffect(() => {
     if (problem === undefined) {
       return;
     }
-    if (loadedProblemId.current === problem.id) {
+
+    const initial = problem.latestCode ?? problem.starterCode;
+    const switching = loadedProblemId.current !== problem.id;
+
+    if (!switching && result.stale) {
       return;
     }
+    if (!switching && !isClean(problem.id)) {
+      return;
+    }
+    if (!switching && readCode(problem.id) === initial) {
+      return;
+    }
+    if (!switching) {
+      remember(problem.id, initial);
+      setCode(initial);
+      if (problem.solved && problem.passingCode !== null) {
+        setPassedCode({ problemId: problem.id, code: problem.passingCode });
+      }
+      return;
+    }
+
     loadedProblemId.current = problem.id;
-    setCode(problem.latestCode ?? problem.starterCode);
+    remember(problem.id, initial);
+    setCode(initial);
     setOutcome(null);
     setNotice(null);
     setTerminal({ kind: "idle" });
-    if (problem.solved && problem.latestCode !== null) {
-      setPassedCode({ problemId: problem.id, code: problem.latestCode });
+    if (problem.solved && problem.passingCode !== null) {
+      setPassedCode({ problemId: problem.id, code: problem.passingCode });
       return;
     }
     setPassedCode(null);
-  }, [problem]);
+  }, [isClean, problem, readCode, remember, result.stale]);
 
   const lessonReady = lesson !== null && lesson.slug === slug;
-  const stacked = orientation === "horizontal";
   const theme = getEditorTheme(themeId);
   const bar = (
     <WorkspaceBar
@@ -157,6 +192,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
       onThemeChange={setThemeId}
       orientation={orientation}
       onOrientationChange={setOrientation}
+      savedTick={tick}
     />
   );
 
@@ -252,6 +288,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
   };
 
   const onReset = () => {
+    track(problem.starterCode);
     setCode(problem.starterCode);
     setOutcome(null);
     setNotice(null);
@@ -279,7 +316,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
       ? passedCode.code
       : null;
   const passingCode =
-    rememberedPass ?? (problem.solved ? problem.latestCode : null);
+    rememberedPass ?? (problem.solved ? problem.passingCode : null);
   const codeMatchesPass =
     editorReady && passingCode !== null && code === passingCode;
   const hasPassed =
@@ -298,20 +335,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
       {bar}
-      <div
-        className={cn(
-          "grid min-h-0 flex-1",
-          stacked
-            ? "grid-rows-[minmax(0,1fr)_minmax(0,1fr)]"
-            : "grid-cols-[minmax(0,1fr)_minmax(0,1fr)]",
-        )}
-      >
-        <ScrollArea
-          className={cn(
-            "h-full min-h-0 min-w-0 bg-background",
-            stacked ? "border-b" : "border-r",
-          )}
-        >
+      <LessonSplit
+        orientation={orientation}
+        lesson={
+        <ScrollArea className="h-full min-h-0 min-w-0 bg-background">
           <div className="mx-auto max-w-xl space-y-6 px-6 py-8">
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
@@ -413,23 +440,36 @@ export function Workspace({ slug }: { readonly slug: string }) {
             </div>
           </div>
         </ScrollArea>
+        }
+        editor={
         <section
           className="relative flex h-full min-h-0 min-w-0 flex-col"
           style={{ backgroundColor: theme.background, color: theme.foreground }}
         >
-          <div className="flex items-center justify-between px-4 py-2 text-xs">
+          <div className="flex items-center justify-between gap-3 px-4 py-2 text-xs">
             <span className="font-mono opacity-70">solution.ts</span>
-            <Badge
-              variant="outline"
-              className="border-current/25 bg-transparent"
-              style={{ color: theme.foreground }}
-            >
-              {problem.solved ? "Solved" : "Draft"}
-            </Badge>
+            <div className="flex items-center gap-1">
+              <FormatCodeButton editorRef={editorRef} />
+              <Badge
+                variant="outline"
+                className="border-current/25 bg-transparent"
+                style={{ color: theme.foreground }}
+              >
+                {problem.solved ? "Solved" : "Draft"}
+              </Badge>
+            </div>
           </div>
           <Separator style={{ backgroundColor: chrome.rule }} />
           <div className="relative min-h-0 flex-1">
-            <CodeEditor value={code} onChange={setCode} themeId={themeId} />
+            <CodeEditor
+              value={code}
+              onChange={(next) => {
+                track(next);
+                setCode(next);
+              }}
+              themeId={themeId}
+              editorRef={editorRef}
+            />
             {notice !== null ? (
               <SolutionNotice notice={notice} onDismiss={() => setNotice(null)} />
             ) : null}
@@ -555,7 +595,8 @@ export function Workspace({ slug }: { readonly slug: string }) {
             </div>
           </div>
         </section>
-      </div>
+        }
+      />
     </div>
   );
 }

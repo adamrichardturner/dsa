@@ -1,6 +1,8 @@
 "use client";
 
+import { type RefObject } from "react";
 import Editor, { type BeforeMount } from "@monaco-editor/react";
+import type { editor } from "monaco-editor";
 import { cn } from "cn";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -34,6 +36,8 @@ export function EditorSkeleton() {
   );
 }
 
+export type CodeEditorInstance = editor.IStandaloneCodeEditor;
+
 const prepareEditor: BeforeMount = (monaco) => {
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
     strict: true,
@@ -56,11 +60,13 @@ export function CodeEditor({
   onChange,
   themeId,
   autoFocus = true,
+  editorRef,
 }: {
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly themeId: EditorThemeId;
   readonly autoFocus?: boolean;
+  readonly editorRef?: RefObject<CodeEditorInstance | null>;
 }) {
   const theme = getEditorTheme(themeId);
 
@@ -75,11 +81,14 @@ export function CodeEditor({
       }}
       loading={<EditorSkeleton />}
       beforeMount={prepareEditor}
-      onMount={(editor) => {
+      onMount={(instance) => {
+        if (editorRef !== undefined) {
+          editorRef.current = instance;
+        }
         if (!autoFocus) {
           return;
         }
-        editor.focus();
+        instance.focus();
       }}
       options={{
         fontSize: 14,

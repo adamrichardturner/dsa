@@ -168,12 +168,6 @@ export const editorThemes: readonly EditorTheme[] = [
   },
 ];
 
-export const editorThemeItems: Record<string, string> = {};
-
-for (const theme of editorThemes) {
-  editorThemeItems[theme.id] = theme.label;
-}
-
 export const getEditorTheme = (themeId: EditorThemeId): EditorTheme => {
   for (const theme of editorThemes) {
     if (theme.id === themeId) {

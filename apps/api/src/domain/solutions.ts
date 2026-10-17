@@ -38,6 +38,8 @@ const failUnexpected = (message: string) => <A, E, R>(effect: Effect.Effect<A, E
     Effect.mapError(() => new Unexpected({ message })),
   );
 
+const maxDraftLength = 100_000;
+
 const starsFor = (passed: boolean, previousAttempts: number): number => {
   if (!passed) {
     return 0;
@@ -59,6 +61,11 @@ export class Solutions extends Context.Service<
       problemId: string,
       code: string,
     ): Effect.Effect<SubmissionView, NotFound | Unexpected>;
+    saveDraft(
+      userId: string,
+      problemId: string,
+      code: string,
+    ): Effect.Effect<boolean, Unexpected>;
     run(
       problemId: string,
       code: string,
@@ -142,6 +149,22 @@ export class Solutions extends Context.Service<
               ${request.resultsJson},
               ${request.createdAt}::timestamptz
             )
+          `,
+      });
+
+      const upsertDraft = SqlSchema.void({
+        Request: Schema.Struct({
+          userId: Schema.String,
+          problemId: Schema.String,
+          code: Schema.String,
+        }),
+        execute: (request) =>
+          sql`
+            INSERT INTO drafts (user_id, problem_id, code, updated_at)
+            VALUES (${request.userId}, ${request.problemId}, ${request.code}, NOW())
+            ON CONFLICT (user_id, problem_id) DO UPDATE SET
+              code = EXCLUDED.code,
+              updated_at = NOW()
           `,
       });
 
@@ -238,6 +261,21 @@ export class Solutions extends Context.Service<
         };
       });
 
+      const saveDraft = Effect.fn("Solutions.saveDraft")(function* (
+        userId: string,
+        problemId: string,
+        code: string,
+      ) {
+        if (code.length > maxDraftLength) {
+          return yield* new Unexpected({ message: "That solution is too long to save." });
+        }
+
+        yield* upsertDraft({ userId, problemId, code }).pipe(
+          failUnexpected("Could not save your progress."),
+        );
+        return true;
+      });
+
       const run = Effect.fn("Solutions.run")(function* (problemId: string, code: string) {
         if (code.trim().length === 0) {
           const lines: PreviewLine[] = [
@@ -256,7 +294,7 @@ export class Solutions extends Context.Service<
         return { lines };
       });
 
-      return Solutions.of({ submit, run });
+      return Solutions.of({ submit, saveDraft, run });
     }),
   );
 }
