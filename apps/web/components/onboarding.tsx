@@ -18,13 +18,15 @@ import type { User } from "@/lib/types";
 interface OnboardingStep {
   readonly title: string;
   readonly paragraphs: readonly string[];
-  readonly figure: string;
+  readonly image: string;
+  readonly alt: string;
 }
 
 const steps: readonly OnboardingStep[] = [
   {
     title: "A path of short lessons",
-    figure: "Screenshot of a lesson beside the editor",
+    image: "/onboarding/onboarding-1.png",
+    alt: "A lesson open beside the editor, with the first lesson marked complete",
     paragraphs: [
       "Each lesson is a short reading and one exercise. You write a function in the editor, then submit it. The tests say straight away whether it passed.",
       "A pass earns points and opens the next lesson. The green tick stays, so you can see what is finished.",
@@ -32,7 +34,8 @@ const steps: readonly OnboardingStep[] = [
   },
   {
     title: "When an attempt does not pass",
-    figure: "Screenshot of the solution explanation",
+    image: "/onboarding/onboarding-2.png",
+    alt: "The editor with the prompt to open the solution explanation",
     paragraphs: [
       "After the first submission that fails, a prompt appears on the lesson. Open the solution explanation and read it through. Diagrams and a runnable example show how the answer is built.",
       "Close it when you want to keep trying. The prompt stays until the lesson passes.",
@@ -40,44 +43,25 @@ const steps: readonly OnboardingStep[] = [
   },
   {
     title: "Skip a lesson, then come back",
-    figure: "Screenshot of a skipped lesson on the syllabus",
+    image: "/onboarding/onboarding-3.png",
+    alt: "The end of the solution explanation, with Close and Skip lesson",
     paragraphs: [
       "At the end of the explanation you can skip the lesson. Skipping opens the next one so you are not stuck.",
       "A skip is not a pass. It earns no points. The lesson stays on your record, and you can return to it whenever you want the points.",
     ],
   },
   {
-    title: "Your progress stays with the account",
-    figure: "Screenshot of the progress page",
-    paragraphs: [
-      "The progress page shows the lessons you have passed, the lessons you skipped, and the topics that still need a pass.",
-      "Use it to choose the next session. A skipped lesson is listed there until you complete it.",
-    ],
-  },
-  {
     title: "Follow the path, or open any lesson",
-    figure: "Screenshot of audit mode on the syllabus",
+    image: "/onboarding/onboarding-4.png",
+    alt: "Audit mode on the syllabus, with lessons marked complete, skipped, and ready",
     paragraphs: [
       "Audit mode lets you open any lesson without finishing the ones before it. Leave it off to work in order.",
       "You can change this later at the top of the syllabus. Skipped lessons still earn no points either way.",
+      "Your progress stays with the account. The progress page shows the lessons you have passed, the lessons you skipped, and the topics that still need a pass.",
+      "Use it to choose the next session. A skipped lesson is listed there until you complete it.",
     ],
   },
 ];
-
-function OnboardingFigure({ caption }: { readonly caption: string }) {
-  return (
-    <div
-      role="img"
-      aria-label={caption}
-      className="flex h-44 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-muted-foreground/40 bg-muted px-6 text-center"
-    >
-      <p className="text-sm font-medium">{caption}</p>
-      <p className="max-w-sm text-xs leading-relaxed text-muted-foreground">
-        Placeholder. Replace this panel with a cropped screenshot of the app.
-      </p>
-    </div>
-  );
-}
 
 export function Onboarding() {
   const { settled, user, updateUser } = useAuth();
@@ -108,7 +92,9 @@ export function Onboarding() {
     const audit = await setAudit({ enabled: true });
     const saved = audit.data?.setAuditMode;
     if (audit.error !== undefined || saved === undefined) {
-      setError(graphqlErrorMessage(audit.error, "Could not turn on audit mode."));
+      setError(
+        graphqlErrorMessage(audit.error, "Could not turn on audit mode."),
+      );
       return false;
     }
     updateUser(saved);
@@ -127,7 +113,12 @@ export function Onboarding() {
     const next = response.data?.completeOnboarding;
     setPending(false);
     if (response.error !== undefined || next === undefined) {
-      setError(graphqlErrorMessage(response.error, "Could not finish the introduction."));
+      setError(
+        graphqlErrorMessage(
+          response.error,
+          "Could not finish the introduction.",
+        ),
+      );
       return;
     }
     updateUser(next);
@@ -135,17 +126,28 @@ export function Onboarding() {
 
   return (
     <Dialog open>
-      <DialogContent className="max-h-[min(90vh,760px)] gap-0 overflow-y-auto p-0 sm:max-w-xl">
+      <DialogContent className="max-h-[min(92vh,920px)] max-w-[min(42rem,calc(100%-2rem))] gap-0 overflow-y-auto p-0">
+        <img
+          src={step.image}
+          alt={step.alt}
+          width={1920}
+          height={1080}
+          className="block h-auto w-full min-w-0 max-w-full rounded-t-xl"
+        />
         <div className="space-y-5 p-6">
           <p className="text-xs tracking-wide text-muted-foreground">
             {index + 1} of {steps.length}
           </p>
-          <OnboardingFigure caption={step.figure} />
           <div className="space-y-3">
             <DialogTitle>{step.title}</DialogTitle>
-            <DialogDescription className="sr-only">{step.paragraphs[0]}</DialogDescription>
+            <DialogDescription className="sr-only">
+              {step.paragraphs[0]}
+            </DialogDescription>
             {step.paragraphs.map((paragraph) => (
-              <p key={paragraph} className="text-sm leading-7 text-muted-foreground">
+              <p
+                key={paragraph}
+                className="text-sm leading-7 text-muted-foreground"
+              >
                 {paragraph}
               </p>
             ))}
@@ -161,7 +163,9 @@ export function Onboarding() {
               />
             </label>
           ) : null}
-          {error !== null ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error !== null ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
           <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
