@@ -1,12 +1,14 @@
 import { Context, Effect, Layer, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { Unexpected } from "./errors.js";
-import type { AnalyticsView, TopicStat } from "./models.js";
+import type { AnalyticsView, SkippedLesson, TopicStat } from "./models.js";
 
 const ProblemRow = Schema.Struct({
   id: Schema.String,
   lessonId: Schema.String,
   topic: Schema.String,
+  slug: Schema.String,
+  title: Schema.String,
 });
 
 const StatRow = Schema.Struct({
@@ -61,7 +63,12 @@ export class Insights extends Context.Service<
         Result: ProblemRow,
         execute: () =>
           sql`
-            SELECT p.id, p.lesson_id AS "lessonId", p.topic
+            SELECT
+              p.id,
+              p.lesson_id AS "lessonId",
+              p.topic,
+              l.slug,
+              l.title
             FROM problems AS p
             JOIN lessons AS l ON l.id = p.lesson_id
             JOIN modules AS m ON m.id = l.module_id
@@ -82,6 +89,17 @@ export class Insights extends Context.Service<
             FROM submissions
             WHERE user_id = ${request.userId}
             GROUP BY problem_id
+          `,
+      });
+
+      const listSkips = SqlSchema.findAll({
+        Request: Schema.Struct({ userId: Schema.String }),
+        Result: Schema.Struct({ lessonId: Schema.String }),
+        execute: (request) =>
+          sql`
+            SELECT lesson_id AS "lessonId"
+            FROM lesson_skips
+            WHERE user_id = ${request.userId}
           `,
       });
 
@@ -108,6 +126,13 @@ export class Insights extends Context.Service<
         const totals = yield* countAttempts({ userId }).pipe(
           failUnexpected("Could not load your progress."),
         );
+        const skipRows = yield* listSkips({ userId }).pipe(
+          failUnexpected("Could not load your progress."),
+        );
+        const skippedIds: Record<string, boolean> = {};
+        for (const row of skipRows) {
+          skippedIds[row.lessonId] = true;
+        }
         const byProblem: Record<string, { bestStars: number; solved: boolean; attempts: number }> =
           {};
 
@@ -120,7 +145,10 @@ export class Insights extends Context.Service<
         }
 
         const topics: Record<string, TopicStat> = {};
-        const lessons: Record<string, { total: number; solved: number }> = {};
+        const lessons: Record<
+          string,
+          { total: number; solved: number; slug: string; title: string }
+        > = {};
 
         for (const problem of problems) {
           const stat = byProblem[problem.id];
@@ -132,7 +160,12 @@ export class Insights extends Context.Service<
             stars: 0,
             maxStars: 0,
           };
-          const lesson = lessons[problem.lessonId] ?? { total: 0, solved: 0 };
+          const lesson = lessons[problem.lessonId] ?? {
+            total: 0,
+            solved: 0,
+            slug: problem.slug,
+            title: problem.title,
+          };
           const solved = stat?.solved ?? false;
           const attempted = (stat?.attempts ?? 0) > 0;
 
@@ -147,6 +180,8 @@ export class Insights extends Context.Service<
           lessons[problem.lessonId] = {
             total: lesson.total + 1,
             solved: lesson.solved + (solved ? 1 : 0),
+            slug: lesson.slug,
+            title: lesson.title,
           };
         }
 
@@ -154,6 +189,7 @@ export class Insights extends Context.Service<
         let problemsSolved = 0;
         let stars = 0;
         let lessonsCompleted = 0;
+        const skippedLessons: SkippedLesson[] = [];
 
         for (const topic of topicList) {
           problemsSolved += topic.solved;
@@ -162,8 +198,16 @@ export class Insights extends Context.Service<
 
         for (const lessonId of Object.keys(lessons)) {
           const lesson = lessons[lessonId];
-          if (lesson !== undefined && lesson.total > 0 && lesson.solved === lesson.total) {
+          if (lesson === undefined) {
+            continue;
+          }
+          const completed = lesson.total > 0 && lesson.solved === lesson.total;
+          if (completed) {
             lessonsCompleted += 1;
+            continue;
+          }
+          if (skippedIds[lessonId] === true) {
+            skippedLessons.push({ slug: lesson.slug, title: lesson.title });
           }
         }
 
@@ -188,6 +232,8 @@ export class Insights extends Context.Service<
           topics: topicList,
           focusAreas,
           summary: describe(problemsSolved, problems.length, attempts, focusAreas),
+          lessonsSkipped: skippedLessons.length,
+          skippedLessons,
         };
       });
 

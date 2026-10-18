@@ -53,6 +53,7 @@ const LessonSummaryType = new GraphQLObjectType({
     summary: { type: new GraphQLNonNull(GraphQLString) },
     estimatedMinutes: { type: new GraphQLNonNull(GraphQLInt) },
     completed: { type: new GraphQLNonNull(GraphQLBoolean) },
+    skipped: { type: new GraphQLNonNull(GraphQLBoolean) },
     available: { type: new GraphQLNonNull(GraphQLBoolean) },
     stars: { type: new GraphQLNonNull(GraphQLInt) },
     maxStars: { type: new GraphQLNonNull(GraphQLInt) },
@@ -91,6 +92,7 @@ const ProblemType = new GraphQLObjectType({
     bestStars: { type: new GraphQLNonNull(GraphQLInt) },
     solved: { type: new GraphQLNonNull(GraphQLBoolean) },
     attempts: { type: new GraphQLNonNull(GraphQLInt) },
+    failedAttempts: { type: new GraphQLNonNull(GraphQLInt) },
     passingCode: { type: GraphQLString },
     latestCode: { type: GraphQLString },
   },
@@ -108,6 +110,7 @@ const LessonType = new GraphQLObjectType({
     weekNumber: { type: new GraphQLNonNull(GraphQLInt) },
     moduleTitle: { type: new GraphQLNonNull(GraphQLString) },
     completed: { type: new GraphQLNonNull(GraphQLBoolean) },
+    skipped: { type: new GraphQLNonNull(GraphQLBoolean) },
     previousSlug: { type: GraphQLString },
     nextSlug: { type: GraphQLString },
     nextAvailable: { type: new GraphQLNonNull(GraphQLBoolean) },
@@ -167,6 +170,14 @@ const TopicStatType = new GraphQLObjectType({
   },
 });
 
+const SkippedLessonType = new GraphQLObjectType({
+  name: "SkippedLesson",
+  fields: {
+    slug: { type: new GraphQLNonNull(GraphQLString) },
+    title: { type: new GraphQLNonNull(GraphQLString) },
+  },
+});
+
 const AnalyticsType = new GraphQLObjectType({
   name: "Analytics",
   fields: {
@@ -181,6 +192,20 @@ const AnalyticsType = new GraphQLObjectType({
     topics: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(TopicStatType))) },
     focusAreas: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))) },
     summary: { type: new GraphQLNonNull(GraphQLString) },
+    lessonsSkipped: { type: new GraphQLNonNull(GraphQLInt) },
+    skippedLessons: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(SkippedLessonType))),
+    },
+  },
+});
+
+const SkipResultType = new GraphQLObjectType({
+  name: "SkipResult",
+  fields: {
+    slug: { type: new GraphQLNonNull(GraphQLString) },
+    skipped: { type: new GraphQLNonNull(GraphQLBoolean) },
+    nextSlug: { type: GraphQLString },
+    nextAvailable: { type: new GraphQLNonNull(GraphQLBoolean) },
   },
 });
 
@@ -619,6 +644,25 @@ export const schema = new GraphQLSchema({
               return yield* solutions.run(
                 problemId,
                 requireString(args.code, "Missing solution."),
+              );
+            }),
+          ),
+      },
+      skipLesson: {
+        type: new GraphQLNonNull(SkipResultType),
+        args: {
+          slug: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (_parent, args: { slug?: unknown }, context: GraphQLContext) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const catalog = yield* Catalog;
+              const user = yield* auth.currentUser;
+              return yield* catalog.skipLesson(
+                user.id,
+                requireString(args.slug, "Missing lesson."),
               );
             }),
           ),

@@ -94,6 +94,12 @@ const statements: readonly string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS submissions_user_problem_idx
     ON submissions (user_id, problem_id, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS lesson_skips (
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, lesson_id)
+  )`,
   `CREATE TABLE IF NOT EXISTS drafts (
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     problem_id TEXT NOT NULL REFERENCES problems(id),

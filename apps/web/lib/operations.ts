@@ -34,6 +34,7 @@ export const MODULES_QUERY = `
         summary
         estimatedMinutes
         completed
+        skipped
         available
         stars
         maxStars
@@ -54,6 +55,7 @@ export const LESSON_QUERY = `
       weekNumber
       moduleTitle
       completed
+      skipped
       previousSlug
       nextSlug
       nextAvailable
@@ -67,6 +69,7 @@ export const LESSON_QUERY = `
         bestStars
         solved
         attempts
+        failedAttempts
         passingCode
         latestCode
         examples {
@@ -91,6 +94,11 @@ export const ANALYTICS_QUERY = `
       passRate
       focusAreas
       summary
+      lessonsSkipped
+      skippedLessons {
+        slug
+        title
+      }
       topics {
         topic
         solved
@@ -184,6 +192,17 @@ export const RUN_CODE = `
         kind
         text
       }
+    }
+  }
+`;
+
+export const SKIP_LESSON = `
+  mutation SkipLesson($slug: String!) {
+    skipLesson(slug: $slug) {
+      slug
+      skipped
+      nextSlug
+      nextAvailable
     }
   }
 `;

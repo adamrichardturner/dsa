@@ -78,6 +78,33 @@ export default function ProgressPage() {
         </Card>
       </section>
 
+      {analytics.lessonsSkipped > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardDescription>Skipped</CardDescription>
+            <CardTitle>
+              {analytics.lessonsSkipped}{" "}
+              {analytics.lessonsSkipped === 1 ? "lesson" : "lessons"} with no points
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              A skipped lesson is not a pass. Come back and submit a solution when you want the
+              points.
+            </p>
+            <ul className="space-y-2">
+              {analytics.skippedLessons.map((lesson) => (
+                <li key={lesson.slug}>
+                  <Link href={`/course/${lesson.slug}`} className="text-sm underline-offset-4 hover:underline">
+                    {lesson.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {analytics.focusAreas.length > 0 ? (
         <Card>
           <CardHeader>

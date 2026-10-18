@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "urql";
 import { cn } from "cn";
@@ -19,10 +19,12 @@ import {
 } from "@/components/editor-theme-select";
 import { LessonMarkdown } from "@/components/markdown";
 import { SuggestedReading } from "@/components/suggested-reading";
+import { SolutionDialog } from "@/components/solution-dialog";
 import {
   SolutionNotice,
   type SolutionNoticeState,
 } from "@/components/solution-notice";
+import { StuckPrompt } from "@/components/stuck-prompt";
 import { CompletionTick } from "@/components/completion-tick";
 import { ProgressSaved } from "@/components/progress-saved";
 import { SyllabusTrigger, useRefreshSyllabus } from "@/components/lesson-sidebar";
@@ -53,7 +55,7 @@ import { currentLessonFrom } from "@/lib/lesson-return";
 import { useLessonDraft } from "@/hooks/use-lesson-draft";
 import { useRequireUser } from "@/lib/auth";
 import { LESSON_QUERY, RUN_CODE, SUBMIT_SOLUTION } from "@/lib/operations";
-import type { LessonView, SubmissionView } from "@/lib/types";
+import type { LessonView, SkipResult, SubmissionView } from "@/lib/types";
 
 interface PassedSolution {
   readonly problemId: string;
@@ -112,6 +114,7 @@ function WorkspaceBar({
 
 export function Workspace({ slug }: { readonly slug: string }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const articleFrom = currentLessonFrom(pathname, searchParams.toString());
   const auth = useRequireUser();
@@ -134,6 +137,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [notice, setNotice] = useState<SolutionNoticeState | null>(null);
   const [terminal, setTerminal] = useState<CodeTerminalState>({ kind: "idle" });
   const [resetOpen, setResetOpen] = useState(false);
+  const [solutionOpen, setSolutionOpen] = useState(false);
   const [passedCode, setPassedCode] = useState<PassedSolution | null>(null);
   const [orientation, setOrientation] = useSplitOrientation();
   const [themeId, setThemeId] = useEditorTheme();
@@ -177,6 +181,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
     setCode(initial);
     setOutcome(null);
     setNotice(null);
+    setSolutionOpen(false);
     setTerminal({ kind: "idle" });
     if (problem.solved && problem.passingCode !== null) {
       setPassedCode({ problemId: problem.id, code: problem.passingCode });
@@ -333,6 +338,17 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const nextIsSecondary =
     !checking && hasPassed && !nextIsPrimary && nextHref !== null;
   const showLastLessonNote = !checking && hasPassed && lesson.nextSlug === null;
+  const failedThisSession = outcome !== null && outcome.passed === false;
+  const showStuck = !hasPassed && (problem.failedAttempts > 0 || failedThisSession);
+  const onSkipped = (result: SkipResult) => {
+    setSolutionOpen(false);
+    reexecute({ requestPolicy: "network-only" });
+    refreshSyllabus();
+    if (!result.nextAvailable || result.nextSlug === null) {
+      return;
+    }
+    router.push(`/course/${result.nextSlug}`);
+  };
   const annotated = annotateLesson(lesson.contentMd, problem.promptMd);
 
   return (
@@ -352,6 +368,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
                   {capitalize(problem.difficulty)}
                 </Badge>
                 <Badge variant="outline">{problem.topic}</Badge>
+                {lesson.skipped ? <Badge variant="outline">Skipped</Badge> : null}
               </div>
               <h1 className="font-serif text-4xl tracking-tight">
                 {lesson.title}
@@ -480,6 +497,15 @@ export function Workspace({ slug }: { readonly slug: string }) {
             foreground={theme.foreground}
             borderColor={chrome.rule}
           />
+          {showStuck ? (
+            <div className="px-4 pt-3" style={{ color: theme.foreground }}>
+              <StuckPrompt
+                onOpen={() => {
+                  setSolutionOpen(true);
+                }}
+              />
+            </div>
+          ) : null}
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Button
               type="button"
@@ -596,6 +622,13 @@ export function Workspace({ slug }: { readonly slug: string }) {
           </div>
         </section>
         }
+      />
+      <SolutionDialog
+        slug={lesson.slug}
+        title={lesson.title}
+        open={solutionOpen}
+        onOpenChange={setSolutionOpen}
+        onSkipped={onSkipped}
       />
     </div>
   );

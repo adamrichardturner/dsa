@@ -170,6 +170,17 @@ function LessonMark({
       />
     );
   }
+  if (lesson.skipped) {
+    return (
+      <span
+        aria-label={`${lesson.title} skipped`}
+        title="Skipped"
+        className="flex size-4 shrink-0 items-center justify-center rounded-full border-2 border-sidebar-foreground/50 text-[10px] leading-none text-sidebar-foreground/70"
+      >
+        –
+      </span>
+    );
+  }
   if (current) {
     return (
       <span
@@ -203,7 +214,7 @@ function LockedLesson({
           <SidebarMenuButton
             type="button"
             aria-disabled={true}
-            aria-label={`${lesson.title}. Locked until the previous lesson is complete.`}
+            aria-label={`${lesson.title}. Locked until the previous lesson is passed or skipped.`}
           >
             <Lock />
             <span className="w-5 shrink-0 font-mono text-[11px] text-sidebar-foreground/50">
@@ -213,7 +224,7 @@ function LockedLesson({
           </SidebarMenuButton>
         </TooltipTrigger>
         <TooltipContent side="right">
-          Finish the previous lesson to open this one.
+          Pass or skip the previous lesson to open this one. A skip does not earn points.
         </TooltipContent>
       </Tooltip>
     </SidebarMenuItem>
@@ -481,7 +492,7 @@ function LessonSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
         <p className="px-2 pb-1 text-[11px] leading-relaxed text-sidebar-foreground/60">
-          A lesson stays locked until the one before it passes.
+          A lesson stays locked until the one before it is passed or skipped. A skip does not earn points.
         </p>
       </SidebarFooter>
       <SidebarRail />

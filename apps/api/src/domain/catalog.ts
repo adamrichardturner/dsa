@@ -1,11 +1,13 @@
 import { Context, Effect, Layer, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { NotFound, Unexpected } from "./errors.js";
-import type { ExampleView, LessonView, ModuleView, ProblemView } from "./models.js";
+import { openLessonSlugs } from "./gating.js";
+import type { ExampleView, LessonView, ModuleView, ProblemView, SkipResult } from "./models.js";
 
 interface ProblemStat {
   readonly bestStars: number;
   readonly attempts: number;
+  readonly failedAttempts: number;
   readonly solved: boolean;
   readonly passingCode: string | null;
   readonly latestCode: string | null;
@@ -50,6 +52,7 @@ const StatRow = Schema.Struct({
   problemId: Schema.String,
   bestStars: Schema.Number,
   attempts: Schema.Number,
+  failedAttempts: Schema.Number,
   solved: Schema.Boolean,
   passingCode: Schema.NullOr(Schema.String),
 });
@@ -71,12 +74,14 @@ const parseJson = (text: string): unknown => JSON.parse(text);
 const emptyStat = (): ProblemStat => ({
   bestStars: 0,
   attempts: 0,
+  failedAttempts: 0,
   solved: false,
   passingCode: null,
   latestCode: null,
 });
 
 interface OrderedLesson {
+  readonly id: string;
   readonly slug: string;
   readonly problemIds: readonly string[];
 }
@@ -97,14 +102,16 @@ const isLessonSolved = (
   return true;
 };
 
-const orderedLessons = (rows: readonly { lessonId: string; slug: string; problemId: string }[]): readonly OrderedLesson[] => {
-  const byId: Record<string, { slug: string; problemIds: string[] }> = {};
+const orderedLessons = (
+  rows: readonly { lessonId: string; slug: string; problemId: string }[],
+): readonly OrderedLesson[] => {
+  const byId: Record<string, { id: string; slug: string; problemIds: string[] }> = {};
   const order: string[] = [];
 
   for (const row of rows) {
     const current = byId[row.lessonId];
     if (current === undefined) {
-      byId[row.lessonId] = { slug: row.slug, problemIds: [row.problemId] };
+      byId[row.lessonId] = { id: row.lessonId, slug: row.slug, problemIds: [row.problemId] };
       order.push(row.lessonId);
       continue;
     }
@@ -122,20 +129,23 @@ const orderedLessons = (rows: readonly { lessonId: string; slug: string; problem
   return lessons;
 };
 
-const openSlugs = (
+const solvedByLesson = (
   lessons: readonly OrderedLesson[],
   stats: Record<string, ProblemStat>,
 ): Record<string, boolean> => {
-  const open: Record<string, boolean> = {};
-  let available = true;
-
+  const solved: Record<string, boolean> = {};
   for (const lesson of lessons) {
-    open[lesson.slug] = available;
-    available = isLessonSolved(lesson.problemIds, stats);
+    solved[lesson.id] = isLessonSolved(lesson.problemIds, stats);
   }
-
-  return open;
+  return solved;
 };
+
+const openSlugs = (
+  lessons: readonly OrderedLesson[],
+  stats: Record<string, ProblemStat>,
+  skippedByLesson: Record<string, boolean>,
+): Record<string, boolean> =>
+  openLessonSlugs(lessons, solvedByLesson(lessons, stats), skippedByLesson);
 
 const slugForProblem = (lessons: readonly OrderedLesson[], problemId: string): string | null => {
   for (const lesson of lessons) {
@@ -191,6 +201,7 @@ export class Catalog extends Context.Service<
     listModules(userId: string): Effect.Effect<readonly ModuleView[], Unexpected>;
     getLesson(userId: string, slug: string): Effect.Effect<LessonView, NotFound | Unexpected>;
     assertProblemOpen(userId: string, problemId: string): Effect.Effect<void, NotFound | Unexpected>;
+    skipLesson(userId: string, slug: string): Effect.Effect<SkipResult, NotFound | Unexpected>;
   }
 >()("app/Catalog") {
   static readonly layer = Layer.effect(
@@ -230,6 +241,7 @@ export class Catalog extends Context.Service<
               problem_id AS "problemId",
               MAX(stars)::int AS "bestStars",
               COUNT(*)::int AS "attempts",
+              COUNT(*) FILTER (WHERE NOT passed)::int AS "failedAttempts",
               BOOL_OR(passed) AS "solved",
               (ARRAY_AGG(code ORDER BY created_at DESC) FILTER (WHERE passed))[1] AS "passingCode"
             FROM submissions
@@ -299,6 +311,42 @@ export class Catalog extends Context.Service<
           `,
       });
 
+      const listSkips = SqlSchema.findAll({
+        Request: Schema.Struct({ userId: Schema.String }),
+        Result: Schema.Struct({ lessonId: Schema.String }),
+        execute: (request) =>
+          sql`
+            SELECT lesson_id AS "lessonId"
+            FROM lesson_skips
+            WHERE user_id = ${request.userId}
+          `,
+      });
+
+      const insertSkip = SqlSchema.void({
+        Request: Schema.Struct({
+          userId: Schema.String,
+          lessonId: Schema.String,
+        }),
+        execute: (request) =>
+          sql`
+            INSERT INTO lesson_skips (user_id, lesson_id)
+            VALUES (${request.userId}, ${request.lessonId})
+            ON CONFLICT (user_id, lesson_id) DO NOTHING
+          `,
+      });
+
+      const loadSkips = (userId: string) =>
+        Effect.gen(function* () {
+          const rows = yield* listSkips({ userId }).pipe(
+            failUnexpected("Could not load your progress."),
+          );
+          const skipped: Record<string, boolean> = {};
+          for (const row of rows) {
+            skipped[row.lessonId] = true;
+          }
+          return skipped;
+        });
+
       const loadStats = (userId: string) =>
         Effect.gen(function* () {
           const stats = yield* listStats({ userId }).pipe(
@@ -313,6 +361,7 @@ export class Catalog extends Context.Service<
             byProblem[stat.problemId] = {
               bestStars: stat.bestStars,
               attempts: stat.attempts,
+              failedAttempts: stat.failedAttempts,
               solved: stat.solved,
               passingCode: stat.passingCode,
               latestCode: null,
@@ -330,7 +379,8 @@ export class Catalog extends Context.Service<
       const listModules = Effect.fn("Catalog.listModules")(function* (userId: string) {
         const rows = yield* listOutline().pipe(failUnexpected("Could not load the course."));
         const stats = yield* loadStats(userId);
-        const open = openSlugs(orderedLessons(rows), stats);
+        const skips = yield* loadSkips(userId);
+        const open = openSlugs(orderedLessons(rows), stats, skips);
         const modules: Record<
           string,
           {
@@ -413,6 +463,7 @@ export class Catalog extends Context.Service<
                 solved += 1;
               }
             }
+            const completed = lesson.problemIds.length > 0 && solved === lesson.problemIds.length;
             return [
               {
                 id: lesson.id,
@@ -420,7 +471,8 @@ export class Catalog extends Context.Service<
                 title: lesson.title,
                 summary: lesson.summary,
                 estimatedMinutes: lesson.estimatedMinutes,
-                completed: lesson.problemIds.length > 0 && solved === lesson.problemIds.length,
+                completed,
+                skipped: skips[lesson.id] === true && !completed,
                 available: open[lesson.slug] === true,
                 stars,
                 maxStars: lesson.problemIds.length * 3,
@@ -451,8 +503,9 @@ export class Catalog extends Context.Service<
 
         const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
         const stats = yield* loadStats(userId);
+        const skips = yield* loadSkips(userId);
         const sequence = orderedLessons(outline);
-        const open = openSlugs(sequence, stats);
+        const open = openSlugs(sequence, stats, skips);
         if (open[slug] !== true) {
           return yield* new NotFound({
             message: "Finish the previous lesson before opening this one.",
@@ -489,6 +542,7 @@ export class Catalog extends Context.Service<
             bestStars: stat.bestStars,
             solved: stat.solved,
             attempts: stat.attempts,
+            failedAttempts: stat.failedAttempts,
             passingCode: stat.passingCode,
             latestCode: stat.latestCode,
           });
@@ -504,6 +558,7 @@ export class Catalog extends Context.Service<
           weekNumber: lesson.weekNumber,
           moduleTitle: lesson.moduleTitle,
           completed: problems.length > 0 && solvedCount === problems.length,
+          skipped: skips[lesson.id] === true && solvedCount !== problems.length,
           previousSlug,
           nextSlug,
           nextAvailable,
@@ -517,12 +572,13 @@ export class Catalog extends Context.Service<
       ) {
         const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
         const stats = yield* loadStats(userId);
+        const skips = yield* loadSkips(userId);
         const sequence = orderedLessons(outline);
         const slug = slugForProblem(sequence, problemId);
         if (slug === null) {
           return yield* new NotFound({ message: "That exercise does not exist." });
         }
-        const open = openSlugs(sequence, stats);
+        const open = openSlugs(sequence, stats, skips);
         if (open[slug] === true) {
           return;
         }
@@ -531,7 +587,45 @@ export class Catalog extends Context.Service<
         });
       });
 
-      return Catalog.of({ listModules, getLesson, assertProblemOpen });
+      const skipLesson = Effect.fn("Catalog.skipLesson")(function* (userId: string, slug: string) {
+        const lessons = yield* findLesson({ slug }).pipe(
+          failUnexpected("Could not load that lesson."),
+        );
+        const lesson = lessons[0];
+        if (lesson === undefined) {
+          return yield* new NotFound({ message: "That lesson does not exist." });
+        }
+
+        const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
+        const stats = yield* loadStats(userId);
+        const skips = yield* loadSkips(userId);
+        const sequence = orderedLessons(outline);
+        const open = openSlugs(sequence, stats, skips);
+        if (open[slug] !== true) {
+          return yield* new NotFound({
+            message: "Finish the previous lesson before skipping this one.",
+          });
+        }
+
+        yield* insertSkip({ userId, lessonId: lesson.id }).pipe(
+          failUnexpected("Could not skip that lesson."),
+        );
+
+        const nextSkips: Record<string, boolean> = { ...skips, [lesson.id]: true };
+        const nextOpen = openSlugs(sequence, stats, nextSkips);
+        const index = sequence.findIndex((item) => item.slug === slug);
+        const next = index >= 0 ? sequence[index + 1] : undefined;
+        const nextSlug = next?.slug ?? null;
+
+        return {
+          slug,
+          skipped: true,
+          nextSlug,
+          nextAvailable: nextSlug !== null && nextOpen[nextSlug] === true,
+        };
+      });
+
+      return Catalog.of({ listModules, getLesson, assertProblemOpen, skipLesson });
     }),
   );
 }

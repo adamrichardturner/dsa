@@ -42,7 +42,7 @@ function LockedLesson({
         <p className="mt-1 font-medium">{lesson.title}</p>
         <p className="mt-1 text-sm leading-relaxed">{lesson.summary}</p>
         <p className="mt-2 text-xs">
-          Finish the previous lesson to open this one.
+          Pass or skip the previous lesson to open this one.
         </p>
       </div>
     </li>
@@ -56,6 +56,36 @@ function OpenLesson({
   readonly lesson: LessonSummary;
   readonly number: string;
 }) {
+  if (lesson.skipped) {
+    return (
+      <li>
+        <Link
+          href={`/course/${lesson.slug}`}
+          className="flex items-start gap-3 rounded-xl bg-card px-4 py-4 ring-1 ring-foreground/15 transition-colors hover:bg-muted/60"
+        >
+          <span
+            aria-label={`${lesson.title} skipped`}
+            className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border-2 border-foreground/50 text-[10px] leading-none"
+          >
+            –
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs tracking-wide text-foreground/80">
+              {number} · Skipped · {lesson.estimatedMinutes} min
+            </p>
+            <p className="mt-1 font-medium">{lesson.title}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {lesson.summary}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              No points yet. You can still complete this lesson.
+            </p>
+          </div>
+        </Link>
+      </li>
+    );
+  }
+
   if (lesson.completed) {
     return (
       <li>
@@ -190,8 +220,9 @@ export default function CoursePage() {
           Four weeks, one desk.
         </h1>
         <p className="max-w-xl text-muted-foreground">
-          Work in order. A dashed grey row is locked until the lesson before it
-          passes. An open row is ready. A green tick stays once it does.
+          Work in order. A dashed row stays locked until the lesson before it is
+          passed or skipped. A skip opens the next lesson and earns no points.
+          A green tick stays once a lesson actually passes.
         </p>
       </div>
       {modules.map((module) => (

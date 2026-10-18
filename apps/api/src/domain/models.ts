@@ -33,6 +33,7 @@ export interface ProblemView {
   readonly bestStars: number;
   readonly solved: boolean;
   readonly attempts: number;
+  readonly failedAttempts: number;
   readonly passingCode: string | null;
   readonly latestCode: string | null;
 }
@@ -44,6 +45,7 @@ export interface LessonSummary {
   readonly summary: string;
   readonly estimatedMinutes: number;
   readonly completed: boolean;
+  readonly skipped: boolean;
   readonly available: boolean;
   readonly stars: number;
   readonly maxStars: number;
@@ -67,6 +69,7 @@ export interface LessonView {
   readonly weekNumber: number;
   readonly moduleTitle: string;
   readonly completed: boolean;
+  readonly skipped: boolean;
   readonly previousSlug: string | null;
   readonly nextSlug: string | null;
   readonly nextAvailable: boolean;
@@ -105,6 +108,20 @@ export interface AnalyticsView {
   readonly topics: readonly TopicStat[];
   readonly focusAreas: readonly string[];
   readonly summary: string;
+  readonly lessonsSkipped: number;
+  readonly skippedLessons: readonly SkippedLesson[];
+}
+
+export interface SkippedLesson {
+  readonly slug: string;
+  readonly title: string;
+}
+
+export interface SkipResult {
+  readonly slug: string;
+  readonly skipped: boolean;
+  readonly nextSlug: string | null;
+  readonly nextAvailable: boolean;
 }
 
 export interface AdminDayPoint {
