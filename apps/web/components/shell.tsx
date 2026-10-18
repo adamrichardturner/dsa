@@ -7,6 +7,7 @@ import { cn } from "cn";
 import { AccountMenu } from "@/components/account-menu";
 import { DesktopNotice } from "@/components/desktop-notice";
 import { ArticleFooter } from "@/components/article-footer";
+import { InfinityIcon } from "@/components/infinity-icon";
 import { LandingFooter } from "@/components/landing-footer";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { buttonVariants } from "@/components/ui/button";
@@ -82,20 +83,7 @@ export function Shell({ children }: { readonly children: ReactNode }) {
           >
             <span className="sm:hidden">{siteShortName}</span>
             <span className="hidden truncate sm:inline">{siteName}</span>
-            <span
-              aria-hidden="true"
-              className="inline-block size-9 shrink-0 bg-foreground"
-              style={{
-                maskImage: "url(/icon.svg)",
-                WebkitMaskImage: "url(/icon.svg)",
-                maskRepeat: "no-repeat",
-                WebkitMaskRepeat: "no-repeat",
-                maskPosition: "center",
-                WebkitMaskPosition: "center",
-                maskSize: "contain",
-                WebkitMaskSize: "contain",
-              }}
-            />
+            <InfinityIcon animate />
           </Link>
           <nav className="flex items-center">
             {visibleLinks.map((link) => {
