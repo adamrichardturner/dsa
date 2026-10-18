@@ -2,9 +2,9 @@
 
 ![The course desk: the syllabus, a lesson on the cost of a loop, and a TypeScript editor with a terminal](apps/web/preview.png)
 
-A free, four-week course in data structures and algorithms, taught by writing TypeScript. Each lesson is short enough to finish in one sitting. You read the idea, implement one function, and submit it against tests. A pass marks the lesson done and opens the next one. After a failed attempt you can open a written solution, or skip the lesson without points and come back later. Audit mode, chosen during a short introduction and kept on the account, opens any lesson without waiting for the ones before it.
+A free, four-week course in data structures and algorithms, taught by writing TypeScript. Each lesson is short enough to finish in one sitting. You read the idea, then work through two short exercises and submit each one against tests. Every exercise has to pass before the lesson is done and the next one opens. After a failed attempt you can open a written solution, or skip the lesson without points and come back later. Audit mode, chosen during a short introduction and kept on the account, opens any lesson without waiting for the ones before it.
 
-The live course is at [datastructuresandalgorithms.com](https://datastructuresandalgorithms.com). Creating an account, the nineteen lessons, the editor, the tests, the articles, and saved progress do not cost anything. There is no trial and no paid tier.
+The live course is at [datastructuresandalgorithms.com](https://datastructuresandalgorithms.com). Creating an account, the lessons, the editor, the tests, the articles, and saved progress do not cost anything. There is no trial and no paid tier.
 
 It is for people who already write TypeScript and want the structures and algorithms used in interviews and production code, without a semester of theory first. The coding desk is meant for a laptop or desktop.
 
@@ -14,13 +14,13 @@ The desk opens the lesson and a TypeScript editor side by side. You can switch t
 
 Public examples show the shape of the answer. Hidden tests check the cases that are easy to forget. The runner compiles the submission with Sucrase and executes it in `node:vm` with a one-second timeout. `require`, imports, `process`, `eval`, and the `Function` constructor are blocked. That is enough for these exercises. It is not a hardened sandbox for arbitrary untrusted programs.
 
-A pass marks the lesson done. A skip does not. Your draft and your passing solution stay on the account, so the editor is yours when you come back. The progress page shows lessons completed, pass rate, skipped lessons, and the topics that still have an attempt which has not passed.
+Passing every exercise marks the lesson done. A skip does not. Your draft and your passing solution stay on the account, so the editor is yours when you come back. The progress page shows lessons completed, pass rate, skipped lessons, and the topics that still have an attempt which has not passed.
 
 ## Syllabus
 
-Nineteen lessons across four weeks. Each lesson has one exercise.
+Thirty-eight short lessons across four weeks. Each idea is a lesson and then a slightly harder follow-up, and each of those lessons has two exercises. The table lists the first lesson of each pair. The follow-up sits immediately after it in the course.
 
-| Week | Lesson | Exercise |
+| Week | Lesson | First exercise |
 | --- | --- | --- |
 | 1. Foundations | The cost of a loop | Count values below a limit |
 | | Arrays | Rotate left |
@@ -122,7 +122,7 @@ Contributions are welcome. The course is open so that lessons, exercises, articl
 
 Good places to start:
 
-- **Lessons and exercises.** Prose, starter code, and tests are in `apps/api/src/content/week1.ts` through `week4.ts`. A lesson has one exercise. Include public tests that show the shape of the answer, and hidden tests for the empty, boundary, and awkward cases. Name the function the runner should call in `functionName`.
+- **Lessons and exercises.** Prose, starter code, and tests are in `apps/api/src/content/week1.ts` through `week4.ts`, with shorter readings, extra exercises, and follow-up lessons applied in `expand.ts`. A lesson has more than one exercise. Include public tests that show the shape of the answer, and hidden tests for the empty, boundary, and awkward cases. Name the function the runner should call in `functionName`. Keep an existing lesson id when you extend it, and add a new id for a later step.
 - **Articles.** Add an explainer with `defineArticle` in the matching file under `apps/web/lib/articles/`, then export it from that file's list. `apps/web/lib/articles/index.ts` already gathers those lists. One question per article, with the cost and a worked example.
 - **The desk.** Editor, split layout, syllabus, progress, and account screens live in `apps/web`.
 - **The runner and the domain.** Submission, scoring, auth, and insights live in `apps/api/src/domain/`.

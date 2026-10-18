@@ -148,7 +148,7 @@
 
 .lesson-copy {
   font-size: 0.975rem;
-  line-height: 1.7;
+  line-height: 1.5;
 }
 
 .lesson-copy h1,
@@ -200,7 +200,7 @@
 .lesson-copy ul,
 .lesson-copy ol,
 .lesson-copy table {
-  margin-top: 0.85rem;
+  margin-top: 0.7rem;
 }
 
 .lesson-copy ul,
@@ -216,7 +216,7 @@
   list-style: decimal;
 }
 
-.lesson-copy li+li {
+.lesson-copy li + li {
   margin-top: 0.35rem;
 }
 
@@ -359,7 +359,8 @@
 .completion-tick-draw {
   stroke-dasharray: 20;
   stroke-dashoffset: 20;
-  animation: completion-tick-draw 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+  animation: completion-tick-draw 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.16s
+    both;
 }
 
 @keyframes completion-tick-pop {
@@ -401,7 +402,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .completion-tick-pop,
   .completion-tick-draw {
     animation: none;
@@ -422,7 +422,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-
   html.theme-transition,
   html.theme-transition *,
   html.theme-transition *::before,

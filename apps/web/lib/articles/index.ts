@@ -5,6 +5,7 @@ import { graphArticles } from "./graphs";
 import { hashMapArticles } from "./hash-maps";
 import { linearArticles } from "./linear";
 import { patternArticles } from "./patterns";
+import { practiceArticles } from "./practice";
 import { searchSortArticles } from "./search-sort";
 import { treeArticles } from "./trees";
 import type { Article, ArticleTopic } from "./types";
@@ -22,6 +23,7 @@ export const articles: readonly Article[] = [
   ...treeArticles,
   ...graphArticles,
   ...patternArticles,
+  ...practiceArticles,
 ];
 
 const bySlug: Record<string, Article> = {};

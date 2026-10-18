@@ -28,8 +28,8 @@ const steps: readonly OnboardingStep[] = [
     image: "/onboarding/onboarding-1.png",
     alt: "A lesson open beside the editor, with the first lesson marked complete",
     paragraphs: [
-      "Each lesson is a short reading and one exercise. You write a function in the editor, then submit it. The tests say straight away whether it passed.",
-      "A pass marks the lesson complete and opens the next one. The green tick stays, so you can see what is finished.",
+      "Each lesson is a short reading and more than one exercise. You write a function in the editor, then submit it. The tests say straight away whether it passed.",
+      "A pass marks that exercise complete. When every exercise in the lesson passes, the next lesson opens. The green tick stays, so you can see what is finished.",
     ],
   },
   {

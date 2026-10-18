@@ -37,5 +37,31 @@ test("every lesson has a complete bitesize explanation", () => {
     }
   }
 
-  assert.equal(lessonCount, 19);
+  assert.equal(lessonCount, 38);
+
+  const preserved = [
+    "complexity",
+    "arrays",
+    "hash-maps",
+    "two-pointers",
+    "sliding-window",
+    "linked-lists",
+    "stacks",
+    "queues",
+    "recursion",
+    "binary-search",
+    "sorting",
+    "trees",
+    "binary-search-trees",
+    "heaps",
+    "graphs",
+    "greedy",
+    "backtracking",
+    "dynamic-programming",
+    "tries",
+  ];
+
+  for (const slug of preserved) {
+    assert.equal(slugs[slug], true, `${slug} should keep its original id`);
+  }
 });

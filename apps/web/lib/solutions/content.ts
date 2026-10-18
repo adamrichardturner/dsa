@@ -1,6 +1,10 @@
 import type { LessonSolution, SolutionBlock } from "@/lib/solutions/types";
+import { extraSolutions, stepSolutions } from "@/lib/solutions/steps";
 
-const lesson = (slug: string, blocks: readonly SolutionBlock[]): LessonSolution => ({
+const lesson = (
+  slug: string,
+  blocks: readonly SolutionBlock[],
+): LessonSolution => ({
   slug,
   blocks,
 });
@@ -374,7 +378,7 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The snippet checks typeof value === \"number\" first and returns. The array branch concatenates by pushing, which keeps the left-to-right order. The call stack is doing the bookkeeping a manual stack would do.",
+      text: 'The snippet checks typeof value === "number" first and returns. The array branch concatenates by pushing, which keeps the left-to-right order. The call stack is doing the bookkeeping a manual stack would do.',
     },
     { kind: "code" },
   ]),
@@ -749,7 +753,7 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Insert every string in words into a trie. Then, for each query, return whether that exact word was inserted. wordsFound([\"cat\", \"car\"], [\"cat\", \"cab\", \"car\"]) is [true, false, true]. A prefix is not a word: \"car\" was not inserted when the only word is \"carpet\". An empty word can be inserted, and it matches only the empty query. Set and Map are rejected. Build the trie from objects.",
+      text: 'Insert every string in words into a trie. Then, for each query, return whether that exact word was inserted. wordsFound(["cat", "car"], ["cat", "cab", "car"]) is [true, false, true]. A prefix is not a word: "car" was not inserted when the only word is "carpet". An empty word can be inserted, and it matches only the empty query. Set and Map are rejected. Build the trie from objects.',
     },
     {
       kind: "heading",
@@ -769,7 +773,7 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "cat and car share c and a, then split. cab dies at b, which was never created. carpet marks only the final t. The node for r along that path has isWord false, so the query \"car\" is false and \"carpet\" is true. The empty word marks the root itself.",
+      text: 'cat and car share c and a, then split. cab dies at b, which was never created. carpet marks only the final t. The node for r along that path has isWord false, so the query "car" is false and "carpet" is true. The empty word marks the root itself.',
     },
     {
       kind: "heading",
@@ -777,16 +781,33 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Children are a plain object. An empty query walks no characters and returns the root flag, which is why inserting \"\" makes the empty query true and leaves \"a\" false. Lookup is proportional to the length of the query, not to the number of other words, once the trie is built.",
+      text: 'Children are a plain object. An empty query walks no characters and returns the root flag, which is why inserting "" makes the empty query true and leaves "a" false. Lookup is proportional to the length of the query, not to the number of other words, once the trie is built.',
     },
     { kind: "code" },
   ]),
 ];
 
 const bySlug: Record<string, LessonSolution> = {};
+const byProblem: Record<string, LessonSolution> = {};
 
 for (const solution of lessonSolutions) {
   bySlug[solution.slug] = solution;
 }
 
-export const solutionFor = (slug: string): LessonSolution | null => bySlug[slug] ?? null;
+for (const solution of stepSolutions) {
+  bySlug[solution.slug] = solution;
+}
+
+for (const solution of extraSolutions) {
+  byProblem[solution.slug] = solution;
+}
+
+export const solutionFor = (slug: string): LessonSolution | null =>
+  bySlug[slug] ?? null;
+
+export const solutionForProblem = (
+  slug: string,
+  problemId: string,
+): LessonSolution | null => {
+  return byProblem[problemId] ?? bySlug[slug] ?? null;
+};

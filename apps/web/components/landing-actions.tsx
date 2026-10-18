@@ -48,8 +48,8 @@ export function LandingCloseCopy() {
       </h2>
       <p className="mt-4 max-w-xl text-base leading-relaxed text-primary-foreground/75">
         Week one is a single pass over an array. The rest of the month builds on
-        it. Nineteen lessons, the editor, the tests, and your progress. Nothing
-        to pay for.
+        it. Short lessons, the editor, the tests, and your progress. Nothing to
+        pay for.
       </p>
     </>
   );

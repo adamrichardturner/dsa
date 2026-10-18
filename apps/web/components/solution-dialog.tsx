@@ -15,7 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { SKIP_LESSON } from "@/lib/operations";
 import { referenceCode } from "@/lib/solutions/code";
-import { solutionFor } from "@/lib/solutions/content";
+import { solutionForProblem } from "@/lib/solutions/content";
 import type { LessonSolution, SolutionBlock } from "@/lib/solutions/types";
 import type { SkipResult } from "@/lib/types";
 
@@ -36,13 +36,19 @@ const dialogShell = (scroller: HTMLElement | null): HTMLElement | true => {
   return popup;
 };
 
-function SolutionBody({ solution }: { readonly solution: LessonSolution }) {
+function SolutionBody({
+  solution,
+  problemId,
+}: {
+  readonly solution: LessonSolution;
+  readonly problemId: string;
+}) {
   return (
     <div className="space-y-5">
       {solution.blocks.map((block, index) => (
         <SolutionPiece
           key={`${block.kind}-${index}`}
-          slug={solution.slug}
+          problemId={problemId}
           block={block}
         />
       ))}
@@ -51,10 +57,10 @@ function SolutionBody({ solution }: { readonly solution: LessonSolution }) {
 }
 
 function SolutionPiece({
-  slug,
+  problemId,
   block,
 }: {
-  readonly slug: string;
+  readonly problemId: string;
   readonly block: SolutionBlock;
 }) {
   if (block.kind === "heading") {
@@ -83,7 +89,7 @@ function SolutionPiece({
     );
   }
 
-  const code = referenceCode[slug];
+  const code = referenceCode[problemId];
   if (code === undefined) {
     return null;
   }
@@ -92,16 +98,18 @@ function SolutionPiece({
 
 function SolutionPanel({
   slug,
+  problemId,
   title,
   onClose,
   onSkipped,
 }: {
   readonly slug: string;
+  readonly problemId: string;
   readonly title: string;
   readonly onClose: () => void;
   readonly onSkipped: (result: SkipResult) => void;
 }) {
-  const solution = solutionFor(slug);
+  const solution = solutionForProblem(slug, problemId);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [reached, setReached] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -169,7 +177,7 @@ function SolutionPanel({
             This lesson does not have a written explanation yet.
           </p>
         ) : (
-          <SolutionBody solution={solution} />
+          <SolutionBody solution={solution} problemId={problemId} />
         )}
         <div className="h-6" />
         {reached ? (
@@ -223,12 +231,14 @@ function SolutionPanel({
 
 export function SolutionDialog({
   slug,
+  problemId,
   title,
   open,
   onOpenChange,
   onSkipped,
 }: {
   readonly slug: string;
+  readonly problemId: string;
   readonly title: string;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -239,6 +249,7 @@ export function SolutionDialog({
       {open ? (
         <SolutionPanel
           slug={slug}
+          problemId={problemId}
           title={title}
           onClose={() => {
             onOpenChange(false);

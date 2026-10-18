@@ -12,12 +12,12 @@ Fork the repository and branch from `main`. Do not commit secrets. `.env` stays 
 
 ## Where to make a change
 
-- **Lessons and exercises.** Prose, starter code, and tests are in `apps/api/src/content/week1.ts` through `week4.ts`. A lesson has one exercise. Include public tests that show the shape of the answer, and hidden tests for the empty, boundary, and awkward cases. Name the function the runner should call in `functionName`.
+- **Lessons and exercises.** Prose, starter code, and tests are in `apps/api/src/content/week1.ts` through `week4.ts`, with shorter readings, extra exercises, and follow-up lessons applied in `expand.ts`. A lesson has more than one exercise. Include public tests that show the shape of the answer, and hidden tests for the empty, boundary, and awkward cases. Name the function the runner should call in `functionName`. Keep an existing lesson id when you extend it, and add a new id for a later step.
 - **Articles.** Add an explainer with `defineArticle` in the matching file under `apps/web/lib/articles/`, then export it from that file's list. `apps/web/lib/articles/index.ts` already gathers those lists. One question per article, with the cost and a worked example.
 - **The desk.** Editor, split layout, syllabus, progress, and account screens live in `apps/web`.
 - **The runner and the domain.** Submission, scoring, auth, and insights live in `apps/api/src/domain/`.
 
-Learner-facing copy uses British spelling: *organise*, *behaviour*, *practise* (the verb), *towards*, *labelled*. Keep the voice plain. Say what the operation costs and what it trades away.
+Learner-facing copy uses British spelling: _organise_, _behaviour_, _practise_ (the verb), _towards_, _labelled_. Keep the voice plain. Say what the operation costs and what it trades away.
 
 ## Code
 

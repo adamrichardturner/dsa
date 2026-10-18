@@ -1,4 +1,6 @@
-export const referenceCode: Record<string, string> = {
+import { extraReferenceCode } from "./references-extra";
+
+const lessonReferenceCode: Record<string, string> = {
   complexity: `export function countBelow(nums: number[], limit: number): number {
   let count = 0;
 
@@ -757,3 +759,46 @@ console.log(wordsFound(["cat", "car"], ["cat", "cab", "car"]));
 console.log(wordsFound(["carpet"], ["car", "carpet"]));
 `,
 };
+
+const primaryProblemId: Record<string, string> = {
+  complexity: "count-below",
+  arrays: "rotate-left",
+  "hash-maps": "two-sum",
+  "two-pointers": "sorted-squares",
+  "sliding-window": "max-window-sum",
+  "linked-lists": "reverse-values",
+  stacks: "is-balanced",
+  queues: "window-sums",
+  recursion: "flatten",
+  "binary-search": "binary-search",
+  sorting: "merge-sort",
+  trees: "max-depth",
+  "binary-search-trees": "bst-contains",
+  heaps: "kth-largest",
+  graphs: "shortest-path",
+  greedy: "max-non-overlapping",
+  backtracking: "subsets",
+  "dynamic-programming": "climb-stairs",
+  tries: "words-found",
+};
+
+const keyed: Record<string, string> = {};
+
+for (const slug of Object.keys(lessonReferenceCode)) {
+  const problemId = primaryProblemId[slug];
+  const code = lessonReferenceCode[slug];
+  if (problemId === undefined || code === undefined) {
+    continue;
+  }
+  keyed[problemId] = code;
+}
+
+for (const problemId of Object.keys(extraReferenceCode)) {
+  const code = extraReferenceCode[problemId];
+  if (code === undefined) {
+    continue;
+  }
+  keyed[problemId] = code;
+}
+
+export const referenceCode: Record<string, string> = keyed;

@@ -15,7 +15,7 @@ https://datastructuresandalgorithms.com
 - Week 3: trees, binary search trees, heaps, graphs
 - Week 4: greedy choices, backtracking, dynamic programming, tries
 
-Nineteen lessons. One exercise each. Written for people who already write TypeScript.
+Short lessons, with more than one exercise on each, and a follow-up step after every idea. Written for people who already write TypeScript.
 
 ## Answers
 

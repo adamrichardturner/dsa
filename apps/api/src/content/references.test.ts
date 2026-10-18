@@ -4,16 +4,26 @@ import { course } from "./course.js";
 import { referenceCode } from "./references.js";
 import { runSolution } from "../domain/runner.js";
 
-test("each lesson reference passes that lesson's tests", () => {
-  const slugs: string[] = [];
+test("each exercise reference passes that exercise's tests", () => {
+  const problemIds: Record<string, true> = {};
 
   for (const module of course) {
     for (const lesson of module.lessons) {
-      slugs.push(lesson.slug);
-      const code = referenceCode[lesson.slug];
-      assert.ok(typeof code === "string" && code.length > 0, lesson.slug);
+      assert.ok(
+        lesson.problems.length >= 2,
+        `${lesson.slug} should have more than one exercise`,
+      );
 
       for (const problem of lesson.problems) {
+        assert.equal(
+          problemIds[problem.id],
+          undefined,
+          `Duplicate problem id: ${problem.id}`,
+        );
+        problemIds[problem.id] = true;
+        const code = referenceCode[problem.id];
+        assert.ok(typeof code === "string" && code.length > 0, problem.id);
+
         const outcome = runSolution(
           code ?? "",
           problem.functionName,
@@ -28,13 +38,13 @@ test("each lesson reference passes that lesson's tests", () => {
         assert.equal(
           outcome.passed,
           true,
-          `${lesson.slug}: ${outcome.feedback} ${JSON.stringify(outcome.results)}`,
+          `${problem.id}: ${outcome.feedback} ${JSON.stringify(outcome.results)}`,
         );
       }
     }
   }
 
-  for (const slug of Object.keys(referenceCode)) {
-    assert.equal(slugs.includes(slug), true, slug);
+  for (const problemId of Object.keys(referenceCode)) {
+    assert.equal(problemIds[problemId], true, problemId);
   }
 });

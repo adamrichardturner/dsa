@@ -18,6 +18,7 @@ import {
   EditorThemeSelect,
   useEditorTheme,
 } from "@/components/editor-theme-select";
+import { ExerciseNav } from "@/components/exercise-nav";
 import { LessonMarkdown } from "@/components/markdown";
 import { SuggestedReading } from "@/components/suggested-reading";
 import { SolutionDialog } from "@/components/solution-dialog";
@@ -54,6 +55,12 @@ import {
 } from "@/components/split-toggle";
 import { getEditorTheme, type EditorThemeId } from "@/lib/editor-themes";
 import { graphqlErrorMessage } from "@/lib/graphql-error";
+import {
+  allExercisesSolved,
+  followingProblem,
+  otherExercisesSolved,
+  selectProblem,
+} from "@/lib/exercise-order";
 import { annotateLesson, annotateMarkdown } from "@/lib/lesson-keywords";
 import { currentLessonFrom } from "@/lib/lesson-return";
 import { useLessonDraft } from "@/hooks/use-lesson-draft";
@@ -161,7 +168,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
   }, [result.error, router]);
 
   const lesson = result.data?.lesson ?? null;
-  const problem = lesson?.problems[0];
+  const problem =
+    lesson === null
+      ? undefined
+      : selectProblem(lesson.problems, searchParams.get("exercise"));
   const [code, setCode] = useState("");
   const [outcome, setOutcome] = useState<SubmissionView | null>(null);
   const [notice, setNotice] = useState<SolutionNoticeState | null>(null);
@@ -370,10 +380,37 @@ export function Workspace({ slug }: { readonly slug: string }) {
     lesson.nextSlug !== null && lesson.nextAvailable
       ? `/course/${lesson.nextSlug}`
       : null;
-  const nextIsPrimary = !checking && codeMatchesPass && nextHref !== null;
+  const exerciseHref = (id: string): string => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("exercise", id);
+    return `${pathname}?${params.toString()}`;
+  };
+  const upcoming = followingProblem(lesson.problems, problem.id);
+  const upcomingHref =
+    upcoming === undefined ? null : exerciseHref(upcoming.id);
+  const advanceExercise = upcomingHref !== null;
+  const onlyThisExerciseLeft = otherExercisesSolved(
+    lesson.problems,
+    problem.id,
+  );
+  const lessonSolved = allExercisesSolved(
+    lesson.problems,
+    problem.id,
+    hasPassed,
+  );
+  const nextIsPrimary =
+    !checking && codeMatchesPass && nextHref !== null && !advanceExercise;
   const nextIsSecondary =
-    !checking && hasPassed && !nextIsPrimary && nextHref !== null;
-  const showLastLessonNote = !checking && hasPassed && lesson.nextSlug === null;
+    !checking &&
+    hasPassed &&
+    !nextIsPrimary &&
+    nextHref !== null &&
+    !advanceExercise;
+  const exerciseIsPrimary = !checking && codeMatchesPass && advanceExercise;
+  const exerciseIsSecondary =
+    !checking && hasPassed && !exerciseIsPrimary && advanceExercise;
+  const showLastLessonNote =
+    !checking && hasPassed && lesson.nextSlug === null && !advanceExercise;
   const failedThisSession = outcome !== null && outcome.passed === false;
   const showStuck =
     !hasPassed && (problem.failedAttempts > 0 || failedThisSession);
@@ -429,6 +466,12 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 content={annotated.contentMd}
                 articleFrom={articleFrom}
               />
+              <ExerciseNav
+                problems={lesson.problems}
+                activeId={problem.id}
+                activePassed={hasPassed}
+                hrefFor={exerciseHref}
+              />
               <Card>
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
@@ -438,7 +481,9 @@ export function Workspace({ slug }: { readonly slug: string }) {
                     {hasPassed ? (
                       <CompletionTick
                         animate={outcome?.passed === true}
-                        label="Lesson complete"
+                        label={
+                          lessonSolved ? "Lesson complete" : "Exercise complete"
+                        }
                         className="mt-1 size-6"
                       />
                     ) : null}
@@ -502,7 +547,9 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 ) : null}
                 {lesson.nextSlug !== null && !lesson.nextAvailable ? (
                   <p className="self-center text-xs text-muted-foreground">
-                    Pass this exercise to open the next lesson.
+                    {onlyThisExerciseLeft
+                      ? "Pass this exercise to open the next lesson."
+                      : "Finish every exercise in this lesson to open the next one."}
                   </p>
                 ) : null}
               </div>
@@ -602,6 +649,35 @@ export function Workspace({ slug }: { readonly slug: string }) {
                     This is the last lesson.
                   </span>
                 ) : null}
+                {exerciseIsPrimary ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="lg"
+                    disabled={running}
+                    className={cn("h-10 px-4", chrome.reset)}
+                    onClick={() => {
+                      void onSubmit();
+                    }}
+                  >
+                    Submit
+                  </Button>
+                ) : null}
+                {exerciseIsSecondary && upcomingHref !== null ? (
+                  <Link
+                    href={upcomingHref}
+                    className={cn(
+                      buttonVariants({
+                        variant: "ghost",
+                        size: "lg",
+                        className: "h-10 px-4",
+                      }),
+                      chrome.reset,
+                    )}
+                  >
+                    Next exercise
+                  </Link>
+                ) : null}
                 {nextIsPrimary ? (
                   <Button
                     type="button"
@@ -654,6 +730,17 @@ export function Workspace({ slug }: { readonly slug: string }) {
                     Checking
                   </Button>
                 ) : null}
+                {!checking && exerciseIsPrimary && upcomingHref !== null ? (
+                  <Link
+                    href={upcomingHref}
+                    className={cn(
+                      buttonVariants({ size: "lg", className: "h-10 px-5" }),
+                      chrome.submit,
+                    )}
+                  >
+                    Next exercise
+                  </Link>
+                ) : null}
                 {!checking && nextIsPrimary && nextHref !== null ? (
                   <Link
                     href={nextHref}
@@ -665,7 +752,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
                     Next lesson
                   </Link>
                 ) : null}
-                {!checking && !nextIsPrimary ? (
+                {!checking && !nextIsPrimary && !exerciseIsPrimary ? (
                   <Button
                     type="button"
                     size="lg"
@@ -685,7 +772,8 @@ export function Workspace({ slug }: { readonly slug: string }) {
       />
       <SolutionDialog
         slug={lesson.slug}
-        title={lesson.title}
+        problemId={problem.id}
+        title={`${lesson.title} · ${problem.title}`}
         open={solutionOpen}
         onOpenChange={setSolutionOpen}
         onSkipped={onSkipped}

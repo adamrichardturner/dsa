@@ -30,10 +30,15 @@ const weeks = [
       "Learn to name the cost of a loop, then practice the scans you will reuse all month.",
     lessons: [
       "The cost of a loop",
+      "The cost of a pair",
       "Arrays",
+      "Moving the middle",
       "Hash maps",
+      "Counting with a map",
       "Two pointers",
+      "Pointers that meet",
       "Sliding window",
+      "Grow, then shrink",
     ],
   },
   {
@@ -43,11 +48,17 @@ const weeks = [
       "Build the structures interviews expect, and a sort you can explain out loud.",
     lessons: [
       "Linked lists",
+      "A second pointer",
       "Stacks",
+      "Remember what is still open",
       "Queues",
+      "First in, first served",
       "Recursion",
+      "Two recursive calls",
       "Binary search",
+      "The empty range",
       "Merge sort",
+      "Which sort you meant",
     ],
   },
   {
@@ -55,14 +66,32 @@ const weeks = [
     title: "Trees and graphs",
     detail:
       "Walk hierarchical data, keep a priority queue, and search a graph.",
-    lessons: ["Trees", "Binary search trees", "Heaps", "Graphs"],
+    lessons: [
+      "Trees",
+      "Leaves and totals",
+      "Binary search trees",
+      "A tree can be a line",
+      "Heaps",
+      "Parents and children",
+      "Graphs",
+      "Mark where you have been",
+    ],
   },
   {
     week: "Week 4",
     title: "Patterns",
     detail:
       "Finish with the patterns that turn a hard problem into a smaller one.",
-    lessons: ["Greedy choices", "Backtracking", "Dynamic programming", "Tries"],
+    lessons: [
+      "Greedy choices",
+      "Try to break the rule",
+      "Backtracking",
+      "When order matters",
+      "Dynamic programming",
+      "From the base case upward",
+      "Tries",
+      "Words that share a path",
+    ],
   },
 ];
 
@@ -71,7 +100,7 @@ const features = [
     icon: Gift,
     title: "100% free",
     detail:
-      "All nineteen lessons, the editor, the tests, and your progress. No trial, no card, and nothing locked behind an upgrade.",
+      "Every lesson, the editor, the tests, and your progress. No trial, no card, and nothing locked behind an upgrade.",
   },
   {
     icon: BookOpen,
@@ -122,7 +151,7 @@ const steps = [
     step: "03",
     title: "Submit",
     detail:
-      "The tests run immediately. A pass marks the lesson done. A failed attempt can open a solution, or you can skip the lesson and come back.",
+      "The tests run immediately. A pass marks that exercise done. Finish the exercises in the lesson and the next one opens. A failed attempt can open a solution, or you can skip the lesson and come back.",
   },
 ];
 
@@ -130,7 +159,7 @@ const faqs = [
   {
     question: "Is this data structures and algorithms course free?",
     answer:
-      "Yes. The course is 100% free. Creating an account, the nineteen lessons, the editor, the tests, and saved progress do not cost anything. There is no paid tier.",
+      "Yes. The course is 100% free. Creating an account, the lessons, the editor, the tests, and saved progress do not cost anything. There is no paid tier.",
   },
   {
     question: "What are data structures and algorithms?",
@@ -140,7 +169,7 @@ const faqs = [
   {
     question: "How do I learn data structures and algorithms?",
     answer:
-      "Learn data structures and algorithms by writing them. This 100% free course is four weeks of TypeScript: read the lesson, implement one function, and submit it against tests. A pass marks the lesson done. A new account gets a short introduction, including the choice to browse with audit mode.",
+      "Learn data structures and algorithms by writing them. This 100% free course is four weeks of TypeScript: read a short lesson, implement the exercises, and submit each one against tests. A lesson is done when its exercises pass. A new account gets a short introduction, including the choice to browse with audit mode.",
   },
   {
     question: "Which data structures and algorithms does the course cover?",
@@ -240,8 +269,9 @@ export default function HomePage() {
             </CardHeader>
             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
               <p>
-                Nineteen lessons. One exercise each. An editor, tests, and a
-                progress page that stays on your account.
+                Short lessons, two exercises on each, then a slightly harder
+                step. An editor, tests, and a progress page that stays on your
+                account.
               </p>
               <p>
                 No trial period, no card, and no lesson held back for a paid
@@ -296,7 +326,7 @@ export default function HomePage() {
             <p className="text-muted-foreground">
               Basics first, then the structures, then the patterns. Work in
               order, or turn on audit mode to open any lesson. A lesson is
-              complete when its exercise passes.
+              complete when its exercises pass.
             </p>
           </Reveal>
           <RevealGroup className="mt-6 grid gap-4 lg:grid-cols-2">
