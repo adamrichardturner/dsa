@@ -7,6 +7,20 @@ export type ArticleTopic =
   | "Trees and graphs"
   | "Patterns";
 
+export const articleTopics: readonly ArticleTopic[] = [
+  "Cost",
+  "Arrays",
+  "Hash maps",
+  "Linear structures",
+  "Search and sort",
+  "Trees and graphs",
+  "Patterns",
+];
+
+export const articleTopicId = (topic: ArticleTopic): string => {
+  return `topic-${topic.toLowerCase().replaceAll(" ", "-")}`;
+};
+
 export interface Article {
   readonly slug: string;
   readonly title: string;

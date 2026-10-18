@@ -10,6 +10,7 @@ import { treeArticles } from "./trees";
 import type { Article, ArticleTopic } from "./types";
 
 export type { Article, ArticleTopic };
+export { articleTopicId, articleTopics } from "./types";
 
 export const articles: readonly Article[] = [
   ...costBasicArticles,

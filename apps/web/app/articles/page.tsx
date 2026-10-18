@@ -2,14 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { articleGroups } from "@/lib/articles";
+import { articleGroups, articleTopicId } from "@/lib/articles";
 import { siteName, socialImage } from "@/lib/site";
 
 const description = `Explainers from ${siteName} on cost, arrays, hash maps, trees, graphs, and the patterns the lessons use.`;
-
-const topicId = (topic: string): string => {
-  return `topic-${topic.toLowerCase().replaceAll(" ", "-")}`;
-};
 
 export const metadata: Metadata = {
   title: "Articles",
@@ -41,10 +37,10 @@ export default function ArticlesPage() {
         <section
           key={group.topic}
           className="space-y-3"
-          aria-labelledby={topicId(group.topic)}
+          aria-labelledby={articleTopicId(group.topic)}
         >
           <h2
-            id={topicId(group.topic)}
+            id={articleTopicId(group.topic)}
             className="font-serif text-2xl tracking-tight"
           >
             {group.topic}

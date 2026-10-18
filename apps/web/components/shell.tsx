@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { cn } from "cn";
 import { AccountMenu } from "@/components/account-menu";
 import { DesktopNotice } from "@/components/desktop-notice";
+import { ArticleFooter } from "@/components/article-footer";
 import { LandingFooter } from "@/components/landing-footer";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { buttonVariants } from "@/components/ui/button";
@@ -24,9 +25,13 @@ const navLinks: readonly NavLink[] = [
   { href: "/articles", label: "Articles", signedInOnly: false },
 ];
 
-function PageFooter({ home }: { readonly home: boolean }) {
-  if (home) {
+function PageFooter({ pathname }: { readonly pathname: string }) {
+  if (pathname === "/") {
     return <LandingFooter />;
+  }
+
+  if (pathname === "/articles" || pathname.startsWith("/articles/")) {
+    return <ArticleFooter />;
   }
 
   return (
@@ -127,7 +132,7 @@ export function Shell({ children }: { readonly children: ReactNode }) {
       >
         {children}
       </div>
-      {workspace ? null : <PageFooter home={pathname === "/"} />}
+      {workspace ? null : <PageFooter pathname={pathname} />}
     </div>
   );
 }

@@ -151,22 +151,17 @@ export function CodeRunner({ code }: { readonly code: string }) {
       }}
       aria-label="TypeScript example"
     >
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs">
-        <div className="flex items-center gap-1">
-          <span className="font-mono opacity-70">example.ts</span>
-          <FormatCodeButton editorRef={editorRef} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="opacity-70">Theme</span>
-          <EditorThemeSelect themeId={themeId} onChange={setThemeId} />
-          <Badge
-            variant="outline"
-            className="border-current/25 bg-transparent"
-            style={{ color: theme.foreground }}
-          >
-            TypeScript
-          </Badge>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-2 text-xs">
+        <FormatCodeButton editorRef={editorRef} />
+        <span className="opacity-70">Theme</span>
+        <EditorThemeSelect themeId={themeId} onChange={setThemeId} />
+        <Badge
+          variant="outline"
+          className="border-current/25 bg-transparent"
+          style={{ color: theme.foreground }}
+        >
+          TypeScript
+        </Badge>
       </div>
       <Separator style={{ backgroundColor: border }} />
       <div style={{ height: editorHeight(source) }}>

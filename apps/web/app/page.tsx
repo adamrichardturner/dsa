@@ -249,9 +249,9 @@ export default function HomePage() {
                   <CardDescription>{week.week}</CardDescription>
                   <h3 className="font-serif text-2xl leading-snug font-medium">{week.title}</h3>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="flex flex-1 flex-col gap-4">
                   <p className="text-sm leading-relaxed text-muted-foreground">{week.detail}</p>
-                  <ul className="flex flex-wrap gap-2">
+                  <ul className="mt-auto flex flex-wrap gap-2">
                     {week.lessons.map((lesson) => (
                       <li key={lesson}>
                         <Badge variant="outline">{lesson}</Badge>

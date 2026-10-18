@@ -446,18 +446,15 @@ export function Workspace({ slug }: { readonly slug: string }) {
           className="relative flex h-full min-h-0 min-w-0 flex-col"
           style={{ backgroundColor: theme.background, color: theme.foreground }}
         >
-          <div className="flex items-center justify-between gap-3 px-4 py-2 text-xs">
-            <span className="font-mono opacity-70">solution.ts</span>
-            <div className="flex items-center gap-1">
-              <FormatCodeButton editorRef={editorRef} />
-              <Badge
-                variant="outline"
-                className="border-current/25 bg-transparent"
-                style={{ color: theme.foreground }}
-              >
-                {problem.solved ? "Solved" : "Draft"}
-              </Badge>
-            </div>
+          <div className="flex items-center justify-end gap-1 px-4 py-2 text-xs">
+            <FormatCodeButton editorRef={editorRef} />
+            <Badge
+              variant="outline"
+              className="border-current/25 bg-transparent"
+              style={{ color: theme.foreground }}
+            >
+              {problem.solved ? "Solved" : "Draft"}
+            </Badge>
           </div>
           <Separator style={{ backgroundColor: chrome.rule }} />
           <div className="relative min-h-0 flex-1">
