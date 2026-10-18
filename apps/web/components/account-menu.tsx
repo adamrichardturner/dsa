@@ -6,6 +6,7 @@ import { useMutation } from "urql";
 import { cn } from "cn";
 import { UserAvatar } from "@/components/user-avatar";
 import { buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,12 +19,19 @@ import { SIGN_OUT } from "@/lib/operations";
 
 export function AccountMenu() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { ready, user, signOut } = useAuth();
   const [, runSignOut] = useMutation(SIGN_OUT);
+
+  if (!ready) {
+    return <Skeleton className="size-8 rounded-full" aria-hidden />;
+  }
 
   if (user === null) {
     return (
-      <Link href="/sign-in" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+      <Link
+        href="/sign-in"
+        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+      >
         Sign in
       </Link>
     );
@@ -40,9 +48,16 @@ export function AccountMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Account"
-        className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "rounded-full")}
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "icon" }),
+          "rounded-full",
+        )}
       >
-        <UserAvatar name={user.name} avatarUrl={user.avatarUrl} className="size-7 text-[11px]" />
+        <UserAvatar
+          name={user.name}
+          avatarUrl={user.avatarUrl}
+          className="size-7 text-[11px]"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-1.5 py-1.5">
@@ -50,7 +65,9 @@ export function AccountMenu() {
           <p className="truncate text-xs text-muted-foreground">{user.email}</p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/settings" />}>Settings</DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/settings" />}>
+          Settings
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onSignOut}>Sign out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

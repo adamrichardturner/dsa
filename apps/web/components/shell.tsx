@@ -60,12 +60,15 @@ function PageFooter({ pathname }: { readonly pathname: string }) {
 
 export function Shell({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { ready, user } = useAuth();
   const workspace = pathname.startsWith("/course/");
   const coursePage = pathname === "/course" || workspace;
-  const visibleLinks = navLinks.filter(
-    (link) => !link.signedInOnly || user !== null,
-  );
+  const visibleLinks = navLinks.filter((link) => {
+    if (!link.signedInOnly) {
+      return true;
+    }
+    return ready && user !== null;
+  });
 
   return (
     <div
@@ -85,26 +88,29 @@ export function Shell({ children }: { readonly children: ReactNode }) {
             <span className="hidden truncate sm:inline">{siteName}</span>
             <InfinityIcon animate />
           </Link>
-          <nav className="flex items-center">
-            {visibleLinks.map((link) => {
-              const active =
-                pathname === link.href || pathname.startsWith(`${link.href}/`);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    buttonVariants({
-                      variant: active ? "secondary" : "ghost",
-                      size: "sm",
-                    }),
-                  )}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
+          {ready ? (
+            <nav className="flex items-center">
+              {visibleLinks.map((link) => {
+                const active =
+                  pathname === link.href ||
+                  pathname.startsWith(`${link.href}/`);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      buttonVariants({
+                        variant: active ? "secondary" : "ghost",
+                        size: "sm",
+                      }),
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <ThemeSwitch />

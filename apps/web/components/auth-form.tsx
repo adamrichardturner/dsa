@@ -62,7 +62,7 @@ export function AuthForm({
           <CardTitle className="font-serif text-3xl">{title}</CardTitle>
           <CardDescription>
             {mode === "sign-up"
-              ? "Google, GitHub, or email. A matching verified email uses the same account."
+              ? "Create an account with Google, GitHub, or an email and password."
               : "Use Google, GitHub, or the email and password for this account."}
           </CardDescription>
         </CardHeader>

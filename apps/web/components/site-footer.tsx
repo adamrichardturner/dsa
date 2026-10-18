@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { ArrowUpRight } from "lucide-react";
+import { cn } from "cn";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   contactEmail,
   creatorName,
@@ -23,17 +25,30 @@ export type FooterLink = {
 export type FooterColumn = {
   readonly title: string;
   readonly links: readonly FooterLink[];
+  readonly pending?: boolean;
 };
 
-export const courseColumn: FooterColumn = {
-  title: "Course",
-  links: [
-    { href: "/course", label: "Open the course" },
-    { href: "/progress", label: "Progress" },
-    { href: "/sign-up", label: "Create an account" },
-    { href: "/sign-in", label: "Sign in" },
-  ],
-};
+const courseSkeletonWidths = ["w-28", "w-16", "w-36", "w-14"] as const;
+
+const signedOutCourseLinks: readonly FooterLink[] = [
+  { href: "/course", label: "Open the course" },
+  { href: "/progress", label: "Progress" },
+  { href: "/sign-up", label: "Create an account" },
+  { href: "/sign-in", label: "Sign in" },
+];
+
+const signedInCourseLinks: readonly FooterLink[] = [
+  { href: "/course", label: "Go to Course" },
+  { href: "/progress", label: "Progress" },
+];
+
+export function courseFooterLinks(signedIn: boolean): readonly FooterLink[] {
+  if (signedIn) {
+    return signedInCourseLinks;
+  }
+
+  return signedOutCourseLinks;
+}
 
 export const legalColumn: FooterColumn = {
   title: "Legal",
@@ -84,18 +99,36 @@ function FooterAnchor({ href, label }: FooterLink) {
   );
 }
 
-function FooterLinks({ title, links }: FooterColumn) {
+function FooterLinkItems({
+  links,
+  pending,
+}: {
+  readonly links: readonly FooterLink[];
+  readonly pending: boolean;
+}) {
+  if (pending) {
+    return courseSkeletonWidths.map((width) => (
+      <li key={width}>
+        <Skeleton className={cn("h-4", width)} />
+      </li>
+    ));
+  }
+
+  return links.map((link) => (
+    <li key={link.href}>
+      <FooterAnchor href={link.href} label={link.label} />
+    </li>
+  ));
+}
+
+function FooterLinks({ title, links, pending = false }: FooterColumn) {
   return (
-    <nav aria-label={title}>
+    <nav aria-label={title} aria-busy={pending}>
       <p className="font-mono text-xs tracking-wide text-muted-foreground">
         {title}
       </p>
       <ul className="mt-4 space-y-2.5">
-        {links.map((link) => (
-          <li key={link.href}>
-            <FooterAnchor href={link.href} label={link.label} />
-          </li>
-        ))}
+        <FooterLinkItems links={links} pending={pending} />
       </ul>
     </nav>
   );
@@ -143,6 +176,7 @@ export function SiteFooter({
                 key={column.title}
                 title={column.title}
                 links={column.links}
+                pending={column.pending}
               />
             ))}
           </div>
