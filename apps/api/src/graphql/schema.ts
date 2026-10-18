@@ -34,6 +34,7 @@ const UserType = new GraphQLObjectType({
     providers: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))) },
     isAdmin: { type: new GraphQLNonNull(GraphQLBoolean) },
     auditMode: { type: new GraphQLNonNull(GraphQLBoolean) },
+    onboardingCompleted: { type: new GraphQLNonNull(GraphQLBoolean) },
   },
 });
 
@@ -459,6 +460,14 @@ export const schema = new GraphQLSchema({
           execute(
             context.token,
             Auth.use((auth) => auth.signOut),
+          ),
+      },
+      completeOnboarding: {
+        type: new GraphQLNonNull(UserType),
+        resolve: (_parent, _args, context: GraphQLContext) =>
+          execute(
+            context.token,
+            Auth.use((auth) => auth.completeOnboarding),
           ),
       },
       setAuditMode: {

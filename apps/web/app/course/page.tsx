@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { Lock } from "lucide-react";
 import { useQuery } from "urql";
 import { AuditModeToggle } from "@/components/audit-mode-toggle";
@@ -185,11 +186,21 @@ function WeekSection({ module }: { readonly module: ModuleView }) {
 
 export default function CoursePage() {
   const auth = useRequireUser();
+  const auditMode = auth.user?.auditMode ?? false;
+  const auditModeRef = useRef(auditMode);
   const [result, reexecute] = useQuery<{ modules: ModuleView[] }>({
     query: MODULES_QUERY,
     pause: auth.user === null,
     requestPolicy: "cache-and-network",
   });
+
+  useEffect(() => {
+    if (auditModeRef.current === auditMode) {
+      return;
+    }
+    auditModeRef.current = auditMode;
+    reexecute({ requestPolicy: "network-only" });
+  }, [auditMode, reexecute]);
 
   if (auth.user === null) {
     return <PageSpinner />;

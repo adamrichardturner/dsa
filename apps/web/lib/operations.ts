@@ -7,6 +7,7 @@ const userFields = `
   providers
   isAdmin
   auditMode
+  onboardingCompleted
 `;
 
 export const ME_QUERY = `
@@ -136,6 +137,12 @@ export const REDEEM_OAUTH_CODE = `
       token
       user {${userFields}}
     }
+  }
+`;
+
+export const COMPLETE_ONBOARDING = `
+  mutation CompleteOnboarding {
+    completeOnboarding {${userFields}}
   }
 `;
 

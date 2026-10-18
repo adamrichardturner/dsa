@@ -50,6 +50,7 @@ const isUserRecord = (
   providers?: unknown;
   isAdmin?: unknown;
   auditMode?: unknown;
+  onboardingCompleted?: unknown;
 } => {
   if (!isRecord(value)) {
     return false;
@@ -70,6 +71,7 @@ const toUser = (value: {
   providers?: unknown;
   isAdmin?: unknown;
   auditMode?: unknown;
+  onboardingCompleted?: unknown;
 }): User => {
   const avatarUrl = value.avatarUrl;
   const trimmed = typeof avatarUrl === "string" ? avatarUrl.trim() : "";
@@ -82,6 +84,7 @@ const toUser = (value: {
     providers: readProviders(value.providers),
     isAdmin: value.isAdmin === true,
     auditMode: value.auditMode === true,
+    onboardingCompleted: value.onboardingCompleted !== false,
   };
 };
 

@@ -8,6 +8,7 @@ import { AccountMenu } from "@/components/account-menu";
 import { DesktopNotice } from "@/components/desktop-notice";
 import { ArticleFooter } from "@/components/article-footer";
 import { InfinityIcon } from "@/components/infinity-icon";
+import { Onboarding } from "@/components/onboarding";
 import { LandingFooter } from "@/components/landing-footer";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { buttonVariants } from "@/components/ui/button";
@@ -127,6 +128,7 @@ export function Shell({ children }: { readonly children: ReactNode }) {
         {children}
       </div>
       {workspace ? null : <PageFooter pathname={pathname} />}
+      <Onboarding />
     </div>
   );
 }

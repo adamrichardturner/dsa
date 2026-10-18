@@ -2,7 +2,7 @@
 
 ![The course desk: the syllabus, a lesson on the cost of a loop, and a TypeScript editor with a terminal](apps/web/preview.png)
 
-A free, four-week course in data structures and algorithms, taught by writing TypeScript. Each lesson is short enough to finish in one sitting. You read the idea, implement one function, and submit it against tests. A pass marks the lesson done and opens the next one.
+A free, four-week course in data structures and algorithms, taught by writing TypeScript. Each lesson is short enough to finish in one sitting. You read the idea, implement one function, and submit it against tests. A pass marks the lesson done and opens the next one. After a failed attempt you can open a written solution, or skip the lesson without points and come back later. Audit mode, chosen during a short introduction and kept on the account, opens any lesson without waiting for the ones before it.
 
 The live course is at [datastructuresandalgorithms.com](https://datastructuresandalgorithms.com). Creating an account, the nineteen lessons, the editor, the tests, the articles, and saved progress do not cost anything. There is no trial and no paid tier.
 
@@ -14,7 +14,7 @@ The desk opens the lesson and a TypeScript editor side by side. You can switch t
 
 Public examples show the shape of the answer. Hidden tests check the cases that are easy to forget. The runner compiles the submission with Sucrase and executes it in `node:vm` with a one-second timeout. `require`, imports, `process`, `eval`, and the `Function` constructor are blocked. That is enough for these exercises. It is not a hardened sandbox for arbitrary untrusted programs.
 
-A pass on the first attempt earns three stars. A pass within the next two attempts earns two. A later pass earns one. Your draft and your passing solution stay on the account, so the editor is yours when you come back. The progress page shows lessons completed, pass rate, and the topics that still have an attempt which has not passed.
+A pass on the first attempt earns three stars. A pass within the next two attempts earns two. A later pass earns one. A skip earns none. Your draft and your passing solution stay on the account, so the editor is yours when you come back. The progress page shows lessons completed, pass rate, skipped lessons, and the topics that still have an attempt which has not passed.
 
 ## Syllabus
 

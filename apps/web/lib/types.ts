@@ -9,6 +9,7 @@ export interface User {
   readonly providers: readonly OauthProvider[];
   readonly isAdmin: boolean;
   readonly auditMode: boolean;
+  readonly onboardingCompleted: boolean;
 }
 
 export interface AuthPayload {

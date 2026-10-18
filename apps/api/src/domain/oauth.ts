@@ -47,6 +47,7 @@ const UserRow = Schema.Struct({
   passwordHash: Schema.NullOr(Schema.String),
   avatarUrl: Schema.NullOr(Schema.String),
   auditMode: Schema.Boolean,
+  onboardingCompleted: Schema.Boolean,
 });
 
 const IdentityRow = Schema.Struct({
@@ -433,7 +434,8 @@ export class OAuth extends Context.Service<
               name,
               password_hash AS "passwordHash",
               avatar_url AS "avatarUrl",
-              audit_mode AS "auditMode"
+              audit_mode AS "auditMode",
+              onboarding_completed AS "onboardingCompleted"
             FROM users
             WHERE email = ${request.email}
           `,
@@ -465,7 +467,8 @@ export class OAuth extends Context.Service<
               name,
               password_hash AS "passwordHash",
               avatar_url AS "avatarUrl",
-              audit_mode AS "auditMode"
+              audit_mode AS "auditMode",
+              onboarding_completed AS "onboardingCompleted"
             FROM users
             WHERE id = ${request.id}
           `,
@@ -493,13 +496,14 @@ export class OAuth extends Context.Service<
         }),
         execute: (request) =>
           sql`
-            INSERT INTO users (id, email, name, password_hash, avatar_url)
+            INSERT INTO users (id, email, name, password_hash, avatar_url, onboarding_completed)
             VALUES (
               ${request.id},
               ${request.email},
               ${request.name},
               ${request.passwordHash},
-              ${request.avatarUrl}
+              ${request.avatarUrl},
+              FALSE
             )
           `,
       });
@@ -639,6 +643,7 @@ export class OAuth extends Context.Service<
             providers: linkedProviders,
             isAdmin: isAdminEmail(row.email),
             auditMode: row.auditMode,
+            onboardingCompleted: row.onboardingCompleted,
           };
           return user;
         });

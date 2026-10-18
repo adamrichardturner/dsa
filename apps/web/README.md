@@ -11,7 +11,7 @@ How to run the API and Postgres beside this app, and how a push to `main` ships 
 | `/` | Landing page, with the syllabus, and FAQ structured data |
 | `/course` | Syllabus for the signed-in account |
 | `/course/[slug]` | One lesson: prose, exercise, editor, and terminal |
-| `/progress` | Lessons completed, pass rate, stars, and topics still to pass |
+| `/progress` | Lessons completed, pass rate, stars, skipped lessons, and topics still to pass |
 | `/articles` | Article index, grouped by topic |
 | `/articles/[slug]` | One explainer |
 | `/sign-in`, `/sign-up` | Email and password, plus Google and GitHub when the API has them configured |
@@ -44,7 +44,7 @@ OAuth does not talk to Google or GitHub from the browser. A button navigates to 
 
 The split is vertical or horizontal, remembered in `localStorage` as `dsa.split-layout.columns` or `dsa.split-layout.stacked`. Editor themes are Kiln, Dark+, Light+, Monokai, Dracula, Solarized Dark, and GitHub Dark (`lib/editor-themes.ts`). The site theme is separate: light, dark, or the system preference, applied by a small script in `app/layout.tsx` before paint so the first frame matches `dsa.theme`.
 
-The syllabus sidebar reads `modules`. A lesson is available when the previous exercise has passed. Stars on a lesson are the stars earned on its exercise.
+The syllabus sidebar reads `modules`. With audit mode off, a lesson is available when every earlier lesson has been passed or skipped. A skip is not a pass and earns no stars. Audit mode, stored on the account, opens every lesson. Stars on a lesson are the stars earned on its exercise. A new account sees a short introduction once; `onboardingCompleted` on the user stops it from repeating.
 
 ## Articles
 

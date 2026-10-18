@@ -61,7 +61,7 @@ const features = [
     icon: Check,
     title: "A tick when it passes",
     detail:
-      "Pass the exercise and the lesson keeps a green tick. It stays on the path, so you can see what is finished.",
+      "Pass the exercise and the lesson keeps a green tick. If an attempt fails, open a written solution, or skip without points and come back later.",
   },
   {
     icon: Moon,
@@ -85,7 +85,8 @@ const steps = [
   {
     step: "03",
     title: "Submit",
-    detail: "The tests run immediately. A pass marks the lesson done.",
+    detail:
+      "The tests run immediately. A pass marks the lesson done. A failed attempt can open a solution, or a skip that earns no points.",
   },
 ];
 
@@ -103,7 +104,7 @@ const faqs = [
   {
     question: "How do I learn data structures and algorithms?",
     answer:
-      "Learn data structures and algorithms by writing them. This 100% free course is four weeks of TypeScript: read the lesson, implement one function, and submit it against tests. A pass marks the lesson done.",
+      "Learn data structures and algorithms by writing them. This 100% free course is four weeks of TypeScript: read the lesson, implement one function, and submit it against tests. A pass marks the lesson done. A new account gets a short introduction, including the choice to browse with audit mode.",
   },
   {
     question: "Which data structures and algorithms does the course cover?",
@@ -237,8 +238,8 @@ export default function HomePage() {
             Four weeks of course material
           </h2>
           <p className="text-muted-foreground">
-            Basics first, then the structures, then the patterns. Work in order. A lesson is
-            complete when its exercise passes.
+            Basics first, then the structures, then the patterns. Work in order, or turn on
+            audit mode to open any lesson. A lesson is complete when its exercise passes.
           </p>
         </Reveal>
         <RevealGroup className="mt-6 grid gap-4 lg:grid-cols-2">

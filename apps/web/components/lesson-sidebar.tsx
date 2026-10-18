@@ -6,6 +6,8 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -516,6 +518,8 @@ export function LessonSidebarFrame({
 }) {
   const [open, setOpen] = useState(() => readSidebarOpen(defaultOpen));
   const { user } = useAuth();
+  const auditMode = user?.auditMode ?? false;
+  const auditModeRef = useRef(auditMode);
   const [result, reexecute] = useQuery<{ modules: readonly ModuleView[] }>({
     query: MODULES_QUERY,
     pause: user === null,
@@ -524,6 +528,14 @@ export function LessonSidebarFrame({
   const refresh = useCallback(() => {
     reexecute({ requestPolicy: "network-only" });
   }, [reexecute]);
+
+  useEffect(() => {
+    if (auditModeRef.current === auditMode) {
+      return;
+    }
+    auditModeRef.current = auditMode;
+    refresh();
+  }, [auditMode, refresh]);
 
   const modules = result.data?.modules ?? [];
   const status = syllabusStatus(result.data, result.error);

@@ -62,6 +62,7 @@ const UserRow = Schema.Struct({
   passwordHash: Schema.NullOr(Schema.String),
   avatarUrl: Schema.NullOr(Schema.String),
   auditMode: Schema.Boolean,
+  onboardingCompleted: Schema.Boolean,
 });
 
 const deriveKey = (password: string, salt: string): Promise<Buffer> =>
@@ -204,6 +205,7 @@ export class Auth extends Context.Service<
     setAuditMode(
       enabled: boolean,
     ): Effect.Effect<PublicUser, Unauthorized | Unexpected, RequestAuth>;
+    completeOnboarding: Effect.Effect<PublicUser, Unauthorized | Unexpected, RequestAuth>;
     changePassword(
       input: ChangePasswordInput,
     ): Effect.Effect<boolean, BadInput | InvalidCredentials | Unauthorized | Unexpected, RequestAuth>;
@@ -232,7 +234,8 @@ export class Auth extends Context.Service<
               name,
               password_hash AS "passwordHash",
               avatar_url AS "avatarUrl",
-              audit_mode AS "auditMode"
+              audit_mode AS "auditMode",
+              onboarding_completed AS "onboardingCompleted"
             FROM users
             WHERE email = ${request.email}
           `,
@@ -248,13 +251,14 @@ export class Auth extends Context.Service<
         }),
         execute: (request) =>
           sql`
-            INSERT INTO users (id, email, name, password_hash, avatar_url)
+            INSERT INTO users (id, email, name, password_hash, avatar_url, onboarding_completed)
             VALUES (
               ${request.id},
               ${request.email},
               ${request.name},
               ${request.passwordHash},
-              ${request.avatarUrl}
+              ${request.avatarUrl},
+              FALSE
             )
           `,
       });
@@ -289,7 +293,8 @@ export class Auth extends Context.Service<
               u.name,
               u.password_hash AS "passwordHash",
               u.avatar_url AS "avatarUrl",
-              u.audit_mode AS "auditMode"
+              u.audit_mode AS "auditMode",
+              u.onboarding_completed AS "onboardingCompleted"
             FROM sessions AS s
             JOIN users AS u ON u.id = s.user_id
             WHERE s.token_hash = ${request.tokenHash}
@@ -314,7 +319,8 @@ export class Auth extends Context.Service<
               name,
               password_hash AS "passwordHash",
               avatar_url AS "avatarUrl",
-              audit_mode AS "auditMode"
+              audit_mode AS "auditMode",
+              onboarding_completed AS "onboardingCompleted"
             FROM users
             WHERE id = ${request.id}
           `,
@@ -423,6 +429,7 @@ export class Auth extends Context.Service<
         readonly passwordHash: string | null;
         readonly avatarUrl: string | null;
         readonly auditMode: boolean;
+        readonly onboardingCompleted: boolean;
       }) =>
         Effect.gen(function* () {
           const linked = yield* listProviderRows({ userId: row.id }).pipe(
@@ -443,6 +450,7 @@ export class Auth extends Context.Service<
             providers,
             isAdmin: isAdminEmail(row.email),
             auditMode: row.auditMode,
+            onboardingCompleted: row.onboardingCompleted,
           };
         });
 
@@ -519,6 +527,7 @@ export class Auth extends Context.Service<
             passwordHash,
             avatarUrl: null,
             auditMode: false,
+            onboardingCompleted: false,
           }),
         );
       });
@@ -629,6 +638,7 @@ export class Auth extends Context.Service<
           passwordHash: account.passwordHash,
           avatarUrl,
           auditMode: account.auditMode,
+          onboardingCompleted: account.onboardingCompleted,
         });
       });
 
@@ -657,6 +667,33 @@ export class Auth extends Context.Service<
           passwordHash: account.passwordHash,
           avatarUrl: account.avatarUrl,
           auditMode: enabled,
+          onboardingCompleted: account.onboardingCompleted,
+        });
+      });
+
+      const markOnboarding = SqlSchema.void({
+        Request: Schema.Struct({ id: Schema.String }),
+        execute: (request) =>
+          sql`
+            UPDATE users
+            SET onboarding_completed = TRUE
+            WHERE id = ${request.id}
+          `,
+      });
+
+      const completeOnboarding = Effect.gen(function* () {
+        const account = yield* loadAccount();
+        yield* markOnboarding({ id: account.id }).pipe(
+          failUnexpected("Could not finish onboarding."),
+        );
+        return yield* withProviders({
+          id: account.id,
+          email: account.email,
+          name: account.name,
+          passwordHash: account.passwordHash,
+          avatarUrl: account.avatarUrl,
+          auditMode: account.auditMode,
+          onboardingCompleted: true,
         });
       });
 
@@ -787,6 +824,7 @@ export class Auth extends Context.Service<
         currentUser,
         updateProfile,
         setAuditMode,
+        completeOnboarding,
         changePassword,
         deleteAccount,
         requestPasswordReset,
