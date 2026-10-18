@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import { createYoga } from "graphql-yoga";
 import type { AppConfig } from "../config.js";
+import { maskPublicError, maskValidationErrors } from "../graphql/public-error.js";
 import { schema, type GraphQLContext } from "../graphql/schema.js";
 import { mountOAuth } from "./oauth.js";
 
@@ -21,6 +22,7 @@ export const createHttpApp = (config: AppConfig["Service"]) => {
   const yoga = createYoga({
     schema,
     graphqlEndpoint: "/graphql",
+    plugins: [maskValidationErrors()],
     context: ({ request }): GraphQLContext => ({
       token: readToken(request),
     }),
@@ -29,7 +31,11 @@ export const createHttpApp = (config: AppConfig["Service"]) => {
       methods: ["GET", "POST", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
     },
-    maskedErrors: false,
+    maskedErrors: {
+      errorMessage: "Request failed.",
+      isDev: false,
+      maskError: maskPublicError,
+    },
   });
 
   const app = express();

@@ -20,6 +20,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { providerLabel } from "@/lib/oauth";
 import { CHANGE_PASSWORD, DELETE_ACCOUNT, UPDATE_PROFILE } from "@/lib/operations";
 import type { User } from "@/lib/types";
@@ -35,14 +36,6 @@ interface ChangePasswordData {
 interface DeleteAccountData {
   readonly deleteAccount: boolean;
 }
-
-const readableError = (message: string): string => {
-  const marker = "[GraphQL] ";
-  if (!message.startsWith(marker)) {
-    return message;
-  }
-  return message.slice(marker.length);
-};
 
 function ProfileForm({
   user,
@@ -149,7 +142,9 @@ function ProfileForm({
           </div>
           {result.error !== undefined ? (
             <Alert variant="destructive">
-              <AlertDescription>{readableError(result.error.message)}</AlertDescription>
+              <AlertDescription>
+                {graphqlErrorMessage(result.error, "Could not save your profile.")}
+              </AlertDescription>
             </Alert>
           ) : null}
           {saved ? (
@@ -239,7 +234,9 @@ function PasswordForm({
           </div>
           {result.error !== undefined ? (
             <Alert variant="destructive">
-              <AlertDescription>{readableError(result.error.message)}</AlertDescription>
+              <AlertDescription>
+                {graphqlErrorMessage(result.error, "Could not update the password.")}
+              </AlertDescription>
             </Alert>
           ) : null}
           {saved ? (
@@ -296,7 +293,7 @@ function DeleteAccount({
       user.hasPassword ? { password, confirmation: null } : { password: null, confirmation },
     );
     if (response.error !== undefined) {
-      setError(readableError(response.error.message));
+      setError(graphqlErrorMessage(response.error, "Could not delete the account."));
       return;
     }
     if (response.data?.deleteAccount !== true) {

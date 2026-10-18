@@ -4,6 +4,7 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import type { CodeEditorInstance } from "@/components/editor";
 import { FormatCodeButton } from "@/components/format-code-button";
 import { useMutation } from "urql";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { cn } from "cn";
 import {
   CodeTerminal,
@@ -127,7 +128,7 @@ export function CodeRunner({ code }: { readonly code: string }) {
     if (next === undefined) {
       setTerminal({
         kind: "failed",
-        message: response.error?.message ?? "Could not run that code.",
+        message: graphqlErrorMessage(response.error, "Could not run that code."),
       });
       return;
     }

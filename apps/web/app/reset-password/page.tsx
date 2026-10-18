@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { RESET_PASSWORD } from "@/lib/operations";
 
 function ResetPasswordForm() {
@@ -65,7 +66,9 @@ function ResetPasswordForm() {
           </div>
           {result.error !== undefined ? (
             <Alert variant="destructive">
-              <AlertDescription>{result.error.message}</AlertDescription>
+              <AlertDescription>
+                {graphqlErrorMessage(result.error, "Could not update the password.")}
+              </AlertDescription>
             </Alert>
           ) : null}
           <Button type="submit" className="h-10 w-full" disabled={result.fetching}>

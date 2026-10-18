@@ -37,6 +37,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/auth";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { MODULES_QUERY } from "@/lib/operations";
 import { readSidebarOpen } from "@/lib/sidebar-state";
 import type { LessonSummary, ModuleView } from "@/lib/types";
@@ -348,11 +349,13 @@ function WeekGroup({
 function SyllabusList({
   modules,
   status,
+  errorMessage,
   currentSlug,
   onOpen,
 }: {
   readonly modules: readonly ModuleView[];
   readonly status: "loading" | "error" | "ready";
+  readonly errorMessage: string;
   readonly currentSlug: string;
   readonly onOpen: () => void;
 }) {
@@ -366,7 +369,7 @@ function SyllabusList({
   if (status === "error") {
     return (
       <p className="px-4 py-6 text-sm text-sidebar-foreground/70">
-        The syllabus could not be loaded.
+        {errorMessage}
       </p>
     );
   }
@@ -407,9 +410,11 @@ function SyllabusList({
 function LessonSidebar({
   modules,
   status,
+  errorMessage,
 }: {
   readonly modules: readonly ModuleView[];
   readonly status: "loading" | "error" | "ready";
+  readonly errorMessage: string;
 }) {
   const pathname = usePathname();
   const currentSlug = currentSlugFrom(pathname);
@@ -459,6 +464,7 @@ function LessonSidebar({
         <SyllabusList
           modules={modules}
           status={status}
+          errorMessage={errorMessage}
           currentSlug={currentSlug}
           onOpen={onOpen}
         />
@@ -503,6 +509,10 @@ export function LessonSidebarFrame({
 
   const modules = result.data?.modules ?? [];
   const status = syllabusStatus(result.data, result.error);
+  const syllabusError = graphqlErrorMessage(
+    result.error,
+    "The syllabus could not be loaded.",
+  );
 
   return (
     <SyllabusRefreshContext.Provider value={refresh}>
@@ -511,7 +521,7 @@ export function LessonSidebarFrame({
         onOpenChange={setOpen}
         className="relative h-full min-h-0 flex-1 overflow-hidden"
       >
-        <LessonSidebar modules={modules} status={status} />
+        <LessonSidebar modules={modules} status={status} errorMessage={syllabusError} />
         <SidebarInset className="h-full min-h-0 min-w-0 overflow-hidden">
           {children}
         </SidebarInset>

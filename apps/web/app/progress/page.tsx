@@ -11,6 +11,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useRequireUser } from "@/lib/auth";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { ANALYTICS_QUERY } from "@/lib/operations";
 import type { AnalyticsView } from "@/lib/types";
 
@@ -29,7 +30,9 @@ export default function ProgressPage() {
     return (
       <main className="mx-auto max-w-3xl px-6 py-12">
         <Alert variant="destructive">
-          <AlertDescription>{result.error?.message ?? "Could not load progress."}</AlertDescription>
+          <AlertDescription>
+            {graphqlErrorMessage(result.error, "Could not load progress.")}
+          </AlertDescription>
         </Alert>
       </main>
     );

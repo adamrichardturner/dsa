@@ -1,5 +1,4 @@
-import { GraphQLError } from "graphql";
-import { errorMessage } from "../lib/guards.js";
+import { classifyError, publicGraphQLError } from "./public-error.js";
 import { runEffect } from "../runtime.js";
 
 export const execute = async <A>(
@@ -9,11 +8,10 @@ export const execute = async <A>(
   try {
     return await runEffect(token, effect);
   } catch (error) {
-    const message = errorMessage(error, "");
-    if (message.length === 0) {
+    const code = classifyError(error);
+    if (code === "UNEXPECTED") {
       console.error(error);
-      throw new GraphQLError("Request failed.");
     }
-    throw new GraphQLError(message);
+    throw publicGraphQLError(code);
   }
 };

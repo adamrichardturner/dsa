@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { oauthErrorMessage, safeReturnPath } from "@/lib/oauth";
 import { REDEEM_OAUTH_CODE } from "@/lib/operations";
 import type { AuthPayload } from "@/lib/types";
@@ -60,7 +61,9 @@ export function OAuthCallback() {
     void redeem({ code }).then((result) => {
       const payload = result.data?.redeemOAuthCode;
       if (payload === undefined) {
-        setMessage(result.error?.message ?? oauthErrorMessage("provider", provider));
+        setMessage(
+          graphqlErrorMessage(result.error, oauthErrorMessage("provider", provider)),
+        );
         return;
       }
       signIn(payload.token, payload.user);

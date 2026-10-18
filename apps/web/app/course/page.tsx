@@ -8,6 +8,7 @@ import { CompletionTick } from "@/components/completion-tick";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useRequireUser } from "@/lib/auth";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { MODULES_QUERY } from "@/lib/operations";
 import type { LessonSummary, ModuleView } from "@/lib/types";
 
@@ -167,7 +168,9 @@ export default function CoursePage() {
     return (
       <main className="mx-auto max-w-3xl px-6 py-12">
         <Alert variant="destructive">
-          <AlertDescription>{result.error.message}</AlertDescription>
+          <AlertDescription>
+            {graphqlErrorMessage(result.error, "Could not load the course.")}
+          </AlertDescription>
         </Alert>
       </main>
     );

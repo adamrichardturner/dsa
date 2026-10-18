@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { REQUEST_PASSWORD_RESET } from "@/lib/operations";
 
 export default function ForgotPasswordPage() {
@@ -71,7 +72,9 @@ export default function ForgotPasswordPage() {
             </div>
             {result.error !== undefined ? (
               <Alert variant="destructive">
-                <AlertDescription>{result.error.message}</AlertDescription>
+                <AlertDescription>
+                  {graphqlErrorMessage(result.error, "Could not send a reset link. Try again.")}
+                </AlertDescription>
               </Alert>
             ) : null}
             <Button type="submit" className="h-10 w-full" disabled={result.fetching}>

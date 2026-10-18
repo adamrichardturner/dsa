@@ -47,6 +47,7 @@ import {
   type SplitOrientation,
 } from "@/components/split-toggle";
 import { getEditorTheme, type EditorThemeId } from "@/lib/editor-themes";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { annotateLesson } from "@/lib/lesson-keywords";
 import { currentLessonFrom } from "@/lib/lesson-return";
 import { useLessonDraft } from "@/hooks/use-lesson-draft";
@@ -213,7 +214,9 @@ export function Workspace({ slug }: { readonly slug: string }) {
         {bar}
         <div className="space-y-4 p-6">
           <Alert>
-            <AlertDescription>{result.error.message}</AlertDescription>
+            <AlertDescription>
+              {graphqlErrorMessage(result.error, "Could not load that lesson.")}
+            </AlertDescription>
           </Alert>
           <Link
             href="/course"
@@ -256,7 +259,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
     if (next === undefined) {
       setNotice({
         kind: "error",
-        message: response.error?.message ?? "Could not check that solution.",
+        message: graphqlErrorMessage(response.error, "Could not check that solution."),
       });
       return;
     }
@@ -280,7 +283,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
     if (next === undefined) {
       setTerminal({
         kind: "failed",
-        message: response.error?.message ?? "Could not run that code.",
+        message: graphqlErrorMessage(response.error, "Could not run that code."),
       });
       return;
     }

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OAuthButtons } from "@/components/oauth-buttons";
 import { useAuth } from "@/lib/auth";
+import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { SIGN_IN, SIGN_UP } from "@/lib/operations";
 import type { AuthPayload } from "@/lib/types";
 
@@ -30,7 +31,14 @@ export function AuthForm({
   const [signUpResult, signUp] = useMutation<{ signUp: AuthPayload }>(SIGN_UP);
   const [signInResult, signInMutation] = useMutation<{ signIn: AuthPayload }>(SIGN_IN);
   const pending = signUpResult.fetching || signInResult.fetching;
-  const error = signUpResult.error?.message ?? signInResult.error?.message ?? null;
+  const failure = signUpResult.error ?? signInResult.error;
+  const error =
+    failure === undefined
+      ? null
+      : graphqlErrorMessage(
+          failure,
+          mode === "sign-up" ? "Could not create the account." : "Could not sign in.",
+        );
   const title = mode === "sign-up" ? "Create your account" : "Welcome back";
 
   if (pending) {
