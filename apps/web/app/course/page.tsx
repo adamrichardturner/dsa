@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import { useQuery } from "urql";
+import { AuditModeToggle } from "@/components/audit-mode-toggle";
 import { PageSpinner } from "@/components/page-spinner";
 import { CompletionTick } from "@/components/completion-tick";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -184,7 +185,7 @@ function WeekSection({ module }: { readonly module: ModuleView }) {
 
 export default function CoursePage() {
   const auth = useRequireUser();
-  const [result] = useQuery<{ modules: ModuleView[] }>({
+  const [result, reexecute] = useQuery<{ modules: ModuleView[] }>({
     query: MODULES_QUERY,
     pause: auth.user === null,
     requestPolicy: "cache-and-network",
@@ -220,10 +221,16 @@ export default function CoursePage() {
           Four weeks, one desk.
         </h1>
         <p className="max-w-xl text-muted-foreground">
-          Work in order. A dashed row stays locked until the lesson before it is
+          Work in order, or turn on audit mode to open any lesson. With audit
+          mode off, a dashed row stays locked until the lesson before it is
           passed or skipped. A skip opens the next lesson and earns no points.
           A green tick stays once a lesson actually passes.
         </p>
+        <AuditModeToggle
+          onChanged={() => {
+            reexecute({ requestPolicy: "network-only" });
+          }}
+        />
       </div>
       {modules.map((module) => (
         <WeekSection key={module.id} module={module} />

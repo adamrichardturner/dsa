@@ -13,6 +13,7 @@ const statements: readonly string[] = [
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS audit_mode BOOLEAN NOT NULL DEFAULT FALSE`,
   `ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL`,
   `CREATE TABLE IF NOT EXISTS oauth_identities (
     id TEXT PRIMARY KEY,

@@ -49,6 +49,7 @@ const isUserRecord = (
   hasPassword?: unknown;
   providers?: unknown;
   isAdmin?: unknown;
+  auditMode?: unknown;
 } => {
   if (!isRecord(value)) {
     return false;
@@ -68,6 +69,7 @@ const toUser = (value: {
   hasPassword?: unknown;
   providers?: unknown;
   isAdmin?: unknown;
+  auditMode?: unknown;
 }): User => {
   const avatarUrl = value.avatarUrl;
   const trimmed = typeof avatarUrl === "string" ? avatarUrl.trim() : "";
@@ -79,6 +81,7 @@ const toUser = (value: {
     hasPassword: typeof value.hasPassword === "boolean" ? value.hasPassword : true,
     providers: readProviders(value.providers),
     isAdmin: value.isAdmin === true,
+    auditMode: value.auditMode === true,
   };
 };
 

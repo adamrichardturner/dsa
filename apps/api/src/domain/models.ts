@@ -10,6 +10,7 @@ export interface PublicUser {
   readonly hasPassword: boolean;
   readonly providers: readonly OauthProvider[];
   readonly isAdmin: boolean;
+  readonly auditMode: boolean;
 }
 
 export interface AuthResult {

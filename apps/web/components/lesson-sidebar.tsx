@@ -11,6 +11,7 @@ import {
 } from "react";
 import { BookOpen, Lock, PanelLeft, PanelLeftClose } from "lucide-react";
 import { useQuery } from "urql";
+import { AuditModeToggle } from "@/components/audit-mode-toggle";
 import { CompletionTick } from "@/components/completion-tick";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -470,6 +471,7 @@ function LessonSidebar({
             className="gap-0"
           />
         ) : null}
+        <AuditModeControl />
       </SidebarHeader>
       <SidebarContent>
         <SyllabusList
@@ -492,12 +494,17 @@ function LessonSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
         <p className="px-2 pb-1 text-[11px] leading-relaxed text-sidebar-foreground/60">
-          A lesson stays locked until the one before it is passed or skipped. A skip does not earn points.
+          With audit mode off, a lesson stays locked until the one before it is passed or skipped. A skip does not earn points.
         </p>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );
+}
+
+function AuditModeControl() {
+  const refresh = useRefreshSyllabus();
+  return <AuditModeToggle onChanged={refresh} />;
 }
 
 export function LessonSidebarFrame({

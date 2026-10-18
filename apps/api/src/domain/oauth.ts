@@ -46,6 +46,7 @@ const UserRow = Schema.Struct({
   name: Schema.String,
   passwordHash: Schema.NullOr(Schema.String),
   avatarUrl: Schema.NullOr(Schema.String),
+  auditMode: Schema.Boolean,
 });
 
 const IdentityRow = Schema.Struct({
@@ -431,7 +432,8 @@ export class OAuth extends Context.Service<
               email,
               name,
               password_hash AS "passwordHash",
-              avatar_url AS "avatarUrl"
+              avatar_url AS "avatarUrl",
+              audit_mode AS "auditMode"
             FROM users
             WHERE email = ${request.email}
           `,
@@ -462,7 +464,8 @@ export class OAuth extends Context.Service<
               email,
               name,
               password_hash AS "passwordHash",
-              avatar_url AS "avatarUrl"
+              avatar_url AS "avatarUrl",
+              audit_mode AS "auditMode"
             FROM users
             WHERE id = ${request.id}
           `,
@@ -635,6 +638,7 @@ export class OAuth extends Context.Service<
             hasPassword: row.passwordHash !== null,
             providers: linkedProviders,
             isAdmin: isAdminEmail(row.email),
+            auditMode: row.auditMode,
           };
           return user;
         });

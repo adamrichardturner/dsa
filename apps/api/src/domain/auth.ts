@@ -61,6 +61,7 @@ const UserRow = Schema.Struct({
   name: Schema.String,
   passwordHash: Schema.NullOr(Schema.String),
   avatarUrl: Schema.NullOr(Schema.String),
+  auditMode: Schema.Boolean,
 });
 
 const deriveKey = (password: string, salt: string): Promise<Buffer> =>
@@ -200,6 +201,9 @@ export class Auth extends Context.Service<
     updateProfile(
       input: UpdateProfileInput,
     ): Effect.Effect<PublicUser, BadInput | EmailTaken | Unauthorized | Unexpected, RequestAuth>;
+    setAuditMode(
+      enabled: boolean,
+    ): Effect.Effect<PublicUser, Unauthorized | Unexpected, RequestAuth>;
     changePassword(
       input: ChangePasswordInput,
     ): Effect.Effect<boolean, BadInput | InvalidCredentials | Unauthorized | Unexpected, RequestAuth>;
@@ -227,7 +231,8 @@ export class Auth extends Context.Service<
               email,
               name,
               password_hash AS "passwordHash",
-              avatar_url AS "avatarUrl"
+              avatar_url AS "avatarUrl",
+              audit_mode AS "auditMode"
             FROM users
             WHERE email = ${request.email}
           `,
@@ -283,7 +288,8 @@ export class Auth extends Context.Service<
               u.email,
               u.name,
               u.password_hash AS "passwordHash",
-              u.avatar_url AS "avatarUrl"
+              u.avatar_url AS "avatarUrl",
+              u.audit_mode AS "auditMode"
             FROM sessions AS s
             JOIN users AS u ON u.id = s.user_id
             WHERE s.token_hash = ${request.tokenHash}
@@ -307,7 +313,8 @@ export class Auth extends Context.Service<
               email,
               name,
               password_hash AS "passwordHash",
-              avatar_url AS "avatarUrl"
+              avatar_url AS "avatarUrl",
+              audit_mode AS "auditMode"
             FROM users
             WHERE id = ${request.id}
           `,
@@ -415,6 +422,7 @@ export class Auth extends Context.Service<
         readonly name: string;
         readonly passwordHash: string | null;
         readonly avatarUrl: string | null;
+        readonly auditMode: boolean;
       }) =>
         Effect.gen(function* () {
           const linked = yield* listProviderRows({ userId: row.id }).pipe(
@@ -434,6 +442,7 @@ export class Auth extends Context.Service<
             hasPassword: row.passwordHash !== null,
             providers,
             isAdmin: isAdminEmail(row.email),
+            auditMode: row.auditMode,
           };
         });
 
@@ -509,6 +518,7 @@ export class Auth extends Context.Service<
             name: user.name,
             passwordHash,
             avatarUrl: null,
+            auditMode: false,
           }),
         );
       });
@@ -618,6 +628,35 @@ export class Auth extends Context.Service<
           name,
           passwordHash: account.passwordHash,
           avatarUrl,
+          auditMode: account.auditMode,
+        });
+      });
+
+      const updateAuditMode = SqlSchema.void({
+        Request: Schema.Struct({
+          id: Schema.String,
+          auditMode: Schema.Boolean,
+        }),
+        execute: (request) =>
+          sql`
+            UPDATE users
+            SET audit_mode = ${request.auditMode}
+            WHERE id = ${request.id}
+          `,
+      });
+
+      const setAuditMode = Effect.fn("Auth.setAuditMode")(function* (enabled: boolean) {
+        const account = yield* loadAccount();
+        yield* updateAuditMode({ id: account.id, auditMode: enabled }).pipe(
+          failUnexpected("Could not update audit mode."),
+        );
+        return yield* withProviders({
+          id: account.id,
+          email: account.email,
+          name: account.name,
+          passwordHash: account.passwordHash,
+          avatarUrl: account.avatarUrl,
+          auditMode: enabled,
         });
       });
 
@@ -747,6 +786,7 @@ export class Auth extends Context.Service<
         signOut,
         currentUser,
         updateProfile,
+        setAuditMode,
         changePassword,
         deleteAccount,
         requestPasswordReset,

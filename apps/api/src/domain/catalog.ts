@@ -144,8 +144,9 @@ const openSlugs = (
   lessons: readonly OrderedLesson[],
   stats: Record<string, ProblemStat>,
   skippedByLesson: Record<string, boolean>,
+  auditMode: boolean,
 ): Record<string, boolean> =>
-  openLessonSlugs(lessons, solvedByLesson(lessons, stats), skippedByLesson);
+  openLessonSlugs(lessons, solvedByLesson(lessons, stats), skippedByLesson, auditMode);
 
 const slugForProblem = (lessons: readonly OrderedLesson[], problemId: string): string | null => {
   for (const lesson of lessons) {
@@ -335,6 +336,25 @@ export class Catalog extends Context.Service<
           `,
       });
 
+      const findAuditMode = SqlSchema.findAll({
+        Request: Schema.Struct({ userId: Schema.String }),
+        Result: Schema.Struct({ auditMode: Schema.Boolean }),
+        execute: (request) =>
+          sql`
+            SELECT audit_mode AS "auditMode"
+            FROM users
+            WHERE id = ${request.userId}
+          `,
+      });
+
+      const loadAuditMode = (userId: string) =>
+        Effect.gen(function* () {
+          const rows = yield* findAuditMode({ userId }).pipe(
+            failUnexpected("Could not load your account."),
+          );
+          return rows[0]?.auditMode ?? false;
+        });
+
       const loadSkips = (userId: string) =>
         Effect.gen(function* () {
           const rows = yield* listSkips({ userId }).pipe(
@@ -380,7 +400,8 @@ export class Catalog extends Context.Service<
         const rows = yield* listOutline().pipe(failUnexpected("Could not load the course."));
         const stats = yield* loadStats(userId);
         const skips = yield* loadSkips(userId);
-        const open = openSlugs(orderedLessons(rows), stats, skips);
+        const auditMode = yield* loadAuditMode(userId);
+        const open = openSlugs(orderedLessons(rows), stats, skips, auditMode);
         const modules: Record<
           string,
           {
@@ -504,8 +525,9 @@ export class Catalog extends Context.Service<
         const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
         const stats = yield* loadStats(userId);
         const skips = yield* loadSkips(userId);
+        const auditMode = yield* loadAuditMode(userId);
         const sequence = orderedLessons(outline);
-        const open = openSlugs(sequence, stats, skips);
+        const open = openSlugs(sequence, stats, skips, auditMode);
         if (open[slug] !== true) {
           return yield* new NotFound({
             message: "Finish the previous lesson before opening this one.",
@@ -573,12 +595,13 @@ export class Catalog extends Context.Service<
         const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
         const stats = yield* loadStats(userId);
         const skips = yield* loadSkips(userId);
+        const auditMode = yield* loadAuditMode(userId);
         const sequence = orderedLessons(outline);
         const slug = slugForProblem(sequence, problemId);
         if (slug === null) {
           return yield* new NotFound({ message: "That exercise does not exist." });
         }
-        const open = openSlugs(sequence, stats, skips);
+        const open = openSlugs(sequence, stats, skips, auditMode);
         if (open[slug] === true) {
           return;
         }
@@ -599,8 +622,9 @@ export class Catalog extends Context.Service<
         const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
         const stats = yield* loadStats(userId);
         const skips = yield* loadSkips(userId);
+        const auditMode = yield* loadAuditMode(userId);
         const sequence = orderedLessons(outline);
-        const open = openSlugs(sequence, stats, skips);
+        const open = openSlugs(sequence, stats, skips, auditMode);
         if (open[slug] !== true) {
           return yield* new NotFound({
             message: "Finish the previous lesson before skipping this one.",
@@ -612,7 +636,7 @@ export class Catalog extends Context.Service<
         );
 
         const nextSkips: Record<string, boolean> = { ...skips, [lesson.id]: true };
-        const nextOpen = openSlugs(sequence, stats, nextSkips);
+        const nextOpen = openSlugs(sequence, stats, nextSkips, auditMode);
         const index = sequence.findIndex((item) => item.slug === slug);
         const next = index >= 0 ? sequence[index + 1] : undefined;
         const nextSlug = next?.slug ?? null;

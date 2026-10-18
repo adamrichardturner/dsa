@@ -12,12 +12,13 @@ export const openLessonSlugs = (
   lessons: readonly GateLesson[],
   solvedByLesson: Record<string, boolean>,
   skippedByLesson: Record<string, boolean>,
+  auditMode: boolean,
 ): Record<string, boolean> => {
   const open: Record<string, boolean> = {};
   let reachable = true;
 
   for (const lesson of lessons) {
-    open[lesson.slug] = reachable;
+    open[lesson.slug] = auditMode || reachable;
     const solved = solvedByLesson[lesson.id] === true;
     const skipped = skippedByLesson[lesson.id] === true;
     reachable = solved || skipped;

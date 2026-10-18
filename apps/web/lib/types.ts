@@ -8,6 +8,7 @@ export interface User {
   readonly hasPassword: boolean;
   readonly providers: readonly OauthProvider[];
   readonly isAdmin: boolean;
+  readonly auditMode: boolean;
 }
 
 export interface AuthPayload {

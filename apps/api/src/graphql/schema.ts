@@ -33,6 +33,7 @@ const UserType = new GraphQLObjectType({
     hasPassword: { type: new GraphQLNonNull(GraphQLBoolean) },
     providers: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))) },
     isAdmin: { type: new GraphQLNonNull(GraphQLBoolean) },
+    auditMode: { type: new GraphQLNonNull(GraphQLBoolean) },
   },
 });
 
@@ -310,6 +311,13 @@ const requireString = (value: unknown, message: string): string => {
   return value;
 };
 
+const requireBoolean = (value: unknown, message: string): boolean => {
+  if (typeof value !== "boolean") {
+    throw new Error(message);
+  }
+  return value;
+};
+
 export const schema = new GraphQLSchema({
   query: new GraphQLObjectType({
     name: "Query",
@@ -451,6 +459,17 @@ export const schema = new GraphQLSchema({
           execute(
             context.token,
             Auth.use((auth) => auth.signOut),
+          ),
+      },
+      setAuditMode: {
+        type: new GraphQLNonNull(UserType),
+        args: {
+          enabled: { type: new GraphQLNonNull(GraphQLBoolean) },
+        },
+        resolve: (_parent, args: { enabled?: unknown }, context: GraphQLContext) =>
+          execute(
+            context.token,
+            Auth.use((auth) => auth.setAuditMode(requireBoolean(args.enabled, "Missing audit mode."))),
           ),
       },
       updateProfile: {

@@ -118,6 +118,8 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const searchParams = useSearchParams();
   const articleFrom = currentLessonFrom(pathname, searchParams.toString());
   const auth = useRequireUser();
+  const auditMode = auth.user?.auditMode ?? false;
+  const auditModeRef = useRef(auditMode);
   const [result, reexecute] = useQuery<{ lesson: LessonView | null }>({
     query: LESSON_QUERY,
     variables: { slug },
@@ -130,6 +132,25 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [runState, runCode] = useMutation<{
     runCode: { readonly lines: readonly { readonly kind: string; readonly text: string }[] };
   }>(RUN_CODE);
+  useEffect(() => {
+    if (auditModeRef.current === auditMode) {
+      return;
+    }
+    auditModeRef.current = auditMode;
+    reexecute({ requestPolicy: "network-only" });
+  }, [auditMode, reexecute]);
+
+  useEffect(() => {
+    if (result.error === undefined) {
+      return;
+    }
+    const message = graphqlErrorMessage(result.error, "");
+    if (message !== "Finish the previous lesson before opening this one.") {
+      return;
+    }
+    router.replace("/course");
+  }, [result.error, router]);
+
   const lesson = result.data?.lesson ?? null;
   const problem = lesson?.problems[0];
   const [code, setCode] = useState("");

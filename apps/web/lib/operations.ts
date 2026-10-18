@@ -6,6 +6,7 @@ const userFields = `
   hasPassword
   providers
   isAdmin
+  auditMode
 `;
 
 export const ME_QUERY = `
@@ -135,6 +136,12 @@ export const REDEEM_OAUTH_CODE = `
       token
       user {${userFields}}
     }
+  }
+`;
+
+export const SET_AUDIT_MODE = `
+  mutation SetAuditMode($enabled: Boolean!) {
+    setAuditMode(enabled: $enabled) {${userFields}}
   }
 `;
 
