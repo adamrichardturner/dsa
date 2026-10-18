@@ -231,20 +231,13 @@
   text-underline-offset: 0.2em;
 }
 
-.keyword-tip {
-  position: relative;
-  display: inline;
+.keyword-panel-positioner {
+  z-index: 50;
 }
 
 .keyword-panel {
-  position: absolute;
-  z-index: 40;
-  top: 100%;
-  left: 0;
-  display: none;
   width: 18rem;
   max-width: min(18rem, 70vw);
-  padding-top: 0.35rem;
   text-align: left;
   font-weight: 400;
   font-style: normal;
@@ -253,12 +246,8 @@
   line-height: 1.45;
 }
 
-.keyword-tip:hover > .keyword-panel,
-.keyword-tip:focus-within > .keyword-panel {
-  display: block;
-}
-
 .keyword-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -266,10 +255,16 @@
   border-radius: var(--radius-xl);
   background: var(--popover);
   color: var(--popover-foreground);
-  padding: 0.75rem 0.85rem;
+  padding: 0.75rem 2.65rem 0.75rem 0.85rem;
   box-shadow:
     0 12px 32px oklch(0 0 0 / 12%),
     0 1px 2px oklch(0 0 0 / 8%);
+}
+
+.keyword-open {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.35rem;
 }
 
 .keyword-kicker {
