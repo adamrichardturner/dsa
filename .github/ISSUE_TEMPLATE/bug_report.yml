@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in the course, a lesson, or the desk is wrong.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. A clear report is as useful as a patch.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+      placeholder: I submitted Two sum with an empty array and the runner...
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The page, lesson, or article. A URL is ideal.
+      placeholder: https://datastructuresandalgorithms.com
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - A lesson or exercise
+        - An article
+        - The editor or desk
+        - Sign-in or progress
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Browser, screenshot, or the code you submitted. Leave out passwords and tokens.
+    validations:
+      required: false

@@ -1,0 +1,36 @@
+name: Change request
+description: A lesson, article, or part of the desk that should work differently.
+title: "[Change] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open an issue before a large pull request. Small, focused changes are easier to review.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is missing or awkward
+      description: The lesson, article, or screen, and what a learner runs into.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would change
+      description: The smallest change that would fix it.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - A lesson or exercise
+        - An article
+        - The editor or desk
+        - Sign-in or progress
+        - Something else
+    validations:
+      required: true
