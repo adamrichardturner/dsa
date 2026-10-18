@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type UIEvent } from "react";
+import { useLayoutEffect, useRef, useState, type UIEvent } from "react";
 import { useMutation } from "urql";
 import { CodeRunner } from "@/components/code-runner";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
@@ -22,13 +22,29 @@ import type { SkipResult } from "@/lib/types";
 const submitButtonClass = "h-10 px-5";
 
 const nearEnd = (node: HTMLElement): boolean =>
+  node.clientHeight > 0 &&
   node.scrollHeight - node.scrollTop - node.clientHeight < 32;
+
+const dialogShell = (scroller: HTMLElement | null): HTMLElement | true => {
+  if (scroller === null) {
+    return true;
+  }
+  const popup = scroller.closest("[data-slot='dialog-content']");
+  if (!(popup instanceof HTMLElement)) {
+    return true;
+  }
+  return popup;
+};
 
 function SolutionBody({ solution }: { readonly solution: LessonSolution }) {
   return (
     <div className="space-y-5">
       {solution.blocks.map((block, index) => (
-        <SolutionPiece key={`${block.kind}-${index}`} slug={solution.slug} block={block} />
+        <SolutionPiece
+          key={`${block.kind}-${index}`}
+          slug={solution.slug}
+          block={block}
+        />
       ))}
     </div>
   );
@@ -86,21 +102,39 @@ function SolutionPanel({
   readonly onSkipped: (result: SkipResult) => void;
 }) {
   const solution = solutionFor(slug);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [reached, setReached] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [skipState, skipLesson] = useMutation<{ skipLesson: SkipResult }>(SKIP_LESSON);
+  const [skipState, skipLesson] = useMutation<{ skipLesson: SkipResult }>(
+    SKIP_LESSON,
+  );
 
-  const noteScroll = (node: HTMLElement) => {
+  useLayoutEffect(() => {
+    const node = scrollerRef.current;
+    if (node === null) {
+      return;
+    }
+    node.scrollTop = 0;
+    if (nearEnd(node)) {
+      setReached(true);
+    }
+  }, []);
+
+  const onScroll = (event: UIEvent<HTMLDivElement>) => {
     if (reached) {
       return;
     }
-    if (nearEnd(node)) {
+    if (nearEnd(event.currentTarget)) {
       setReached(true);
     }
   };
 
-  const onScroll = (event: UIEvent<HTMLDivElement>) => {
-    noteScroll(event.currentTarget);
+  const revealActions = (node: HTMLDivElement | null) => {
+    const scroller = scrollerRef.current;
+    if (node === null || scroller === null || scroller.scrollTop === 0) {
+      return;
+    }
+    node.scrollIntoView({ block: "end" });
   };
 
   const onSkip = async () => {
@@ -108,50 +142,49 @@ function SolutionPanel({
     const response = await skipLesson({ slug });
     const result = response.data?.skipLesson;
     if (result === undefined) {
-      setError(graphqlErrorMessage(response.error, "Could not skip that lesson."));
+      setError(
+        graphqlErrorMessage(response.error, "Could not skip that lesson."),
+      );
       return;
     }
     onSkipped(result);
   };
 
   return (
-    <DialogContent className="h-[min(85vh,880px)] max-h-[min(85vh,880px)] gap-0 overflow-hidden p-0 sm:max-w-3xl">
+    <DialogContent
+      initialFocus={() => dialogShell(scrollerRef.current)}
+      className="h-[min(85vh,880px)] max-h-[min(85vh,880px)] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+    >
       <div className="space-y-1 border-b px-6 py-5">
         <DialogTitle>Solution explanation</DialogTitle>
         <DialogDescription>{title}</DialogDescription>
       </div>
       <div
-        ref={(node) => {
-          if (node === null) {
-            return;
-          }
-          noteScroll(node);
-        }}
+        ref={scrollerRef}
         className="min-h-0 flex-1 overflow-y-auto px-6 py-6"
         onScroll={onScroll}
       >
         {solution === null ? (
-          <p className="text-sm leading-7">This lesson does not have a written explanation yet.</p>
+          <p className="text-sm leading-7">
+            This lesson does not have a written explanation yet.
+          </p>
         ) : (
           <SolutionBody solution={solution} />
         )}
         <div className="h-6" />
         {reached ? (
           <div
-            ref={(node) => {
-              if (node === null) {
-                return;
-              }
-              node.scrollIntoView({ block: "end" });
-            }}
+            ref={revealActions}
             className="animate-in fade-in-0 slide-in-from-bottom-2 space-y-4 duration-300"
           >
             <p className="text-sm leading-7 text-muted-foreground">
-              Close keeps this lesson open so you can keep trying. Skip lesson records a skip. It
-              is not a pass, and it does not earn points. The next lesson opens, and you can come
-              back to finish this one.
+              Close keeps this lesson open so you can keep trying. Skip lesson
+              records a skip. It is not a pass, and it does not earn points. The
+              next lesson opens, and you can come back to finish this one.
             </p>
-            {error !== null ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error !== null ? (
+              <p className="text-sm text-destructive">{error}</p>
+            ) : null}
             <div className="grid grid-cols-2 gap-3">
               <Button
                 type="button"
@@ -171,7 +204,9 @@ function SolutionPanel({
                   void onSkip();
                 }}
               >
-                {skipState.fetching ? <Spinner data-icon="inline-start" /> : null}
+                {skipState.fetching ? (
+                  <Spinner data-icon="inline-start" />
+                ) : null}
                 Skip lesson
               </Button>
             </div>

@@ -31,7 +31,11 @@ const UserType = new GraphQLObjectType({
     name: { type: new GraphQLNonNull(GraphQLString) },
     avatarUrl: { type: GraphQLString },
     hasPassword: { type: new GraphQLNonNull(GraphQLBoolean) },
-    providers: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))) },
+    providers: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GraphQLString)),
+      ),
+    },
     isAdmin: { type: new GraphQLNonNull(GraphQLBoolean) },
     auditMode: { type: new GraphQLNonNull(GraphQLBoolean) },
     onboardingCompleted: { type: new GraphQLNonNull(GraphQLBoolean) },
@@ -57,8 +61,6 @@ const LessonSummaryType = new GraphQLObjectType({
     completed: { type: new GraphQLNonNull(GraphQLBoolean) },
     skipped: { type: new GraphQLNonNull(GraphQLBoolean) },
     available: { type: new GraphQLNonNull(GraphQLBoolean) },
-    stars: { type: new GraphQLNonNull(GraphQLInt) },
-    maxStars: { type: new GraphQLNonNull(GraphQLInt) },
   },
 });
 
@@ -69,7 +71,11 @@ const ModuleType = new GraphQLObjectType({
     title: { type: new GraphQLNonNull(GraphQLString) },
     summary: { type: new GraphQLNonNull(GraphQLString) },
     weekNumber: { type: new GraphQLNonNull(GraphQLInt) },
-    lessons: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(LessonSummaryType))) },
+    lessons: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(LessonSummaryType)),
+      ),
+    },
   },
 });
 
@@ -90,8 +96,11 @@ const ProblemType = new GraphQLObjectType({
     starterCode: { type: new GraphQLNonNull(GraphQLString) },
     difficulty: { type: new GraphQLNonNull(GraphQLString) },
     topic: { type: new GraphQLNonNull(GraphQLString) },
-    examples: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(ExampleType))) },
-    bestStars: { type: new GraphQLNonNull(GraphQLInt) },
+    examples: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ExampleType)),
+      ),
+    },
     solved: { type: new GraphQLNonNull(GraphQLBoolean) },
     attempts: { type: new GraphQLNonNull(GraphQLInt) },
     failedAttempts: { type: new GraphQLNonNull(GraphQLInt) },
@@ -108,6 +117,7 @@ const LessonType = new GraphQLObjectType({
     title: { type: new GraphQLNonNull(GraphQLString) },
     summary: { type: new GraphQLNonNull(GraphQLString) },
     contentMd: { type: new GraphQLNonNull(GraphQLString) },
+    bitesizeMd: { type: new GraphQLNonNull(GraphQLString) },
     estimatedMinutes: { type: new GraphQLNonNull(GraphQLInt) },
     weekNumber: { type: new GraphQLNonNull(GraphQLInt) },
     moduleTitle: { type: new GraphQLNonNull(GraphQLString) },
@@ -116,7 +126,11 @@ const LessonType = new GraphQLObjectType({
     previousSlug: { type: GraphQLString },
     nextSlug: { type: GraphQLString },
     nextAvailable: { type: new GraphQLNonNull(GraphQLBoolean) },
-    problems: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(ProblemType))) },
+    problems: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ProblemType)),
+      ),
+    },
   },
 });
 
@@ -142,7 +156,11 @@ const RunLineType = new GraphQLObjectType({
 const CodeRunType = new GraphQLObjectType({
   name: "CodeRun",
   fields: {
-    lines: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(RunLineType))) },
+    lines: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(RunLineType)),
+      ),
+    },
   },
 });
 
@@ -151,11 +169,14 @@ const SubmissionType = new GraphQLObjectType({
   fields: {
     id: { type: new GraphQLNonNull(GraphQLID) },
     passed: { type: new GraphQLNonNull(GraphQLBoolean) },
-    stars: { type: new GraphQLNonNull(GraphQLInt) },
     testsPassed: { type: new GraphQLNonNull(GraphQLInt) },
     testsTotal: { type: new GraphQLNonNull(GraphQLInt) },
     feedback: { type: new GraphQLNonNull(GraphQLString) },
-    results: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(TestResultType))) },
+    results: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(TestResultType)),
+      ),
+    },
     createdAt: { type: new GraphQLNonNull(GraphQLString) },
   },
 });
@@ -167,8 +188,6 @@ const TopicStatType = new GraphQLObjectType({
     solved: { type: new GraphQLNonNull(GraphQLInt) },
     total: { type: new GraphQLNonNull(GraphQLInt) },
     attempted: { type: new GraphQLNonNull(GraphQLInt) },
-    stars: { type: new GraphQLNonNull(GraphQLInt) },
-    maxStars: { type: new GraphQLNonNull(GraphQLInt) },
   },
 });
 
@@ -180,6 +199,48 @@ const SkippedLessonType = new GraphQLObjectType({
   },
 });
 
+const ActivityDayType = new GraphQLObjectType({
+  name: "ActivityDay",
+  fields: {
+    day: { type: new GraphQLNonNull(GraphQLString) },
+    submissions: { type: new GraphQLNonNull(GraphQLInt) },
+    passes: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const DifficultyStatType = new GraphQLObjectType({
+  name: "DifficultyStat",
+  fields: {
+    difficulty: { type: new GraphQLNonNull(GraphQLString) },
+    label: { type: new GraphQLNonNull(GraphQLString) },
+    solved: { type: new GraphQLNonNull(GraphQLInt) },
+    total: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const LessonStatType = new GraphQLObjectType({
+  name: "LessonStat",
+  fields: {
+    slug: { type: new GraphQLNonNull(GraphQLString) },
+    title: { type: new GraphQLNonNull(GraphQLString) },
+    weekNumber: { type: new GraphQLNonNull(GraphQLInt) },
+    moduleTitle: { type: new GraphQLNonNull(GraphQLString) },
+    solved: { type: new GraphQLNonNull(GraphQLInt) },
+    total: { type: new GraphQLNonNull(GraphQLInt) },
+    skipped: { type: new GraphQLNonNull(GraphQLBoolean) },
+  },
+});
+
+const ImprovementType = new GraphQLObjectType({
+  name: "Improvement",
+  fields: {
+    kind: { type: new GraphQLNonNull(GraphQLString) },
+    title: { type: new GraphQLNonNull(GraphQLString) },
+    detail: { type: new GraphQLNonNull(GraphQLString) },
+    href: { type: new GraphQLNonNull(GraphQLString) },
+  },
+});
+
 const AnalyticsType = new GraphQLObjectType({
   name: "Analytics",
   fields: {
@@ -187,16 +248,46 @@ const AnalyticsType = new GraphQLObjectType({
     lessonsTotal: { type: new GraphQLNonNull(GraphQLInt) },
     problemsSolved: { type: new GraphQLNonNull(GraphQLInt) },
     problemsTotal: { type: new GraphQLNonNull(GraphQLInt) },
-    stars: { type: new GraphQLNonNull(GraphQLInt) },
-    maxStars: { type: new GraphQLNonNull(GraphQLInt) },
     attempts: { type: new GraphQLNonNull(GraphQLInt) },
     passRate: { type: new GraphQLNonNull(GraphQLFloat) },
-    topics: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(TopicStatType))) },
-    focusAreas: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))) },
+    streak: { type: new GraphQLNonNull(GraphQLInt) },
+    activeDays: { type: new GraphQLNonNull(GraphQLInt) },
+    topics: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(TopicStatType)),
+      ),
+    },
+    focusAreas: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GraphQLString)),
+      ),
+    },
     summary: { type: new GraphQLNonNull(GraphQLString) },
     lessonsSkipped: { type: new GraphQLNonNull(GraphQLInt) },
     skippedLessons: {
-      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(SkippedLessonType))),
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(SkippedLessonType)),
+      ),
+    },
+    activity: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ActivityDayType)),
+      ),
+    },
+    difficulties: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(DifficultyStatType)),
+      ),
+    },
+    lessons: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(LessonStatType)),
+      ),
+    },
+    improvements: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(ImprovementType)),
+      ),
     },
   },
 });
@@ -265,20 +356,26 @@ const AdminUserType = new GraphQLObjectType({
     name: { type: new GraphQLNonNull(GraphQLString) },
     avatarUrl: { type: GraphQLString },
     hasPassword: { type: new GraphQLNonNull(GraphQLBoolean) },
-    providers: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))) },
+    providers: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GraphQLString)),
+      ),
+    },
     createdAt: { type: new GraphQLNonNull(GraphQLString) },
     lastActiveAt: { type: GraphQLString },
     lessonsCompleted: { type: new GraphQLNonNull(GraphQLInt) },
     lessonsTotal: { type: new GraphQLNonNull(GraphQLInt) },
     problemsSolved: { type: new GraphQLNonNull(GraphQLInt) },
     problemsTotal: { type: new GraphQLNonNull(GraphQLInt) },
-    stars: { type: new GraphQLNonNull(GraphQLInt) },
-    maxStars: { type: new GraphQLNonNull(GraphQLInt) },
     attempts: { type: new GraphQLNonNull(GraphQLInt) },
     passes: { type: new GraphQLNonNull(GraphQLInt) },
     passRate: { type: new GraphQLNonNull(GraphQLFloat) },
     deletable: { type: new GraphQLNonNull(GraphQLBoolean) },
-    topics: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminUserTopicType))) },
+    topics: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(AdminUserTopicType)),
+      ),
+    },
   },
 });
 
@@ -295,13 +392,31 @@ const AdminOverviewType = new GraphQLObjectType({
     passRate: { type: new GraphQLNonNull(GraphQLFloat) },
     lessonsCompletedAverage: { type: new GraphQLNonNull(GraphQLFloat) },
     problemsSolvedAverage: { type: new GraphQLNonNull(GraphQLFloat) },
-    series: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminDayPointType))) },
-    authMethods: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminAuthSliceType))) },
-    topics: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminTopicStatType))) },
-    progress: {
-      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminProgressBucketType))),
+    series: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(AdminDayPointType)),
+      ),
     },
-    users: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminUserType))) },
+    authMethods: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(AdminAuthSliceType)),
+      ),
+    },
+    topics: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(AdminTopicStatType)),
+      ),
+    },
+    progress: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(AdminProgressBucketType)),
+      ),
+    },
+    users: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(AdminUserType)),
+      ),
+    },
   },
 });
 
@@ -324,7 +439,9 @@ export const schema = new GraphQLSchema({
     name: "Query",
     fields: {
       oauthProviders: {
-        type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))),
+        type: new GraphQLNonNull(
+          new GraphQLList(new GraphQLNonNull(GraphQLString)),
+        ),
         resolve: (_parent, _args, context: GraphQLContext) =>
           execute(
             context.token,
@@ -345,7 +462,9 @@ export const schema = new GraphQLSchema({
           ),
       },
       modules: {
-        type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(ModuleType))),
+        type: new GraphQLNonNull(
+          new GraphQLList(new GraphQLNonNull(ModuleType)),
+        ),
         resolve: (_parent, _args, context: GraphQLContext) =>
           execute(
             context.token,
@@ -369,7 +488,10 @@ export const schema = new GraphQLSchema({
               const auth = yield* Auth;
               const catalog = yield* Catalog;
               const user = yield* auth.currentUser;
-              return yield* catalog.getLesson(user.id, requireString(args.slug, "Missing lesson."));
+              return yield* catalog.getLesson(
+                user.id,
+                requireString(args.slug, "Missing lesson."),
+              );
             }),
           ),
       },
@@ -451,7 +573,9 @@ export const schema = new GraphQLSchema({
         resolve: (_parent, args: { code?: unknown }, context: GraphQLContext) =>
           execute(
             context.token,
-            OAuth.use((oauth) => oauth.redeem(requireString(args.code, "Missing sign-in code."))),
+            OAuth.use((oauth) =>
+              oauth.redeem(requireString(args.code, "Missing sign-in code.")),
+            ),
           ),
       },
       signOut: {
@@ -475,10 +599,18 @@ export const schema = new GraphQLSchema({
         args: {
           enabled: { type: new GraphQLNonNull(GraphQLBoolean) },
         },
-        resolve: (_parent, args: { enabled?: unknown }, context: GraphQLContext) =>
+        resolve: (
+          _parent,
+          args: { enabled?: unknown },
+          context: GraphQLContext,
+        ) =>
           execute(
             context.token,
-            Auth.use((auth) => auth.setAuditMode(requireBoolean(args.enabled, "Missing audit mode."))),
+            Auth.use((auth) =>
+              auth.setAuditMode(
+                requireBoolean(args.enabled, "Missing audit mode."),
+              ),
+            ),
           ),
       },
       updateProfile: {
@@ -499,7 +631,8 @@ export const schema = new GraphQLSchema({
               auth.updateProfile({
                 name: requireString(args.name, "Name is required."),
                 email: requireString(args.email, "Email is required."),
-                avatarUrl: typeof args.avatarUrl === "string" ? args.avatarUrl : null,
+                avatarUrl:
+                  typeof args.avatarUrl === "string" ? args.avatarUrl : null,
               }),
             ),
           ),
@@ -519,8 +652,14 @@ export const schema = new GraphQLSchema({
             context.token,
             Auth.use((auth) =>
               auth.changePassword({
-                currentPassword: requireString(args.currentPassword, "Password is required."),
-                nextPassword: requireString(args.nextPassword, "Password is required."),
+                currentPassword: requireString(
+                  args.currentPassword,
+                  "Password is required.",
+                ),
+                nextPassword: requireString(
+                  args.nextPassword,
+                  "Password is required.",
+                ),
               }),
             ),
           ),
@@ -530,11 +669,17 @@ export const schema = new GraphQLSchema({
         args: {
           email: { type: new GraphQLNonNull(GraphQLString) },
         },
-        resolve: (_parent, args: { email?: unknown }, context: GraphQLContext) =>
+        resolve: (
+          _parent,
+          args: { email?: unknown },
+          context: GraphQLContext,
+        ) =>
           execute(
             context.token,
             Auth.use((auth) =>
-              auth.requestPasswordReset(requireString(args.email, "Email is required.")),
+              auth.requestPasswordReset(
+                requireString(args.email, "Email is required."),
+              ),
             ),
           ),
       },
@@ -553,7 +698,10 @@ export const schema = new GraphQLSchema({
             context.token,
             Auth.use((auth) =>
               auth.resetPassword({
-                token: requireString(args.token, "That reset link is invalid or has expired."),
+                token: requireString(
+                  args.token,
+                  "That reset link is invalid or has expired.",
+                ),
                 password: requireString(args.password, "Password is required."),
               }),
             ),
@@ -574,8 +722,12 @@ export const schema = new GraphQLSchema({
             context.token,
             Auth.use((auth) =>
               auth.deleteAccount({
-                password: typeof args.password === "string" ? args.password : null,
-                confirmation: typeof args.confirmation === "string" ? args.confirmation : null,
+                password:
+                  typeof args.password === "string" ? args.password : null,
+                confirmation:
+                  typeof args.confirmation === "string"
+                    ? args.confirmation
+                    : null,
               }),
             ),
           ),
@@ -585,11 +737,17 @@ export const schema = new GraphQLSchema({
         args: {
           userId: { type: new GraphQLNonNull(GraphQLID) },
         },
-        resolve: (_parent, args: { userId?: unknown }, context: GraphQLContext) =>
+        resolve: (
+          _parent,
+          args: { userId?: unknown },
+          context: GraphQLContext,
+        ) =>
           execute(
             context.token,
             Admin.use((admin) =>
-              admin.deleteAccount(requireString(args.userId, "That account does not exist.")),
+              admin.deleteAccount(
+                requireString(args.userId, "That account does not exist."),
+              ),
             ),
           ),
       },
@@ -611,7 +769,10 @@ export const schema = new GraphQLSchema({
               const catalog = yield* Catalog;
               const solutions = yield* Solutions;
               const user = yield* auth.currentUser;
-              const problemId = requireString(args.problemId, "Missing exercise.");
+              const problemId = requireString(
+                args.problemId,
+                "Missing exercise.",
+              );
               yield* catalog.assertProblemOpen(user.id, problemId);
               return yield* solutions.saveDraft(
                 user.id,
@@ -639,7 +800,10 @@ export const schema = new GraphQLSchema({
               const catalog = yield* Catalog;
               const solutions = yield* Solutions;
               const user = yield* auth.currentUser;
-              const problemId = requireString(args.problemId, "Missing exercise.");
+              const problemId = requireString(
+                args.problemId,
+                "Missing exercise.",
+              );
               yield* catalog.assertProblemOpen(user.id, problemId);
               return yield* solutions.submit(
                 user.id,
@@ -667,7 +831,10 @@ export const schema = new GraphQLSchema({
               const catalog = yield* Catalog;
               const solutions = yield* Solutions;
               const user = yield* auth.currentUser;
-              const problemId = requireString(args.problemId, "Missing exercise.");
+              const problemId = requireString(
+                args.problemId,
+                "Missing exercise.",
+              );
               yield* catalog.assertProblemOpen(user.id, problemId);
               return yield* solutions.run(
                 problemId,

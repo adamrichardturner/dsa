@@ -37,7 +37,6 @@ const ProblemStatRow = Schema.Struct({
   userId: Schema.String,
   problemId: Schema.String,
   solved: Schema.Boolean,
-  bestStars: Schema.Number,
   attempts: Schema.Number,
 });
 
@@ -123,7 +122,6 @@ export class Admin extends Context.Service<
               user_id AS "userId",
               problem_id AS "problemId",
               BOOL_OR(passed) AS solved,
-              MAX(stars)::int AS "bestStars",
               COUNT(*)::int AS attempts
             FROM submissions
             GROUP BY user_id, problem_id

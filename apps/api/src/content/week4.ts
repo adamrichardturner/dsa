@@ -1,4 +1,5 @@
 import type { SeedModule } from "./types.js";
+import { bitesize } from "./bitesize.js";
 
 export const week4: SeedModule = {
   id: "patterns",
@@ -10,8 +11,10 @@ export const week4: SeedModule = {
       id: "greedy",
       slug: "greedy",
       title: "Greedy choices",
-      summary: "Take the local option that you can prove does not block a better future.",
+      summary:
+        "Take the local option that you can prove does not block a better future.",
       estimatedMinutes: 35,
+      bitesizeMd: bitesize.greedy,
       contentMd: `
 A greedy algorithm makes the choice that looks best right now and does not take it back. It is fast when the local choice is safe. It is wrong when a patient choice would have opened a better path later. The skill is telling those problems apart, not applying "sort and scan" to everything.
 
@@ -92,6 +95,7 @@ Touching is allowed: \`[1, 2]\` and \`[2, 4]\` can both be chosen. An empty list
       title: "Backtracking",
       summary: "Choose, explore, then undo the choice.",
       estimatedMinutes: 40,
+      bitesizeMd: bitesize.backtracking,
       contentMd: `
 Backtracking searches a tree of decisions. At each step you choose, recurse, then undo so the next choice starts from a clean state. It is depth-first search on decisions you are generating, rather than on a graph you were given.
 
@@ -175,6 +179,7 @@ The order of subsets, and the order inside each subset, does not matter. Include
       title: "Dynamic programming",
       summary: "Solve the small problems once, and reuse the answers.",
       estimatedMinutes: 45,
+      bitesizeMd: bitesize.dynamicProgramming,
       contentMd: `
 Dynamic programming applies when a problem is made of smaller problems that **overlap**. Recursion still describes the answer. The difference from backtracking is that you store results instead of exploring the same state twice.
 
@@ -247,6 +252,7 @@ You can climb 1 or 2 steps at a time. Return how many distinct ways there are to
       title: "Tries",
       summary: "A tree of characters, for looking words up by their spelling.",
       estimatedMinutes: 40,
+      bitesizeMd: bitesize.tries,
       contentMd: `
 A trie (pronounced "try") is a tree where each edge is a character. Words that share a prefix share the path from the root. \`cat\` and \`car\` share the \`c → a\` path, then split into \`t\` and \`r\`.
 

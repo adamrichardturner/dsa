@@ -28,6 +28,7 @@ export interface SeedLesson {
   readonly title: string;
   readonly summary: string;
   readonly contentMd: string;
+  readonly bitesizeMd: string;
   readonly estimatedMinutes: number;
   readonly problems: readonly SeedProblem[];
 }

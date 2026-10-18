@@ -18,10 +18,6 @@ const ProblemRow = Schema.Struct({
   disallowJson: Schema.String,
 });
 
-const CountRow = Schema.Struct({
-  attempts: Schema.Number,
-});
-
 const StoredTest = Schema.Struct({
   name: Schema.String,
   args: Schema.Array(Schema.Unknown),
@@ -39,19 +35,6 @@ const failUnexpected = (message: string) => <A, E, R>(effect: Effect.Effect<A, E
   );
 
 const maxDraftLength = 100_000;
-
-const starsFor = (passed: boolean, previousAttempts: number): number => {
-  if (!passed) {
-    return 0;
-  }
-  if (previousAttempts === 0) {
-    return 3;
-  }
-  if (previousAttempts < 3) {
-    return 2;
-  }
-  return 1;
-};
 
 export class Solutions extends Context.Service<
   Solutions,
@@ -92,21 +75,6 @@ export class Solutions extends Context.Service<
           `,
       });
 
-      const countAttempts = SqlSchema.findAll({
-        Request: Schema.Struct({
-          userId: Schema.String,
-          problemId: Schema.String,
-        }),
-        Result: CountRow,
-        execute: (request) =>
-          sql`
-            SELECT COUNT(*)::int AS "attempts"
-            FROM submissions
-            WHERE user_id = ${request.userId}
-              AND problem_id = ${request.problemId}
-          `,
-      });
-
       const insertSubmission = SqlSchema.void({
         Request: Schema.Struct({
           id: Schema.String,
@@ -114,7 +82,6 @@ export class Solutions extends Context.Service<
           problemId: Schema.String,
           code: Schema.String,
           passed: Schema.Boolean,
-          stars: Schema.Number,
           testsPassed: Schema.Number,
           testsTotal: Schema.Number,
           feedback: Schema.String,
@@ -129,7 +96,6 @@ export class Solutions extends Context.Service<
               problem_id,
               code,
               passed,
-              stars,
               tests_passed,
               tests_total,
               feedback,
@@ -142,7 +108,6 @@ export class Solutions extends Context.Service<
               ${request.problemId},
               ${request.code},
               ${request.passed},
-              ${request.stars},
               ${request.testsPassed},
               ${request.testsTotal},
               ${request.feedback},
@@ -227,11 +192,6 @@ export class Solutions extends Context.Service<
 
         const exercise = yield* loadExercise(problemId);
         const outcome = runSolution(code, exercise.functionName, exercise.tests, exercise.disallow);
-        const counts = yield* countAttempts({ userId, problemId }).pipe(
-          failUnexpected("Could not save the submission."),
-        );
-        const previousAttempts = counts[0]?.attempts ?? 0;
-        const stars = starsFor(outcome.passed, previousAttempts);
         const createdAt = new Date().toISOString();
         const id = randomUUID();
 
@@ -241,7 +201,6 @@ export class Solutions extends Context.Service<
           problemId,
           code,
           passed: outcome.passed,
-          stars,
           testsPassed: outcome.testsPassed,
           testsTotal: outcome.testsTotal,
           feedback: outcome.feedback,
@@ -252,7 +211,6 @@ export class Solutions extends Context.Service<
         return {
           id,
           passed: outcome.passed,
-          stars,
           testsPassed: outcome.testsPassed,
           testsTotal: outcome.testsTotal,
           feedback: outcome.feedback,

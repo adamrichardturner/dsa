@@ -51,8 +51,11 @@ function DeleteAccountDialog({
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [result, remove] = useMutation<{ adminDeleteAccount: boolean }>(ADMIN_DELETE_ACCOUNT);
-  const confirmed = confirmation.trim().toLowerCase() === user.email.toLowerCase();
+  const [result, remove] = useMutation<{ adminDeleteAccount: boolean }>(
+    ADMIN_DELETE_ACCOUNT,
+  );
+  const confirmed =
+    confirmation.trim().toLowerCase() === user.email.toLowerCase();
 
   const onOpenChange = (next: boolean) => {
     if (result.fetching) {
@@ -74,7 +77,9 @@ function DeleteAccountDialog({
     setError(null);
     const response = await remove({ userId: user.id });
     if (response.error !== undefined) {
-      setError(graphqlErrorMessage(response.error, "Could not delete that account."));
+      setError(
+        graphqlErrorMessage(response.error, "Could not delete that account."),
+      );
       return;
     }
     if (response.data?.adminDeleteAccount !== true) {
@@ -86,7 +91,11 @@ function DeleteAccountDialog({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange} disablePointerDismissal={result.fetching}>
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      disablePointerDismissal={result.fetching}
+    >
       <Button
         type="button"
         variant="destructive"
@@ -101,8 +110,8 @@ function DeleteAccountDialog({
         <Alert variant="destructive" role="presentation">
           <AlertDialogTitle>Delete {user.name}?</AlertDialogTitle>
           <AlertDialogDescription>
-            This permanently removes {user.email}, their sessions, and all course progress. Type
-            the email address to confirm.
+            This permanently removes {user.email}, their sessions, and all
+            course progress. Type the email address to confirm.
           </AlertDialogDescription>
         </Alert>
         <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
@@ -133,7 +142,11 @@ function DeleteAccountDialog({
             >
               Cancel
             </AlertDialogClose>
-            <Button type="submit" variant="destructive" disabled={!confirmed || result.fetching}>
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={!confirmed || result.fetching}
+            >
               {result.fetching ? "Deleting…" : "Delete account"}
             </Button>
           </AlertDialogFooter>
@@ -158,7 +171,8 @@ export function AdminUsers({
       ? users
       : users.filter((user) => {
           return (
-            user.name.toLowerCase().includes(needle) || user.email.toLowerCase().includes(needle)
+            user.name.toLowerCase().includes(needle) ||
+            user.email.toLowerCase().includes(needle)
           );
         });
 
@@ -188,7 +202,9 @@ export function AdminUsers({
       </div>
 
       {visible.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No accounts match that search.</p>
+        <p className="text-sm text-muted-foreground">
+          No accounts match that search.
+        </p>
       ) : (
         <div className="overflow-x-auto rounded-xl ring-1 ring-foreground/10">
           <table className="w-full min-w-[880px] text-left text-sm">
@@ -210,7 +226,10 @@ export function AdminUsers({
               {visible.map((user) => {
                 const open = openId === user.id;
                 return (
-                  <tr key={user.id} className="border-b align-top last:border-b-0">
+                  <tr
+                    key={user.id}
+                    className="border-b align-top last:border-b-0"
+                  >
                     <td className="px-3 py-3" colSpan={open ? 8 : undefined}>
                       {open ? (
                         <UserDetail
@@ -231,7 +250,9 @@ export function AdminUsers({
                     </td>
                     {open ? null : (
                       <>
-                        <td className="px-3 py-3 text-muted-foreground">{user.email}</td>
+                        <td className="px-3 py-3 text-muted-foreground">
+                          {user.email}
+                        </td>
                         <td className="px-3 py-3 whitespace-nowrap text-muted-foreground">
                           {formatTimestamp(user.createdAt)}
                         </td>
@@ -243,9 +264,6 @@ export function AdminUsers({
                         </td>
                         <td className="px-3 py-3 tabular-nums">
                           {user.problemsSolved}/{user.problemsTotal}
-                          <span className="block text-xs text-muted-foreground">
-                            {user.stars}/{user.maxStars} stars
-                          </span>
                         </td>
                         <td className="px-3 py-3 tabular-nums">
                           {formatPercent(user.passRate)}
@@ -255,7 +273,10 @@ export function AdminUsers({
                         </td>
                         <td className="px-3 py-3 text-right">
                           {user.deletable ? (
-                            <DeleteAccountDialog user={user} onDeleted={onDeleted} />
+                            <DeleteAccountDialog
+                              user={user}
+                              onDeleted={onDeleted}
+                            />
                           ) : (
                             <Badge variant="outline">Protected</Badge>
                           )}
@@ -273,12 +294,26 @@ export function AdminUsers({
   );
 }
 
-function AccountCell({ user, onOpen }: { readonly user: AdminUser; readonly onOpen: () => void }) {
+function AccountCell({
+  user,
+  onOpen,
+}: {
+  readonly user: AdminUser;
+  readonly onOpen: () => void;
+}) {
   return (
     <div className="flex items-center gap-3">
-      <UserAvatar name={user.name} avatarUrl={user.avatarUrl} className="size-8 text-xs" />
+      <UserAvatar
+        name={user.name}
+        avatarUrl={user.avatarUrl}
+        className="size-8 text-xs"
+      />
       <div className="min-w-0">
-        <button type="button" className="truncate font-medium hover:underline" onClick={onOpen}>
+        <button
+          type="button"
+          className="truncate font-medium hover:underline"
+          onClick={onOpen}
+        >
           {user.name}
         </button>
         <div className="mt-1 flex flex-wrap gap-1">
@@ -306,7 +341,11 @@ function UserDetail({
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <UserAvatar name={user.name} avatarUrl={user.avatarUrl} className="size-10" />
+          <UserAvatar
+            name={user.name}
+            avatarUrl={user.avatarUrl}
+            className="size-10"
+          />
           <div>
             <p className="font-medium">{user.name}</p>
             <p className="text-muted-foreground">{user.email}</p>
@@ -341,14 +380,17 @@ function UserDetail({
         <div>
           <dt className="text-muted-foreground">Problems</dt>
           <dd className="tabular-nums">
-            {user.problemsSolved}/{user.problemsTotal} · {user.stars}/{user.maxStars} stars ·{" "}
+            {user.problemsSolved}/{user.problemsTotal} ·{" "}
             {formatPercent(user.passRate)} pass rate
           </dd>
         </div>
       </dl>
       <ul className="grid gap-3 sm:grid-cols-2">
         {user.topics.map((topic) => {
-          const value = topic.total === 0 ? 0 : Math.round((topic.solved / topic.total) * 100);
+          const value =
+            topic.total === 0
+              ? 0
+              : Math.round((topic.solved / topic.total) * 100);
           return (
             <li key={topic.topic} className="space-y-1.5">
               <div className="flex items-center justify-between gap-3 text-xs">

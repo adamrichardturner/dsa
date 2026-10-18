@@ -7,6 +7,7 @@ import { useMutation, useQuery } from "urql";
 import { cn } from "cn";
 import { CodeEditor, type CodeEditorInstance } from "@/components/editor";
 import { FormatCodeButton } from "@/components/format-code-button";
+import { BitesizeExplanationDialog } from "@/components/bitesize-explanation-dialog";
 import { LessonSplit } from "@/components/lesson-split";
 import {
   CodeTerminal,
@@ -27,7 +28,10 @@ import {
 import { StuckPrompt } from "@/components/stuck-prompt";
 import { CompletionTick } from "@/components/completion-tick";
 import { ProgressSaved } from "@/components/progress-saved";
-import { SyllabusTrigger, useRefreshSyllabus } from "@/components/lesson-sidebar";
+import {
+  SyllabusTrigger,
+  useRefreshSyllabus,
+} from "@/components/lesson-sidebar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -50,7 +54,7 @@ import {
 } from "@/components/split-toggle";
 import { getEditorTheme, type EditorThemeId } from "@/lib/editor-themes";
 import { graphqlErrorMessage } from "@/lib/graphql-error";
-import { annotateLesson } from "@/lib/lesson-keywords";
+import { annotateLesson, annotateMarkdown } from "@/lib/lesson-keywords";
 import { currentLessonFrom } from "@/lib/lesson-return";
 import { useLessonDraft } from "@/hooks/use-lesson-draft";
 import { useRequireUser } from "@/lib/auth";
@@ -130,7 +134,12 @@ export function Workspace({ slug }: { readonly slug: string }) {
     SUBMIT_SOLUTION,
   );
   const [runState, runCode] = useMutation<{
-    runCode: { readonly lines: readonly { readonly kind: string; readonly text: string }[] };
+    runCode: {
+      readonly lines: readonly {
+        readonly kind: string;
+        readonly text: string;
+      }[];
+    };
   }>(RUN_CODE);
   useEffect(() => {
     if (auditModeRef.current === auditMode) {
@@ -285,7 +294,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
     if (next === undefined) {
       setNotice({
         kind: "error",
-        message: graphqlErrorMessage(response.error, "Could not check that solution."),
+        message: graphqlErrorMessage(
+          response.error,
+          "Could not check that solution.",
+        ),
       });
       return;
     }
@@ -309,7 +321,10 @@ export function Workspace({ slug }: { readonly slug: string }) {
     if (next === undefined) {
       setTerminal({
         kind: "failed",
-        message: graphqlErrorMessage(response.error, "Could not run that code."),
+        message: graphqlErrorMessage(
+          response.error,
+          "Could not run that code.",
+        ),
       });
       return;
     }
@@ -360,7 +375,8 @@ export function Workspace({ slug }: { readonly slug: string }) {
     !checking && hasPassed && !nextIsPrimary && nextHref !== null;
   const showLastLessonNote = !checking && hasPassed && lesson.nextSlug === null;
   const failedThisSession = outcome !== null && outcome.passed === false;
-  const showStuck = !hasPassed && (problem.failedAttempts > 0 || failedThisSession);
+  const showStuck =
+    !hasPassed && (problem.failedAttempts > 0 || failedThisSession);
   const onSkipped = (result: SkipResult) => {
     setSolutionOpen(false);
     reexecute({ requestPolicy: "network-only" });
@@ -371,6 +387,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
     router.push(`/course/${result.nextSlug}`);
   };
   const annotated = annotateLesson(lesson.contentMd, problem.promptMd);
+  const annotatedBitesize = annotateMarkdown(lesson.bitesizeMd);
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
@@ -378,220 +395,172 @@ export function Workspace({ slug }: { readonly slug: string }) {
       <LessonSplit
         orientation={orientation}
         lesson={
-        <ScrollArea className="h-full min-h-0 min-w-0 bg-background">
-          <div className="mx-auto max-w-xl space-y-6 px-6 py-8">
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">
-                  Week {lesson.weekNumber} · {lesson.moduleTitle}
-                </Badge>
-                <Badge variant="outline">
-                  {capitalize(problem.difficulty)}
-                </Badge>
-                <Badge variant="outline">{problem.topic}</Badge>
-                {lesson.skipped ? <Badge variant="outline">Skipped</Badge> : null}
-              </div>
-              <h1 className="font-serif text-4xl tracking-tight">
-                {lesson.title}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {lesson.estimatedMinutes} minutes
-              </p>
-            </div>
-            <LessonMarkdown
-              content={annotated.contentMd}
-              articleFrom={articleFrom}
-            />
-            <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <CardTitle className="font-serif text-2xl">
-                    {problem.title}
-                  </CardTitle>
-                  {hasPassed ? (
-                    <CompletionTick
-                      animate={outcome?.passed === true}
-                      label="Lesson complete"
-                      className="mt-1 size-6"
-                    />
+          <ScrollArea className="h-full min-h-0 min-w-0 bg-background">
+            <div className="mx-auto max-w-xl space-y-6 px-6 py-8">
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">
+                    Week {lesson.weekNumber} · {lesson.moduleTitle}
+                  </Badge>
+                  <Badge variant="outline">
+                    {capitalize(problem.difficulty)}
+                  </Badge>
+                  <Badge variant="outline">{problem.topic}</Badge>
+                  {lesson.skipped ? (
+                    <Badge variant="outline">Skipped</Badge>
                   ) : null}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <LessonMarkdown
-                  content={annotated.promptMd}
-                  articleFrom={articleFrom}
-                />
-                <div className="space-y-2">
-                  {problem.examples.map((example) => (
-                    <pre
-                      key={example.call}
-                      className="overflow-x-auto rounded-lg bg-zinc-950 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-100"
-                    >
-                      {example.call}
-                      {"\n"}
-                      {example.output}
-                    </pre>
-                  ))}
+                <div className="flex items-start justify-between gap-4">
+                  <h1 className="font-serif text-4xl tracking-tight">
+                    {lesson.title}
+                  </h1>
+                  <BitesizeExplanationDialog
+                    lessonTitle={lesson.title}
+                    content={annotatedBitesize.markdown}
+                    articleSlugs={annotatedBitesize.articleSlugs}
+                    articleFrom={articleFrom}
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {problem.attempts} attempt{problem.attempts === 1 ? "" : "s"}{" "}
-                  so far.
+                <p className="text-sm text-muted-foreground">
+                  {lesson.estimatedMinutes} minutes
                 </p>
-              </CardContent>
-            </Card>
-            <SuggestedReading
-              slugs={annotated.articleSlugs}
-              from={articleFrom}
-            />
-            <div className="flex gap-3">
-              {lesson.previousSlug !== null ? (
-                <Link
-                  href={`/course/${lesson.previousSlug}`}
-                  className={cn(
-                    buttonVariants({
-                      variant: "outline",
-                      size: "lg",
-                      className: "h-10 px-4",
-                    }),
-                  )}
-                >
-                  Previous
-                </Link>
-              ) : null}
-              {lesson.nextSlug !== null && lesson.nextAvailable ? (
-                <Link
-                  href={`/course/${lesson.nextSlug}`}
-                  className={cn(
-                    buttonVariants({
-                      variant: "secondary",
-                      size: "lg",
-                      className: "h-10 px-4",
-                    }),
-                  )}
-                >
-                  Next lesson
-                </Link>
-              ) : null}
-              {lesson.nextSlug !== null && !lesson.nextAvailable ? (
-                <p className="self-center text-xs text-muted-foreground">
-                  Pass this exercise to open the next lesson.
-                </p>
-              ) : null}
+              </div>
+              <LessonMarkdown
+                content={annotated.contentMd}
+                articleFrom={articleFrom}
+              />
+              <Card>
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-3">
+                    <CardTitle className="font-serif text-2xl">
+                      {problem.title}
+                    </CardTitle>
+                    {hasPassed ? (
+                      <CompletionTick
+                        animate={outcome?.passed === true}
+                        label="Lesson complete"
+                        className="mt-1 size-6"
+                      />
+                    ) : null}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <LessonMarkdown
+                    content={annotated.promptMd}
+                    articleFrom={articleFrom}
+                  />
+                  <div className="space-y-2">
+                    {problem.examples.map((example) => (
+                      <pre
+                        key={example.call}
+                        className="overflow-x-auto rounded-lg bg-zinc-950 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-100"
+                      >
+                        {example.call}
+                        {"\n"}
+                        {example.output}
+                      </pre>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {problem.attempts} attempt
+                    {problem.attempts === 1 ? "" : "s"} so far.
+                  </p>
+                </CardContent>
+              </Card>
+              <SuggestedReading
+                slugs={annotated.articleSlugs}
+                from={articleFrom}
+              />
+              <div className="flex gap-3">
+                {lesson.previousSlug !== null ? (
+                  <Link
+                    href={`/course/${lesson.previousSlug}`}
+                    className={cn(
+                      buttonVariants({
+                        variant: "outline",
+                        size: "lg",
+                        className: "h-10 px-4",
+                      }),
+                    )}
+                  >
+                    Previous
+                  </Link>
+                ) : null}
+                {lesson.nextSlug !== null && lesson.nextAvailable ? (
+                  <Link
+                    href={`/course/${lesson.nextSlug}`}
+                    className={cn(
+                      buttonVariants({
+                        variant: "secondary",
+                        size: "lg",
+                        className: "h-10 px-4",
+                      }),
+                    )}
+                  >
+                    Next lesson
+                  </Link>
+                ) : null}
+                {lesson.nextSlug !== null && !lesson.nextAvailable ? (
+                  <p className="self-center text-xs text-muted-foreground">
+                    Pass this exercise to open the next lesson.
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </ScrollArea>
+          </ScrollArea>
         }
         editor={
-        <section
-          className="relative flex h-full min-h-0 min-w-0 flex-col"
-          style={{ backgroundColor: theme.background, color: theme.foreground }}
-        >
-          <div className="flex items-center justify-end gap-1 px-4 py-2 text-xs">
-            <FormatCodeButton editorRef={editorRef} />
-            <Badge
-              variant="outline"
-              className="border-current/25 bg-transparent"
-              style={{ color: theme.foreground }}
-            >
-              {problem.solved ? "Solved" : "Draft"}
-            </Badge>
-          </div>
-          <Separator style={{ backgroundColor: chrome.rule }} />
-          <div className="relative min-h-0 flex-1">
-            <CodeEditor
-              value={code}
-              onChange={(next) => {
-                track(next);
-                setCode(next);
-              }}
-              themeId={themeId}
-              editorRef={editorRef}
-            />
-            {notice !== null ? (
-              <SolutionNotice notice={notice} onDismiss={() => setNotice(null)} />
-            ) : null}
-          </div>
-          <CodeTerminal
-            state={terminal}
-            light={theme.light}
-            foreground={theme.foreground}
-            borderColor={chrome.rule}
-          />
-          {showStuck ? (
-            <div className="px-4 pt-3" style={{ color: theme.foreground }}>
-              <StuckPrompt
-                onOpen={() => {
-                  setSolutionOpen(true);
+          <section
+            className="relative flex h-full min-h-0 min-w-0 flex-col"
+            style={{
+              backgroundColor: theme.background,
+              color: theme.foreground,
+            }}
+          >
+            <div className="flex items-center justify-end gap-1 px-4 py-2 text-xs">
+              <FormatCodeButton editorRef={editorRef} />
+              <Badge
+                variant="outline"
+                className="border-current/25 bg-transparent"
+                style={{ color: theme.foreground }}
+              >
+                {problem.solved ? "Solved" : "Draft"}
+              </Badge>
+            </div>
+            <Separator style={{ backgroundColor: chrome.rule }} />
+            <div className="relative min-h-0 flex-1">
+              <CodeEditor
+                value={code}
+                onChange={(next) => {
+                  track(next);
+                  setCode(next);
+                }}
+                themeId={themeId}
+                editorRef={editorRef}
+              />
+              <SolutionNotice
+                notice={notice}
+                onDismiss={() => {
+                  setNotice(null);
                 }}
               />
             </div>
-          ) : null}
-          <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              disabled={busy}
-              className="h-10 px-4 text-foreground"
-              onClick={() => {
-                setResetOpen(true);
-              }}
-            >
-              Reset
-            </Button>
-            <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
-              <AlertDialogContent>
-                <AlertDialogTitle>Reset the workspace?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will reset the workspace to the original starter code. The solution in the
-                  editor will be replaced.
-                </AlertDialogDescription>
-                <AlertDialogFooter>
-                  <AlertDialogClose className={cn(buttonVariants({ variant: "outline" }))}>
-                    Cancel
-                  </AlertDialogClose>
-                  <Button type="button" variant="destructive" onClick={onReset}>
-                    Reset workspace
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <div className="flex items-center gap-2">
-              {showLastLessonNote ? (
-                <span className="text-xs opacity-70">
-                  This is the last lesson.
-                </span>
-              ) : null}
-              {nextIsPrimary ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="lg"
-                  disabled={running}
-                  className={cn("h-10 px-4", chrome.reset)}
-                  onClick={() => {
-                    void onSubmit();
+            <CodeTerminal
+              state={terminal}
+              light={theme.light}
+              foreground={theme.foreground}
+              borderColor={chrome.rule}
+            />
+            {showStuck ? (
+              <div className="px-4 pt-3" style={{ color: theme.foreground }}>
+                <StuckPrompt
+                  onOpen={() => {
+                    setSolutionOpen(true);
                   }}
-                >
-                  Submit
-                </Button>
-              ) : null}
-              {nextIsSecondary && nextHref !== null ? (
-                <Link
-                  href={nextHref}
-                  className={cn(
-                    buttonVariants({
-                      variant: "ghost",
-                      size: "lg",
-                      className: "h-10 px-4",
-                    }),
-                    chrome.reset,
-                  )}
-                >
-                  Next lesson
-                </Link>
-              ) : null}
+                />
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
               <Button
                 type="button"
                 variant="outline"
@@ -599,49 +568,119 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 disabled={busy}
                 className="h-10 px-4 text-foreground"
                 onClick={() => {
-                  void onRun();
+                  setResetOpen(true);
                 }}
               >
-                {running ? <Spinner data-icon="inline-start" /> : null}
-                {running ? "Running" : "Run"}
+                Reset
               </Button>
-              {checking ? (
-                <Button
-                  size="lg"
-                  disabled
-                  className={cn("h-10 px-5", chrome.submit)}
-                >
-                  <Spinner data-icon="inline-start" />
-                  Checking
-                </Button>
-              ) : null}
-              {!checking && nextIsPrimary && nextHref !== null ? (
-                <Link
-                  href={nextHref}
-                  className={cn(
-                    buttonVariants({ size: "lg", className: "h-10 px-5" }),
-                    chrome.submit,
-                  )}
-                >
-                  Next lesson
-                </Link>
-              ) : null}
-              {!checking && !nextIsPrimary ? (
+              <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+                <AlertDialogContent>
+                  <AlertDialogTitle>Reset the workspace?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will reset the workspace to the original starter code.
+                    The solution in the editor will be replaced.
+                  </AlertDialogDescription>
+                  <AlertDialogFooter>
+                    <AlertDialogClose
+                      className={cn(buttonVariants({ variant: "outline" }))}
+                    >
+                      Cancel
+                    </AlertDialogClose>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={onReset}
+                    >
+                      Reset workspace
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              <div className="flex items-center gap-2">
+                {showLastLessonNote ? (
+                  <span className="text-xs opacity-70">
+                    This is the last lesson.
+                  </span>
+                ) : null}
+                {nextIsPrimary ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="lg"
+                    disabled={running}
+                    className={cn("h-10 px-4", chrome.reset)}
+                    onClick={() => {
+                      void onSubmit();
+                    }}
+                  >
+                    Submit
+                  </Button>
+                ) : null}
+                {nextIsSecondary && nextHref !== null ? (
+                  <Link
+                    href={nextHref}
+                    className={cn(
+                      buttonVariants({
+                        variant: "ghost",
+                        size: "lg",
+                        className: "h-10 px-4",
+                      }),
+                      chrome.reset,
+                    )}
+                  >
+                    Next lesson
+                  </Link>
+                ) : null}
                 <Button
                   type="button"
+                  variant="outline"
                   size="lg"
-                  disabled={running}
-                  className={cn("h-10 px-5", chrome.submit)}
+                  disabled={busy}
+                  className="h-10 px-4 text-foreground"
                   onClick={() => {
-                    void onSubmit();
+                    void onRun();
                   }}
                 >
-                  Submit
+                  {running ? <Spinner data-icon="inline-start" /> : null}
+                  {running ? "Running" : "Run"}
                 </Button>
-              ) : null}
+                {checking ? (
+                  <Button
+                    size="lg"
+                    disabled
+                    className={cn("h-10 px-5", chrome.submit)}
+                  >
+                    <Spinner data-icon="inline-start" />
+                    Checking
+                  </Button>
+                ) : null}
+                {!checking && nextIsPrimary && nextHref !== null ? (
+                  <Link
+                    href={nextHref}
+                    className={cn(
+                      buttonVariants({ size: "lg", className: "h-10 px-5" }),
+                      chrome.submit,
+                    )}
+                  >
+                    Next lesson
+                  </Link>
+                ) : null}
+                {!checking && !nextIsPrimary ? (
+                  <Button
+                    type="button"
+                    size="lg"
+                    disabled={running}
+                    className={cn("h-10 px-5", chrome.submit)}
+                    onClick={() => {
+                      void onSubmit();
+                    }}
+                  >
+                    Submit
+                  </Button>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
         }
       />
       <SolutionDialog

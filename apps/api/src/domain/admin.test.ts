@@ -62,9 +62,9 @@ describe("admin overview", () => {
         { id: "p3", lessonId: "l2", topic: "Graphs" },
       ],
       problemStats: [
-        { userId: "ada", problemId: "p1", solved: true, bestStars: 3, attempts: 2 },
-        { userId: "ada", problemId: "p2", solved: true, bestStars: 2, attempts: 1 },
-        { userId: "ada", problemId: "p3", solved: false, bestStars: 0, attempts: 1 },
+        { userId: "ada", problemId: "p1", solved: true, attempts: 2 },
+        { userId: "ada", problemId: "p2", solved: true, attempts: 1 },
+        { userId: "ada", problemId: "p3", solved: false, attempts: 1 },
       ],
       activity: [
         {
@@ -99,8 +99,6 @@ describe("admin overview", () => {
     assert.equal(ada.lessonsCompleted, 1);
     assert.equal(ada.lessonsTotal, 2);
     assert.equal(ada.problemsSolved, 2);
-    assert.equal(ada.stars, 5);
-    assert.equal(ada.maxStars, 9);
     assert.equal(ada.topics[0]?.topic, "Arrays");
     assert.equal(ada.topics[0]?.solved, 2);
     assert.equal(ada.deletable, true);

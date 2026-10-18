@@ -26,8 +26,6 @@ export interface LessonSummary {
   readonly completed: boolean;
   readonly skipped: boolean;
   readonly available: boolean;
-  readonly stars: number;
-  readonly maxStars: number;
 }
 
 export interface ModuleView {
@@ -51,7 +49,6 @@ export interface ProblemView {
   readonly difficulty: string;
   readonly topic: string;
   readonly examples: readonly ExampleView[];
-  readonly bestStars: number;
   readonly solved: boolean;
   readonly attempts: number;
   readonly failedAttempts: number;
@@ -65,6 +62,7 @@ export interface LessonView {
   readonly title: string;
   readonly summary: string;
   readonly contentMd: string;
+  readonly bitesizeMd: string;
   readonly estimatedMinutes: number;
   readonly weekNumber: number;
   readonly moduleTitle: string;
@@ -94,7 +92,6 @@ export interface RunLineView {
 export interface SubmissionView {
   readonly id: string;
   readonly passed: boolean;
-  readonly stars: number;
   readonly testsPassed: number;
   readonly testsTotal: number;
   readonly feedback: string;
@@ -107,8 +104,36 @@ export interface TopicStat {
   readonly solved: number;
   readonly total: number;
   readonly attempted: number;
-  readonly stars: number;
-  readonly maxStars: number;
+}
+
+export interface ActivityDay {
+  readonly day: string;
+  readonly submissions: number;
+  readonly passes: number;
+}
+
+export interface DifficultyStat {
+  readonly difficulty: string;
+  readonly label: string;
+  readonly solved: number;
+  readonly total: number;
+}
+
+export interface LessonStat {
+  readonly slug: string;
+  readonly title: string;
+  readonly weekNumber: number;
+  readonly moduleTitle: string;
+  readonly solved: number;
+  readonly total: number;
+  readonly skipped: boolean;
+}
+
+export interface Improvement {
+  readonly kind: string;
+  readonly title: string;
+  readonly detail: string;
+  readonly href: string;
 }
 
 export interface AnalyticsView {
@@ -116,15 +141,19 @@ export interface AnalyticsView {
   readonly lessonsTotal: number;
   readonly problemsSolved: number;
   readonly problemsTotal: number;
-  readonly stars: number;
-  readonly maxStars: number;
   readonly attempts: number;
   readonly passRate: number;
+  readonly streak: number;
+  readonly activeDays: number;
   readonly topics: readonly TopicStat[];
   readonly focusAreas: readonly string[];
   readonly summary: string;
   readonly lessonsSkipped: number;
   readonly skippedLessons: readonly SkippedLesson[];
+  readonly activity: readonly ActivityDay[];
+  readonly difficulties: readonly DifficultyStat[];
+  readonly lessons: readonly LessonStat[];
+  readonly improvements: readonly Improvement[];
 }
 
 export interface SkippedLesson {
@@ -183,8 +212,6 @@ export interface AdminUser {
   readonly lessonsTotal: number;
   readonly problemsSolved: number;
   readonly problemsTotal: number;
-  readonly stars: number;
-  readonly maxStars: number;
   readonly attempts: number;
   readonly passes: number;
   readonly passRate: number;

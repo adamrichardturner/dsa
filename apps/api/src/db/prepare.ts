@@ -65,9 +65,11 @@ const statements: readonly string[] = [
     title TEXT NOT NULL,
     summary TEXT NOT NULL,
     content_md TEXT NOT NULL,
+    bitesize_md TEXT NOT NULL DEFAULT '',
     estimated_minutes INTEGER NOT NULL,
     sort_order INTEGER NOT NULL
   )`,
+  `ALTER TABLE lessons ADD COLUMN IF NOT EXISTS bitesize_md TEXT NOT NULL DEFAULT ''`,
   `CREATE TABLE IF NOT EXISTS problems (
     id TEXT PRIMARY KEY,
     lesson_id TEXT NOT NULL REFERENCES lessons(id),
@@ -87,7 +89,6 @@ const statements: readonly string[] = [
     problem_id TEXT NOT NULL REFERENCES problems(id),
     code TEXT NOT NULL,
     passed BOOLEAN NOT NULL,
-    stars INTEGER NOT NULL,
     tests_passed INTEGER NOT NULL,
     tests_total INTEGER NOT NULL,
     feedback TEXT NOT NULL,
@@ -96,6 +97,7 @@ const statements: readonly string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS submissions_user_problem_idx
     ON submissions (user_id, problem_id, created_at DESC)`,
+  `ALTER TABLE submissions DROP COLUMN IF EXISTS stars`,
   `CREATE TABLE IF NOT EXISTS lesson_skips (
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
@@ -118,19 +120,21 @@ const statements: readonly string[] = [
   )`,
 ];
 
-const reportDatabaseFailure = (message: string) => <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  effect.pipe(
-    Effect.tapError((error) => Effect.logError(message, error)),
-    Effect.mapError(() => new Unexpected({ message })),
-  );
+const reportDatabaseFailure =
+  (message: string) =>
+  <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    effect.pipe(
+      Effect.tapError((error) => Effect.logError(message, error)),
+      Effect.mapError(() => new Unexpected({ message })),
+    );
 
 export const prepareDatabase = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
 
   for (const statement of statements) {
-    yield* sql.unsafe(statement).pipe(
-      reportDatabaseFailure("Could not prepare the database."),
-    );
+    yield* sql
+      .unsafe(statement)
+      .pipe(reportDatabaseFailure("Could not prepare the database."));
   }
 
   const upsertModule = SqlSchema.void({
@@ -167,13 +171,14 @@ export const prepareDatabase = Effect.gen(function* () {
       title: Schema.String,
       summary: Schema.String,
       contentMd: Schema.String,
+      bitesizeMd: Schema.String,
       estimatedMinutes: Schema.Number,
       sortOrder: Schema.Number,
     }),
     execute: (request) =>
       sql`
         INSERT INTO lessons (
-          id, module_id, slug, title, summary, content_md, estimated_minutes, sort_order
+          id, module_id, slug, title, summary, content_md, bitesize_md, estimated_minutes, sort_order
         )
         VALUES (
           ${request.id},
@@ -182,6 +187,7 @@ export const prepareDatabase = Effect.gen(function* () {
           ${request.title},
           ${request.summary},
           ${request.contentMd},
+          ${request.bitesizeMd},
           ${request.estimatedMinutes},
           ${request.sortOrder}
         )
@@ -191,6 +197,7 @@ export const prepareDatabase = Effect.gen(function* () {
           title = EXCLUDED.title,
           summary = EXCLUDED.summary,
           content_md = EXCLUDED.content_md,
+          bitesize_md = EXCLUDED.bitesize_md,
           estimated_minutes = EXCLUDED.estimated_minutes,
           sort_order = EXCLUDED.sort_order
       `,
@@ -277,6 +284,7 @@ export const prepareDatabase = Effect.gen(function* () {
               title: lesson.title,
               summary: lesson.summary,
               contentMd: lesson.contentMd,
+              bitesizeMd: lesson.bitesizeMd,
               estimatedMinutes: lesson.estimatedMinutes,
               sortOrder: lessonOrder,
             });

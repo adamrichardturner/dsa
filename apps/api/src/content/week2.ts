@@ -1,4 +1,5 @@
 import type { SeedModule } from "./types.js";
+import { bitesize } from "./bitesize.js";
 
 const reverseStarter = `class ListNode {
   value: number;
@@ -45,7 +46,8 @@ export function reverseValues(values: number[]): number[] {
 export const week2: SeedModule = {
   id: "core-structures",
   title: "Core structures",
-  summary: "Lists, stacks, queues, recursion, search, and a sort you can explain.",
+  summary:
+    "Lists, stacks, queues, recursion, search, and a sort you can explain.",
   weekNumber: 2,
   lessons: [
     {
@@ -54,6 +56,7 @@ export const week2: SeedModule = {
       title: "Linked lists",
       summary: "Nodes, a next pointer, and no random access.",
       estimatedMinutes: 40,
+      bitesizeMd: bitesize.linkedLists,
       contentMd: `
 An array stores neighbours in neighbouring memory. A linked list stores a **node**: a value, plus a reference to the next node. The list itself is just the reference to the first node, called the head. The last node's \`next\` is \`null\`.
 
@@ -118,6 +121,7 @@ Do not reverse the array directly.
       title: "Stacks",
       summary: "Last in, first out. The call stack is one.",
       estimatedMinutes: 30,
+      bitesizeMd: bitesize.stacks,
       contentMd: `
 A stack is a list where you only touch the most recently added item. \`push\` adds, \`pop\` removes. Both are O(1) at the end of an array, so a TypeScript array is a perfectly good stack. You just agree not to touch the middle.
 
@@ -190,6 +194,7 @@ Other characters are not in the input. An empty string is balanced.
       title: "Queues",
       summary: "First in, first out. Breadth-first search is waiting on this.",
       estimatedMinutes: 30,
+      bitesizeMd: bitesize.queues,
       contentMd: `
 A queue serves items in arrival order. \`enqueue\` adds at the back, \`dequeue\` removes from the front. A printer queue, a checkout line, and breadth-first search are the same rule.
 
@@ -251,6 +256,7 @@ Walk \`values\` from left to right. After each element, return the sum of the la
       title: "Recursion",
       summary: "A function that solves a smaller version of the same problem.",
       estimatedMinutes: 35,
+      bitesizeMd: bitesize.recursion,
       contentMd: `
 A recursive function calls itself. Each call must be **smaller**, and there must be a **base case** that stops. Without the base case the call stack grows until it overflows. The stack from the previous lesson is doing the bookkeeping.
 
@@ -321,6 +327,7 @@ export function flatten(value: Nested): number[] {
       title: "Binary search",
       summary: "Halve a sorted range until the value has nowhere to hide.",
       estimatedMinutes: 35,
+      bitesizeMd: bitesize.binarySearch,
       contentMd: `
 Linear search checks every index. If the array is sorted, you can do better. Look at the middle. If the target is smaller, it cannot be in the right half. If it is larger, it cannot be in the left half. Each comparison throws away half of what remains, which is O(log n) comparisons. A million elements takes about twenty steps.
 
@@ -395,6 +402,7 @@ Use binary search.
       title: "Merge sort",
       summary: "Split, sort the halves, then merge them in order.",
       estimatedMinutes: 40,
+      bitesizeMd: bitesize.sorting,
       contentMd: `
 You can call \`nums.sort()\` and often should. This lesson is about knowing what that call is doing, well enough to reimplement one honest O(n log n) sort.
 

@@ -6,12 +6,7 @@ export const treeArticles: readonly Article[] = [
     "What Is a Tree? Roots, Leaves, and Depth in Nodes",
     "Trees and graphs",
     "A tree has one root, no cycles, and children under each node. In this course the depth is the number of nodes on the longest path down: an empty tree is 0 and a single node is 1.",
-    [
-      "tree",
-      "trees",
-      "leaf",
-      "root",
-    ],
+    ["tree", "trees", "leaf", "root"],
     `
 A tree has one root, and the links from parent to child never run back into a cycle. A node with no children is a leaf, and a node with at most two children, left and right, sits in a binary tree. Depth in this course is the number of nodes on the longest path from the root down: an empty tree is 0 and a single node is 1. The drawing has depth 3, because the longest path is the nodes 8, 3, and 1.
 
@@ -103,9 +98,7 @@ Read the ordered tree next, then the search that also finishes one branch before
     "What Is a Binary Search Tree? Left Smaller, Right Larger",
     "Trees and graphs",
     "A binary search tree keeps every value in the left subtree smaller than the node and every value in the right subtree larger. This course leaves duplicates out, and search costs the height, not automatically log n.",
-    [
-      "binary search tree",
-    ],
+    ["binary search tree"],
     `
 A binary search tree is a binary tree with an order on the values. Every value in the left subtree is smaller than the node, and every value in the right subtree is larger. This course leaves duplicates out, so an equal value goes neither left nor right. The drawing is the tree after inserting 4, then 2, then 6, then 1, then 3.
 
@@ -226,11 +219,7 @@ Binary search throws away half of a sorted array. A balanced tree keeps this wal
     "What Is a Balanced Tree? AVL, Red-Black, and Height",
     "Trees and graphs",
     "AVL and red-black trees rotate nodes so the height stays about log n. A skewed tree is a list drawn vertically, and that rotation is a tree move, not the array rotation from week one.",
-    [
-      "balanced tree",
-      "AVL",
-      "red-black",
-    ],
+    ["balanced tree", "AVL", "red-black"],
     `
 A balanced tree keeps its height near log n, so a walk from the root stays short as n grows. AVL and red-black trees rotate after an insert or a delete would leave one side too tall. The drawing is 7 nodes with a longest path of 3, close to log2(7). A tree that never rotates can keep the search rule and still become a line.
 
@@ -335,6 +324,7 @@ A binary search tree is the order a rotation must preserve. A heap is the array 
     [
       "heap",
       "heaps",
+      "binary heap",
       "min-heap",
       "max-heap",
       "complete binary tree",

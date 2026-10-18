@@ -296,7 +296,7 @@ Yes, when every adjacent pair was compared with the order you want. If no neighb
     "How Does Merge Sort Stay O(n log n) in Every Case?",
     "Search and sort",
     "Merge sort splits the array, sorts the halves, and merges two sorted runs with two pointers. That is O(n log n) time and O(n) extra memory in every case you implement here.",
-    ["merge sort"],
+    ["merge sort", "numeric comparator", "compare function"],
     `
 Merge sort splits an array, sorts the halves by the same rule, and merges 2 sorted runs with 2 pointers. Fewer than 2 elements is already sorted, and that is the base case. Each element is written once, so merging n elements is O(n), and the sort is O(n log n) time with O(n) extra memory in every case you implement here.
 

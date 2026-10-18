@@ -25,9 +25,36 @@ export const articles: readonly Article[] = [
 ];
 
 const bySlug: Record<string, Article> = {};
+const keywordOwners: Record<string, string> = {};
 
 for (const item of articles) {
+  if (bySlug[item.slug] !== undefined) {
+    throw new Error(`Duplicate article slug: ${item.slug}`);
+  }
   bySlug[item.slug] = item;
+
+  for (const keyword of item.keywords) {
+    const normalised = keyword.toLowerCase();
+    const owner = keywordOwners[normalised];
+    if (owner !== undefined) {
+      throw new Error(
+        `Duplicate article keyword "${keyword}" in ${owner} and ${item.slug}`,
+      );
+    }
+    keywordOwners[normalised] = item.slug;
+  }
+}
+
+const articleLink = /\/articles\/([a-z0-9-]+)/g;
+
+for (const item of articles) {
+  for (const match of item.body.matchAll(articleLink)) {
+    const slug = match[1];
+    if (slug === undefined || bySlug[slug] !== undefined) {
+      continue;
+    }
+    throw new Error(`Broken article link from ${item.slug} to ${slug}`);
+  }
 }
 
 export const articleBySlug = (slug: string): Article | null => {

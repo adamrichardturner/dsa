@@ -6,7 +6,13 @@ export const patternArticles: readonly Article[] = [
     "When Is a Greedy Choice Safe? Interval Scheduling",
     "Patterns",
     "A greedy algorithm takes the local option you can prove does not block a better future. Interval scheduling is safe if you sort half-open intervals by finishing time; a rule you can break with one counterexample is not the rule.",
-    ["greedy", "interval scheduling"],
+    [
+      "greedy",
+      "greedy algorithm",
+      "interval scheduling",
+      "half-open",
+      "half-open intervals",
+    ],
     `
 A greedy choice is safe when you can prove the local option does not block a better future. Interval scheduling is the problem that makes that proof concrete: you want as many half-open intervals as possible, and no pair may overlap. Sort by finishing time, earliest first, take the first interval, then take the next one that starts at or after that finish. A rule you can break with one counterexample is not the rule.
 
@@ -103,7 +109,7 @@ Name a case it gets wrong. If you can name one, the rule is not safe. If you can
     "What Is Backtracking? Choose, Explore, Then Undo",
     "Patterns",
     "Backtracking chooses, explores, then undoes. It is depth-first search on decisions you are generating, and it explodes unless the space is small or you can prune.",
-    ["backtracking"],
+    ["backtracking", "subset", "subsets"],
     `
 Backtracking chooses, explores that choice, then undoes it so the next choice starts from a clean path. It is depth-first search on decisions you are generating, rather than on a graph you were given. You use it to list the answers. You stop when the lists get too many, or when a table could count them without writing them down.
 

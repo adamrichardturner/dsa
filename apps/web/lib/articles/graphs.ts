@@ -6,7 +6,17 @@ export const graphArticles: readonly Article[] = [
     "What Is a Graph? Vertices, Undirected Edges, and Cycles",
     "Trees and graphs",
     "A graph is vertices plus edges. A tree is a graph with no cycles; a general graph can loop, so a search has to remember where it has been. This course uses undirected edges.",
-    ["graph", "graphs", "vertices", "undirected", "cycles"],
+    [
+      "graph",
+      "graphs",
+      "vertices",
+      "edge",
+      "edges",
+      "undirected",
+      "directed",
+      "weighted",
+      "cycles",
+    ],
     `
 A graph is a set of vertices plus a set of edges that join them. A vertex is a place you can stand, and an edge is one step between two of those places. A tree is a graph with no cycles, so connected nodes have a single path. A general graph can loop back on itself, and a search has to remember where it has been or it will walk that loop forever.
 
@@ -190,7 +200,7 @@ The list is how you store the graph, and the layer walk is the first search that
     "How Does Breadth-First Search Find the Fewest Edges?",
     "Trees and graphs",
     "Breadth-first search uses a queue to walk neighbours, then neighbours of neighbours. When every edge costs the same, the first time you reach a vertex is the fewest edges.",
-    ["breadth-first search", "breadth-first", "level order"],
+    ["breadth-first search", "breadth-first", "bfs", "level order"],
     `
 Breadth-first search walks a graph in layers. You handle the neighbours of the start, then the neighbours of those neighbours, and a queue keeps that order. When every edge costs the same, the first time you reach a vertex you got there by the fewest edges. If the edges have different costs, that claim is false, and a hop count picks the wrong route.
 
@@ -277,7 +287,7 @@ The queue is the order this walk depends on, and the weighted case is the algori
     "How Does Depth-First Search Explore One Branch First?",
     "Trees and graphs",
     "Depth-first search uses a stack or recursion to finish one branch before the others. It answers reachability, not fewest edges.",
-    ["depth-first search", "depth-first"],
+    ["depth-first search", "depth-first", "dfs"],
     `
 Depth-first search finishes one branch before it starts the next. You step to a neighbour, then deeper, and a call stack or an explicit stack brings you back to try the neighbour you skipped. The walk answers whether you can reach a vertex and which other vertices sit in the same connected piece. It does not answer fewest edges, because the first branch that finds the target can be a long one.
 

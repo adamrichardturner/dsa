@@ -27,6 +27,11 @@ export interface AnnotatedLesson {
   readonly articleSlugs: readonly string[];
 }
 
+export interface AnnotatedMarkdown {
+  readonly markdown: string;
+  readonly articleSlugs: readonly string[];
+}
+
 const buildKeywords = (): readonly Keyword[] => {
   const list: Keyword[] = [];
   const seen: Record<string, true> = {};
@@ -213,7 +218,7 @@ const splitMarkdown = (markdown: string): readonly Segment[] => {
   return segments;
 };
 
-const annotateMarkdown = (
+const annotateWithState = (
   markdown: string,
   state: AnnotationState,
 ): { readonly markdown: string; readonly state: AnnotationState } => {
@@ -238,13 +243,22 @@ const annotateMarkdown = (
   return { markdown: output, state: next };
 };
 
+export const annotateMarkdown = (markdown: string): AnnotatedMarkdown => {
+  const initial: AnnotationState = { used: {}, slugs: [] };
+  const annotated = annotateWithState(markdown, initial);
+  return {
+    markdown: annotated.markdown,
+    articleSlugs: annotated.state.slugs,
+  };
+};
+
 export const annotateLesson = (
   contentMd: string,
   promptMd: string,
 ): AnnotatedLesson => {
   const initial: AnnotationState = { used: {}, slugs: [] };
-  const content = annotateMarkdown(contentMd, initial);
-  const prompt = annotateMarkdown(promptMd, content.state);
+  const content = annotateWithState(contentMd, initial);
+  const prompt = annotateWithState(promptMd, content.state);
 
   return {
     contentMd: content.markdown,

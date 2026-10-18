@@ -30,7 +30,6 @@ export interface AdminOverviewProblemStat {
   readonly userId: string;
   readonly problemId: string;
   readonly solved: boolean;
-  readonly bestStars: number;
   readonly attempts: number;
 }
 
@@ -218,7 +217,6 @@ export const buildAdminOverview = (input: AdminOverviewInput): AdminOverview => 
     const userTopics: Record<string, AdminUserTopic> = {};
     const touchedTopics: Record<string, { attempted: boolean; solved: boolean }> = {};
     let problemsSolved = 0;
-    let stars = 0;
 
     for (const problem of input.problems) {
       const stat = solvedByProblem[problem.id];
@@ -227,7 +225,6 @@ export const buildAdminOverview = (input: AdminOverviewInput): AdminOverview => 
       if (solved) {
         problemsSolved += 1;
       }
-      stars += stat?.bestStars ?? 0;
 
       const lesson = lessonProgress[problem.lessonId] ?? { total: 0, solved: 0 };
       lessonProgress[problem.lessonId] = {
@@ -294,8 +291,6 @@ export const buildAdminOverview = (input: AdminOverviewInput): AdminOverview => 
       lessonsTotal,
       problemsSolved,
       problemsTotal,
-      stars,
-      maxStars: problemsTotal * 3,
       attempts,
       passes,
       passRate: attempts === 0 ? 0 : passes / attempts,

@@ -356,7 +356,7 @@ Yes. Push an object for the arguments and the other frame data, then loop and po
     "What Is a Queue? FIFO Order, Enqueue, and Dequeue",
     "Linear structures",
     "A queue is first in, first out: enqueue joins the back and dequeue leaves from the front. Breadth-first search is that rule with vertices as the payload, and Array.shift on the front is O(n).",
-    ["queue", "queues", "enqueue", "dequeue"],
+    ["queue", "queues", "enqueue", "dequeue", "deque"],
     `
 A queue is first in, first out. Enqueue joins the back, and dequeue leaves from the front. Breadth-first search is that rule with a vertex and a distance as the payload, and Array.shift on the front is O(n).
 

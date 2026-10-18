@@ -38,8 +38,6 @@ export const MODULES_QUERY = `
         completed
         skipped
         available
-        stars
-        maxStars
       }
     }
   }
@@ -53,6 +51,7 @@ export const LESSON_QUERY = `
       title
       summary
       contentMd
+      bitesizeMd
       estimatedMinutes
       weekNumber
       moduleTitle
@@ -68,7 +67,6 @@ export const LESSON_QUERY = `
         starterCode
         difficulty
         topic
-        bestStars
         solved
         attempts
         failedAttempts
@@ -90,10 +88,10 @@ export const ANALYTICS_QUERY = `
       lessonsTotal
       problemsSolved
       problemsTotal
-      stars
-      maxStars
       attempts
       passRate
+      streak
+      activeDays
       focusAreas
       summary
       lessonsSkipped
@@ -106,8 +104,32 @@ export const ANALYTICS_QUERY = `
         solved
         total
         attempted
-        stars
-        maxStars
+      }
+      activity {
+        day
+        submissions
+        passes
+      }
+      difficulties {
+        difficulty
+        label
+        solved
+        total
+      }
+      lessons {
+        slug
+        title
+        weekNumber
+        moduleTitle
+        solved
+        total
+        skipped
+      }
+      improvements {
+        kind
+        title
+        detail
+        href
       }
     }
   }
@@ -232,7 +254,6 @@ export const SUBMIT_SOLUTION = `
     submitSolution(problemId: $problemId, code: $code) {
       id
       passed
-      stars
       testsPassed
       testsTotal
       feedback
@@ -295,8 +316,6 @@ export const ADMIN_OVERVIEW = `
         lessonsTotal
         problemsSolved
         problemsTotal
-        stars
-        maxStars
         attempts
         passes
         passRate

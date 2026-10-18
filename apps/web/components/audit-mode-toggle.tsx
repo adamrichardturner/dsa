@@ -28,7 +28,9 @@ export function AuditModeToggle({
     const response = await setAuditMode({ enabled });
     setPending(false);
     if (response.error !== undefined) {
-      setError(graphqlErrorMessage(response.error, "Could not update audit mode."));
+      setError(
+        graphqlErrorMessage(response.error, "Could not update audit mode."),
+      );
       return;
     }
     const next = response.data?.setAuditMode;
@@ -54,9 +56,12 @@ export function AuditModeToggle({
         />
       </label>
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Open any lesson without finishing the ones before it. A skip still earns no points.
+        Open any lesson without finishing the ones before it. A skip is still
+        not a pass.
       </p>
-      {error !== null ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error !== null ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : null}
     </div>
   );
 }

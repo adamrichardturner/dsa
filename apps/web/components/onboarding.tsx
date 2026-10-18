@@ -29,7 +29,7 @@ const steps: readonly OnboardingStep[] = [
     alt: "A lesson open beside the editor, with the first lesson marked complete",
     paragraphs: [
       "Each lesson is a short reading and one exercise. You write a function in the editor, then submit it. The tests say straight away whether it passed.",
-      "A pass earns points and opens the next lesson. The green tick stays, so you can see what is finished.",
+      "A pass marks the lesson complete and opens the next one. The green tick stays, so you can see what is finished.",
     ],
   },
   {
@@ -47,7 +47,7 @@ const steps: readonly OnboardingStep[] = [
     alt: "The end of the solution explanation, with Close and Skip lesson",
     paragraphs: [
       "At the end of the explanation you can skip the lesson. Skipping opens the next one so you are not stuck.",
-      "A skip is not a pass. It earns no points. The lesson stays on your record, and you can return to it whenever you want the points.",
+      "A skip is not a pass. The lesson stays on your record, and you can return to finish it.",
     ],
   },
   {
@@ -56,7 +56,7 @@ const steps: readonly OnboardingStep[] = [
     alt: "Audit mode on the syllabus, with lessons marked complete, skipped, and ready",
     paragraphs: [
       "Audit mode lets you open any lesson without finishing the ones before it. Leave it off to work in order.",
-      "You can change this later at the top of the syllabus. Skipped lessons still earn no points either way.",
+      "You can change this later at the top of the syllabus. A skip is still not a pass.",
       "Your progress stays with the account. The progress page shows the lessons you have passed, the lessons you skipped, and the topics that still need a pass.",
       "Use it to choose the next session. A skipped lesson is listed there until you complete it.",
     ],

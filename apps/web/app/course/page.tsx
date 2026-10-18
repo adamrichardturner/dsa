@@ -234,8 +234,8 @@ export default function CoursePage() {
         <p className="max-w-xl text-muted-foreground">
           Work in order, or turn on audit mode to open any lesson. With audit
           mode off, a dashed row stays locked until the lesson before it is
-          passed or skipped. A skip opens the next lesson and earns no points.
-          A green tick stays once a lesson actually passes.
+          passed or skipped. A skip opens the next lesson and does not mark this
+          one complete. A green tick stays once a lesson actually passes.
         </p>
         <AuditModeToggle
           onChanged={() => {

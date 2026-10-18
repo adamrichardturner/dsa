@@ -17,9 +17,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export function SuggestedReading({
   slugs,
   from,
+  headingId = "suggested-reading",
 }: {
   readonly slugs: readonly string[];
   readonly from?: string;
+  readonly headingId?: string;
 }) {
   const items: Article[] = [];
 
@@ -36,11 +38,8 @@ export function SuggestedReading({
   }
 
   return (
-    <section
-      className="space-y-3 border-t pt-6"
-      aria-labelledby="suggested-reading"
-    >
-      <h2 id="suggested-reading" className="font-serif text-2xl tracking-tight">
+    <section className="space-y-3 border-t pt-6" aria-labelledby={headingId}>
+      <h2 id={headingId} className="font-serif text-2xl tracking-tight">
         Suggested reading
       </h2>
       <ScrollArea className="**:data-[slot=scroll-area-viewport]:max-h-80 **:data-[slot=scroll-area-viewport]:overscroll-contain">

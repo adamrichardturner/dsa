@@ -1,17 +1,21 @@
 import type { SeedModule } from "./types.js";
+import { bitesize } from "./bitesize.js";
 
 export const week1: SeedModule = {
   id: "foundations",
   title: "Foundations",
-  summary: "Cost, arrays, hash maps, and the two scanning patterns you will reuse all month.",
+  summary:
+    "Cost, arrays, hash maps, and the two scanning patterns you will reuse all month.",
   weekNumber: 1,
   lessons: [
     {
       id: "complexity",
       slug: "complexity",
       title: "The cost of a loop",
-      summary: "Big O is a way to talk about how work grows, before you memorise data structures.",
+      summary:
+        "Big O is a way to talk about how work grows, before you memorise data structures.",
       estimatedMinutes: 30,
+      bitesizeMd: bitesize.complexity,
       contentMd: `
 A data structure is a way of arranging values so the operations you care about stay cheap. Before the structures, you need a shared way to say *cheap*.
 
@@ -83,6 +87,7 @@ Use a single pass. A nested loop also produces the right number, and it is the h
       title: "Arrays",
       summary: "Index reads are cheap. Shifting elements is not.",
       estimatedMinutes: 35,
+      bitesizeMd: bitesize.arrays,
       contentMd: `
 A TypeScript array is a contiguous list. \`nums[i]\` is O(1) because the runtime can jump straight to that slot. \`nums.push(value)\` is cheap on average: it writes at the end. Inserting or deleting in the middle is O(n), because every later element has to move.
 
@@ -148,6 +153,7 @@ Return a new array with \`nums\` rotated left by \`steps\` positions.
       title: "Hash maps",
       summary: "Spend a little memory so the next lookup does not scan.",
       estimatedMinutes: 40,
+      bitesizeMd: bitesize.hashMaps,
       contentMd: `
 A hash map (a plain object or a \`Map\`) associates a key with a value. On average, set and get are O(1). The occasional collision means it is not a promise about every single call, and that is good enough for almost every exercise here.
 
@@ -216,8 +222,10 @@ There is exactly one solution, and you may not use the same element twice. Retur
       id: "two-pointers",
       slug: "two-pointers",
       title: "Two pointers",
-      summary: "When the data is ordered, the two ends know something the middle does not.",
+      summary:
+        "When the data is ordered, the two ends know something the middle does not.",
       estimatedMinutes: 35,
+      bitesizeMd: bitesize.twoPointers,
       contentMd: `
 Two pointers means two indices moving through the same array according to a rule. You use it when the array is sorted, or when you are comparing the ends.
 
@@ -281,6 +289,7 @@ Try the two-pointer approach from the lesson rather than squaring and sorting.
       title: "Sliding window",
       summary: "Reuse the work you did on the previous slice.",
       estimatedMinutes: 35,
+      bitesizeMd: bitesize.slidingWindow,
       contentMd: `
 A sliding window is a subarray you maintain as you walk forward. The fixed-size version is the one to learn first.
 

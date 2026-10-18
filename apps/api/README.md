@@ -47,11 +47,11 @@ Account and password email is sent through Resend from `Data Structures and Algo
 
 ## Course and submissions
 
-Lesson prose, starter code, and tests live in `src/content/week1.ts` through `week4.ts`, gathered by `src/content/course.ts`. On startup `prepareDatabase` creates any missing tables, applies additive column changes, and upserts modules, lessons, and problems. A new lesson or column in that list is applied the next time the process boots. Submitted code and drafts are left as they are. Removing a lesson from the seed does not delete its row.
+Lesson prose, starter code, and tests live in `src/content/week1.ts` through `week4.ts`, gathered by `src/content/course.ts`. On startup `prepareDatabase` creates any missing tables, applies additive column changes, drops the retired `submissions.stars` column, and upserts modules, lessons, and problems. A new lesson or column in that list is applied the next time the process boots. Submitted code and drafts are left as they are. Removing a lesson from the seed does not delete its row.
 
-Lessons open in order unless the account has audit mode on. `Catalog` marks a lesson available when audit mode is on, or when every earlier lesson has been passed or skipped. A skip is stored on `lesson_skips`, is not a pass, and earns no stars. `assertProblemOpen` rejects a draft, a run, or a submit against a lesson that is still closed. New accounts have `onboarding_completed` false until they finish the introduction; existing accounts default to finished.
+Lessons open in order unless the account has audit mode on. `Catalog` marks a lesson available when audit mode is on, or when every earlier lesson has been passed or skipped. A skip is stored on `lesson_skips` and is not a pass. `assertProblemOpen` rejects a draft, a run, or a submit against a lesson that is still closed. New accounts have `onboarding_completed` false until they finish the introduction; existing accounts default to finished.
 
-`Solutions.submit` runs the hidden and public tests, stores the submission, and scores a pass: three stars on the first attempt, two when fewer than three attempts came before it, and one after that. A failed submission scores no stars. Drafts are capped at 100,000 characters.
+`Solutions.submit` runs the hidden and public tests and stores the submission. A pass marks the exercise solved. Drafts are capped at 100,000 characters.
 
 ## The runner
 

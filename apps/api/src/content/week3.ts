@@ -1,4 +1,5 @@
 import type { SeedModule } from "./types.js";
+import { bitesize } from "./bitesize.js";
 
 const treeStarter = `class TreeNode {
   value: number;
@@ -89,6 +90,7 @@ export const week3: SeedModule = {
       title: "Trees",
       summary: "A root, children, and a depth you can compute by recursion.",
       estimatedMinutes: 40,
+      bitesizeMd: bitesize.trees,
       contentMd: `
 A tree is a set of nodes with one **root** and no cycles. Each node has zero or more children. A node with no children is a leaf. A **binary** tree gives each node at most two children, usually called left and right.
 
@@ -156,6 +158,7 @@ An empty list has depth 0. A single node has depth 1. Use the \`buildTree\` help
       title: "Binary search trees",
       summary: "Left is smaller, right is larger, and search becomes a walk.",
       estimatedMinutes: 35,
+      bitesizeMd: bitesize.binarySearchTrees,
       contentMd: `
 A binary search tree adds one rule to a binary tree. Every value in the left subtree is smaller than the node, and every value in the right subtree is larger. Duplicates are a policy decision. This lesson does not insert them.
 
@@ -214,8 +217,10 @@ Do not scan the array directly.
       id: "heaps",
       slug: "heaps",
       title: "Heaps",
-      summary: "A complete tree in an array, useful when you only need the extreme value.",
+      summary:
+        "A complete tree in an array, useful when you only need the extreme value.",
       estimatedMinutes: 40,
+      bitesizeMd: bitesize.heaps,
       contentMd: `
 A heap is a complete binary tree that keeps the smallest value (a min-heap) or the largest (a max-heap) at the root. **Complete** means every level is full except possibly the last, which is filled from the left. That shape lets you store the tree in an array with no pointers.
 
@@ -281,8 +286,10 @@ Return the kth largest value in \`nums\`. \`k\` is at least 1 and at most \`nums
       id: "graphs",
       slug: "graphs",
       title: "Graphs",
-      summary: "Vertices, edges, and breadth-first search for the shortest path.",
+      summary:
+        "Vertices, edges, and breadth-first search for the shortest path.",
       estimatedMinutes: 45,
+      bitesizeMd: bitesize.graphs,
       contentMd: `
 A graph is a set of vertices and a set of edges between them. This lesson uses undirected edges: if you can walk from 0 to 1, you can walk from 1 to 0. A tree is a graph with no cycles. A general graph may have cycles, so a search has to remember where it has already been or it will loop forever.
 

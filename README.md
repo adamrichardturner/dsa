@@ -14,7 +14,7 @@ The desk opens the lesson and a TypeScript editor side by side. You can switch t
 
 Public examples show the shape of the answer. Hidden tests check the cases that are easy to forget. The runner compiles the submission with Sucrase and executes it in `node:vm` with a one-second timeout. `require`, imports, `process`, `eval`, and the `Function` constructor are blocked. That is enough for these exercises. It is not a hardened sandbox for arbitrary untrusted programs.
 
-A pass on the first attempt earns three stars. A pass within the next two attempts earns two. A later pass earns one. A skip earns none. Your draft and your passing solution stay on the account, so the editor is yours when you come back. The progress page shows lessons completed, pass rate, skipped lessons, and the topics that still have an attempt which has not passed.
+A pass marks the lesson done. A skip does not. Your draft and your passing solution stay on the account, so the editor is yours when you come back. The progress page shows lessons completed, pass rate, skipped lessons, and the topics that still have an attempt which has not passed.
 
 ## Syllabus
 

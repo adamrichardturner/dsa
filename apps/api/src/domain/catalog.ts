@@ -2,10 +2,15 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { NotFound, Unexpected } from "./errors.js";
 import { openLessonSlugs } from "./gating.js";
-import type { ExampleView, LessonView, ModuleView, ProblemView, SkipResult } from "./models.js";
+import type {
+  ExampleView,
+  LessonView,
+  ModuleView,
+  ProblemView,
+  SkipResult,
+} from "./models.js";
 
 interface ProblemStat {
-  readonly bestStars: number;
   readonly attempts: number;
   readonly failedAttempts: number;
   readonly solved: boolean;
@@ -32,6 +37,7 @@ const LessonRow = Schema.Struct({
   title: Schema.String,
   summary: Schema.String,
   contentMd: Schema.String,
+  bitesizeMd: Schema.String,
   estimatedMinutes: Schema.Number,
   weekNumber: Schema.Number,
   moduleTitle: Schema.String,
@@ -50,7 +56,6 @@ const ProblemRow = Schema.Struct({
 
 const StatRow = Schema.Struct({
   problemId: Schema.String,
-  bestStars: Schema.Number,
   attempts: Schema.Number,
   failedAttempts: Schema.Number,
   solved: Schema.Boolean,
@@ -72,7 +77,6 @@ const StoredTest = Schema.Struct({
 const parseJson = (text: string): unknown => JSON.parse(text);
 
 const emptyStat = (): ProblemStat => ({
-  bestStars: 0,
   attempts: 0,
   failedAttempts: 0,
   solved: false,
@@ -105,13 +109,20 @@ const isLessonSolved = (
 const orderedLessons = (
   rows: readonly { lessonId: string; slug: string; problemId: string }[],
 ): readonly OrderedLesson[] => {
-  const byId: Record<string, { id: string; slug: string; problemIds: string[] }> = {};
+  const byId: Record<
+    string,
+    { id: string; slug: string; problemIds: string[] }
+  > = {};
   const order: string[] = [];
 
   for (const row of rows) {
     const current = byId[row.lessonId];
     if (current === undefined) {
-      byId[row.lessonId] = { id: row.lessonId, slug: row.slug, problemIds: [row.problemId] };
+      byId[row.lessonId] = {
+        id: row.lessonId,
+        slug: row.slug,
+        problemIds: [row.problemId],
+      };
       order.push(row.lessonId);
       continue;
     }
@@ -146,9 +157,17 @@ const openSlugs = (
   skippedByLesson: Record<string, boolean>,
   auditMode: boolean,
 ): Record<string, boolean> =>
-  openLessonSlugs(lessons, solvedByLesson(lessons, stats), skippedByLesson, auditMode);
+  openLessonSlugs(
+    lessons,
+    solvedByLesson(lessons, stats),
+    skippedByLesson,
+    auditMode,
+  );
 
-const slugForProblem = (lessons: readonly OrderedLesson[], problemId: string): string | null => {
+const slugForProblem = (
+  lessons: readonly OrderedLesson[],
+  problemId: string,
+): string | null => {
   for (const lesson of lessons) {
     if (!lesson.problemIds.includes(problemId)) {
       continue;
@@ -159,15 +178,19 @@ const slugForProblem = (lessons: readonly OrderedLesson[], problemId: string): s
 };
 
 const formatCall = (functionName: string, args: readonly unknown[]): string => {
-  const rendered = args.map((arg) => JSON.stringify(arg) ?? "undefined").join(", ");
+  const rendered = args
+    .map((arg) => JSON.stringify(arg) ?? "undefined")
+    .join(", ");
   return `${functionName}(${rendered})`;
 };
 
-const failUnexpected = (message: string) => <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  effect.pipe(
-    Effect.tapError((error) => Effect.logError(message, error)),
-    Effect.mapError(() => new Unexpected({ message })),
-  );
+const failUnexpected =
+  (message: string) =>
+  <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    effect.pipe(
+      Effect.tapError((error) => Effect.logError(message, error)),
+      Effect.mapError(() => new Unexpected({ message })),
+    );
 
 const readExamples = (
   functionName: string,
@@ -178,8 +201,12 @@ const readExamples = (
       try: () => parseJson(testsJson),
       catch: () => new Unexpected({ message: "Could not read an exercise." }),
     });
-    const tests = yield* Schema.decodeUnknownEffect(Schema.Array(StoredTest))(parsed).pipe(
-      Effect.mapError(() => new Unexpected({ message: "Could not read an exercise." })),
+    const tests = yield* Schema.decodeUnknownEffect(Schema.Array(StoredTest))(
+      parsed,
+    ).pipe(
+      Effect.mapError(
+        () => new Unexpected({ message: "Could not read an exercise." }),
+      ),
     );
     const examples: ExampleView[] = [];
 
@@ -199,10 +226,21 @@ const readExamples = (
 export class Catalog extends Context.Service<
   Catalog,
   {
-    listModules(userId: string): Effect.Effect<readonly ModuleView[], Unexpected>;
-    getLesson(userId: string, slug: string): Effect.Effect<LessonView, NotFound | Unexpected>;
-    assertProblemOpen(userId: string, problemId: string): Effect.Effect<void, NotFound | Unexpected>;
-    skipLesson(userId: string, slug: string): Effect.Effect<SkipResult, NotFound | Unexpected>;
+    listModules(
+      userId: string,
+    ): Effect.Effect<readonly ModuleView[], Unexpected>;
+    getLesson(
+      userId: string,
+      slug: string,
+    ): Effect.Effect<LessonView, NotFound | Unexpected>;
+    assertProblemOpen(
+      userId: string,
+      problemId: string,
+    ): Effect.Effect<void, NotFound | Unexpected>;
+    skipLesson(
+      userId: string,
+      slug: string,
+    ): Effect.Effect<SkipResult, NotFound | Unexpected>;
   }
 >()("app/Catalog") {
   static readonly layer = Layer.effect(
@@ -240,7 +278,6 @@ export class Catalog extends Context.Service<
           sql`
             SELECT
               problem_id AS "problemId",
-              MAX(stars)::int AS "bestStars",
               COUNT(*)::int AS "attempts",
               COUNT(*) FILTER (WHERE NOT passed)::int AS "failedAttempts",
               BOOL_OR(passed) AS "solved",
@@ -283,6 +320,7 @@ export class Catalog extends Context.Service<
               l.title,
               l.summary,
               l.content_md AS "contentMd",
+              l.bitesize_md AS "bitesizeMd",
               l.estimated_minutes AS "estimatedMinutes",
               m.week_number AS "weekNumber",
               m.title AS "moduleTitle"
@@ -379,7 +417,6 @@ export class Catalog extends Context.Service<
 
           for (const stat of stats) {
             byProblem[stat.problemId] = {
-              bestStars: stat.bestStars,
               attempts: stat.attempts,
               failedAttempts: stat.failedAttempts,
               solved: stat.solved,
@@ -396,8 +433,12 @@ export class Catalog extends Context.Service<
           return byProblem;
         });
 
-      const listModules = Effect.fn("Catalog.listModules")(function* (userId: string) {
-        const rows = yield* listOutline().pipe(failUnexpected("Could not load the course."));
+      const listModules = Effect.fn("Catalog.listModules")(function* (
+        userId: string,
+      ) {
+        const rows = yield* listOutline().pipe(
+          failUnexpected("Could not load the course."),
+        );
         const stats = yield* loadStats(userId);
         const skips = yield* loadSkips(userId);
         const auditMode = yield* loadAuditMode(userId);
@@ -475,16 +516,16 @@ export class Catalog extends Context.Service<
             if (lesson === undefined) {
               return [];
             }
-            let stars = 0;
             let solved = 0;
             for (const problemId of lesson.problemIds) {
               const stat = stats[problemId] ?? emptyStat();
-              stars += stat.bestStars;
               if (stat.solved) {
                 solved += 1;
               }
             }
-            const completed = lesson.problemIds.length > 0 && solved === lesson.problemIds.length;
+            const completed =
+              lesson.problemIds.length > 0 &&
+              solved === lesson.problemIds.length;
             return [
               {
                 id: lesson.id,
@@ -495,8 +536,6 @@ export class Catalog extends Context.Service<
                 completed,
                 skipped: skips[lesson.id] === true && !completed,
                 available: open[lesson.slug] === true,
-                stars,
-                maxStars: lesson.problemIds.length * 3,
               },
             ];
           });
@@ -513,16 +552,23 @@ export class Catalog extends Context.Service<
         });
       });
 
-      const getLesson = Effect.fn("Catalog.getLesson")(function* (userId: string, slug: string) {
+      const getLesson = Effect.fn("Catalog.getLesson")(function* (
+        userId: string,
+        slug: string,
+      ) {
         const lessons = yield* findLesson({ slug }).pipe(
           failUnexpected("Could not load that lesson."),
         );
         const lesson = lessons[0];
         if (lesson === undefined) {
-          return yield* new NotFound({ message: "That lesson does not exist." });
+          return yield* new NotFound({
+            message: "That lesson does not exist.",
+          });
         }
 
-        const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
+        const outline = yield* listOutline().pipe(
+          failUnexpected("Could not load the course."),
+        );
         const stats = yield* loadStats(userId);
         const skips = yield* loadSkips(userId);
         const auditMode = yield* loadAuditMode(userId);
@@ -552,7 +598,10 @@ export class Catalog extends Context.Service<
           if (stat.solved) {
             solvedCount += 1;
           }
-          const examples = yield* readExamples(problem.functionName, problem.testsJson);
+          const examples = yield* readExamples(
+            problem.functionName,
+            problem.testsJson,
+          );
           problemViews.push({
             id: problem.id,
             title: problem.title,
@@ -561,7 +610,6 @@ export class Catalog extends Context.Service<
             difficulty: problem.difficulty,
             topic: problem.topic,
             examples,
-            bestStars: stat.bestStars,
             solved: stat.solved,
             attempts: stat.attempts,
             failedAttempts: stat.failedAttempts,
@@ -576,6 +624,7 @@ export class Catalog extends Context.Service<
           title: lesson.title,
           summary: lesson.summary,
           contentMd: lesson.contentMd,
+          bitesizeMd: lesson.bitesizeMd,
           estimatedMinutes: lesson.estimatedMinutes,
           weekNumber: lesson.weekNumber,
           moduleTitle: lesson.moduleTitle,
@@ -588,38 +637,48 @@ export class Catalog extends Context.Service<
         };
       });
 
-      const assertProblemOpen = Effect.fn("Catalog.assertProblemOpen")(function* (
-        userId: string,
-        problemId: string,
-      ) {
-        const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
-        const stats = yield* loadStats(userId);
-        const skips = yield* loadSkips(userId);
-        const auditMode = yield* loadAuditMode(userId);
-        const sequence = orderedLessons(outline);
-        const slug = slugForProblem(sequence, problemId);
-        if (slug === null) {
-          return yield* new NotFound({ message: "That exercise does not exist." });
-        }
-        const open = openSlugs(sequence, stats, skips, auditMode);
-        if (open[slug] === true) {
-          return;
-        }
-        return yield* new NotFound({
-          message: "Finish the previous lesson before submitting this one.",
-        });
-      });
+      const assertProblemOpen = Effect.fn("Catalog.assertProblemOpen")(
+        function* (userId: string, problemId: string) {
+          const outline = yield* listOutline().pipe(
+            failUnexpected("Could not load the course."),
+          );
+          const stats = yield* loadStats(userId);
+          const skips = yield* loadSkips(userId);
+          const auditMode = yield* loadAuditMode(userId);
+          const sequence = orderedLessons(outline);
+          const slug = slugForProblem(sequence, problemId);
+          if (slug === null) {
+            return yield* new NotFound({
+              message: "That exercise does not exist.",
+            });
+          }
+          const open = openSlugs(sequence, stats, skips, auditMode);
+          if (open[slug] === true) {
+            return;
+          }
+          return yield* new NotFound({
+            message: "Finish the previous lesson before submitting this one.",
+          });
+        },
+      );
 
-      const skipLesson = Effect.fn("Catalog.skipLesson")(function* (userId: string, slug: string) {
+      const skipLesson = Effect.fn("Catalog.skipLesson")(function* (
+        userId: string,
+        slug: string,
+      ) {
         const lessons = yield* findLesson({ slug }).pipe(
           failUnexpected("Could not load that lesson."),
         );
         const lesson = lessons[0];
         if (lesson === undefined) {
-          return yield* new NotFound({ message: "That lesson does not exist." });
+          return yield* new NotFound({
+            message: "That lesson does not exist.",
+          });
         }
 
-        const outline = yield* listOutline().pipe(failUnexpected("Could not load the course."));
+        const outline = yield* listOutline().pipe(
+          failUnexpected("Could not load the course."),
+        );
         const stats = yield* loadStats(userId);
         const skips = yield* loadSkips(userId);
         const auditMode = yield* loadAuditMode(userId);
@@ -635,7 +694,10 @@ export class Catalog extends Context.Service<
           failUnexpected("Could not skip that lesson."),
         );
 
-        const nextSkips: Record<string, boolean> = { ...skips, [lesson.id]: true };
+        const nextSkips: Record<string, boolean> = {
+          ...skips,
+          [lesson.id]: true,
+        };
         const nextOpen = openSlugs(sequence, stats, nextSkips, auditMode);
         const index = sequence.findIndex((item) => item.slug === slug);
         const next = index >= 0 ? sequence[index + 1] : undefined;
@@ -649,7 +711,12 @@ export class Catalog extends Context.Service<
         };
       });
 
-      return Catalog.of({ listModules, getLesson, assertProblemOpen, skipLesson });
+      return Catalog.of({
+        listModules,
+        getLesson,
+        assertProblemOpen,
+        skipLesson,
+      });
     }),
   );
 }

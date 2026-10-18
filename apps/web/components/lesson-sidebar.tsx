@@ -167,10 +167,7 @@ function LessonMark({
 }) {
   if (lesson.completed) {
     return (
-      <CompletionTick
-        label={`${lesson.title} complete`}
-        className="size-4"
-      />
+      <CompletionTick label={`${lesson.title} complete`} className="size-4" />
     );
   }
   if (lesson.skipped) {
@@ -210,10 +207,7 @@ function LockedLesson({
   return (
     <SidebarMenuItem>
       <Tooltip>
-        <TooltipTrigger
-          delay={400}
-          render={<span className="block w-full" />}
-        >
+        <TooltipTrigger delay={400} render={<span className="block w-full" />}>
           <SidebarMenuButton
             type="button"
             aria-disabled={true}
@@ -227,7 +221,8 @@ function LockedLesson({
           </SidebarMenuButton>
         </TooltipTrigger>
         <TooltipContent side="right">
-          Pass or skip the previous lesson to open this one. A skip does not earn points.
+          Pass or skip the previous lesson to open this one. A skip is not a
+          pass.
         </TooltipContent>
       </Tooltip>
     </SidebarMenuItem>
@@ -270,9 +265,7 @@ function OpenLesson({
     <SidebarMenuItem>
       <SidebarMenuButton
         isActive={false}
-        render={
-          <Link href={`/course/${lesson.slug}`} onClick={onOpen} />
-        }
+        render={<Link href={`/course/${lesson.slug}`} onClick={onOpen} />}
       >
         <LessonMark lesson={lesson} current={false} />
         <span className="w-5 shrink-0 font-mono text-[11px] text-sidebar-foreground/50">
@@ -496,7 +489,8 @@ function LessonSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
         <p className="px-2 pb-1 text-[11px] leading-relaxed text-sidebar-foreground/60">
-          With audit mode off, a lesson stays locked until the one before it is passed or skipped. A skip does not earn points.
+          With audit mode off, a lesson stays locked until the one before it is
+          passed or skipped. A skip is not a pass.
         </p>
       </SidebarFooter>
       <SidebarRail />
@@ -551,7 +545,11 @@ export function LessonSidebarFrame({
         onOpenChange={setOpen}
         className="relative h-full min-h-0 flex-1 overflow-hidden"
       >
-        <LessonSidebar modules={modules} status={status} errorMessage={syllabusError} />
+        <LessonSidebar
+          modules={modules}
+          status={status}
+          errorMessage={syllabusError}
+        />
         <SidebarInset className="h-full min-h-0 min-w-0 overflow-hidden">
           {children}
         </SidebarInset>
