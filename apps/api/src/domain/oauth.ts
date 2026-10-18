@@ -3,6 +3,7 @@ import { Context, Effect, Layer, Option, Redacted, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { AppConfig } from "../config.js";
 import { isRecord } from "../lib/guards.js";
+import { isAdminEmail } from "./admin-access.js";
 import { BadInput, OauthFlowError, Unexpected } from "./errors.js";
 import type { AuthResult, OauthProvider, PublicUser } from "./models.js";
 import {
@@ -633,6 +634,7 @@ export class OAuth extends Context.Service<
             avatarUrl: row.avatarUrl,
             hasPassword: row.passwordHash !== null,
             providers: linkedProviders,
+            isAdmin: isAdminEmail(row.email),
           };
           return user;
         });

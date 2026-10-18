@@ -3,6 +3,7 @@ import { PgClient } from "@effect/sql-pg";
 import { AppConfig } from "./config.js";
 import { prepareDatabase } from "./db/prepare.js";
 import { Auth, RequestAuth } from "./domain/auth.js";
+import { Admin } from "./domain/admin.js";
 import { Mail } from "./domain/mail.js";
 import { OAuth } from "./domain/oauth.js";
 import { Catalog } from "./domain/catalog.js";
@@ -24,9 +25,11 @@ const DbLive = Layer.unwrap(
 );
 
 const AuthLive = Auth.layer.pipe(Layer.provide(Mail.layer));
+const AdminLive = Admin.layer.pipe(Layer.provide(AuthLive));
 
 export const AppLayer = Layer.mergeAll(
   AuthLive,
+  AdminLive,
   OAuth.layer,
   Catalog.layer,
   Solutions.layer,
@@ -40,7 +43,15 @@ export const AppLayer = Layer.mergeAll(
 
 export const runtime = ManagedRuntime.make(AppLayer);
 
-type AppRequirements = Auth | OAuth | Catalog | Solutions | Insights | AppConfig | RequestAuth;
+type AppRequirements =
+  | Auth
+  | Admin
+  | OAuth
+  | Catalog
+  | Solutions
+  | Insights
+  | AppConfig
+  | RequestAuth;
 
 export const runEffect = <A, E>(
   token: string | null,

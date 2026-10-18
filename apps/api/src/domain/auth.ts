@@ -10,6 +10,7 @@ import {
   passwordChangedMessage,
   passwordResetMessage,
 } from "./mail.js";
+import { isAdminEmail } from "./admin-access.js";
 import type { AuthResult, OauthProvider, PublicUser } from "./models.js";
 import { isOauthProvider } from "./oauth-plan.js";
 
@@ -432,6 +433,7 @@ export class Auth extends Context.Service<
             avatarUrl: row.avatarUrl,
             hasPassword: row.passwordHash !== null,
             providers,
+            isAdmin: isAdminEmail(row.email),
           };
         });
 

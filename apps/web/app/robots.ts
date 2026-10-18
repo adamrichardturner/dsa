@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/site";
 
-const allowAll = { allow: "/" };
+const allowAll = { allow: "/", disallow: "/admin" };
 
 export default function robots(): MetadataRoute.Robots {
   return {

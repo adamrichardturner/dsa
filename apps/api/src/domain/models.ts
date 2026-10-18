@@ -9,6 +9,7 @@ export interface PublicUser {
   readonly avatarUrl: string | null;
   readonly hasPassword: boolean;
   readonly providers: readonly OauthProvider[];
+  readonly isAdmin: boolean;
 }
 
 export interface AuthResult {
@@ -104,4 +105,75 @@ export interface AnalyticsView {
   readonly topics: readonly TopicStat[];
   readonly focusAreas: readonly string[];
   readonly summary: string;
+}
+
+export interface AdminDayPoint {
+  readonly day: string;
+  readonly signups: number;
+  readonly submissions: number;
+  readonly passes: number;
+}
+
+export interface AdminAuthSlice {
+  readonly method: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+export interface AdminTopicStat {
+  readonly topic: string;
+  readonly problems: number;
+  readonly attempters: number;
+  readonly solvers: number;
+}
+
+export interface AdminProgressBucket {
+  readonly label: string;
+  readonly count: number;
+}
+
+export interface AdminUserTopic {
+  readonly topic: string;
+  readonly solved: number;
+  readonly total: number;
+}
+
+export interface AdminUserRow {
+  readonly id: string;
+  readonly email: string;
+  readonly name: string;
+  readonly avatarUrl: string | null;
+  readonly hasPassword: boolean;
+  readonly providers: readonly OauthProvider[];
+  readonly createdAt: string;
+  readonly lastActiveAt: string | null;
+  readonly lessonsCompleted: number;
+  readonly lessonsTotal: number;
+  readonly problemsSolved: number;
+  readonly problemsTotal: number;
+  readonly stars: number;
+  readonly maxStars: number;
+  readonly attempts: number;
+  readonly passes: number;
+  readonly passRate: number;
+  readonly deletable: boolean;
+  readonly topics: readonly AdminUserTopic[];
+}
+
+export interface AdminOverview {
+  readonly usersTotal: number;
+  readonly activeLast7Days: number;
+  readonly activeLast30Days: number;
+  readonly signupsLast7Days: number;
+  readonly signupsLast30Days: number;
+  readonly submissionsTotal: number;
+  readonly passesTotal: number;
+  readonly passRate: number;
+  readonly lessonsCompletedAverage: number;
+  readonly problemsSolvedAverage: number;
+  readonly series: readonly AdminDayPoint[];
+  readonly authMethods: readonly AdminAuthSlice[];
+  readonly topics: readonly AdminTopicStat[];
+  readonly progress: readonly AdminProgressBucket[];
+  readonly users: readonly AdminUserRow[];
 }

@@ -48,6 +48,7 @@ const isUserRecord = (
   avatarUrl?: unknown;
   hasPassword?: unknown;
   providers?: unknown;
+  isAdmin?: unknown;
 } => {
   if (!isRecord(value)) {
     return false;
@@ -66,6 +67,7 @@ const toUser = (value: {
   avatarUrl?: unknown;
   hasPassword?: unknown;
   providers?: unknown;
+  isAdmin?: unknown;
 }): User => {
   const avatarUrl = value.avatarUrl;
   const trimmed = typeof avatarUrl === "string" ? avatarUrl.trim() : "";
@@ -76,6 +78,7 @@ const toUser = (value: {
     avatarUrl: trimmed.length === 0 ? null : trimmed,
     hasPassword: typeof value.hasPassword === "boolean" ? value.hasPassword : true,
     providers: readProviders(value.providers),
+    isAdmin: value.isAdmin === true,
   };
 };
 
@@ -96,6 +99,7 @@ const readStoredUser = (raw: string | null): User | null => {
 
 interface AuthContextValue {
   readonly ready: boolean;
+  readonly settled: boolean;
   readonly token: string | null;
   readonly user: User | null;
   readonly signIn: (token: string, user: User) => void;
@@ -126,8 +130,29 @@ export const useRequireUser = (): AuthContextValue => {
   return auth;
 };
 
+export const useRequireAdmin = (): AuthContextValue => {
+  const auth = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!auth.ready || !auth.settled) {
+      return;
+    }
+    if (auth.user === null) {
+      router.replace("/sign-in");
+      return;
+    }
+    if (!auth.user.isAdmin) {
+      router.replace("/");
+    }
+  }, [auth.ready, auth.settled, auth.user, router]);
+
+  return auth;
+};
+
 export function AuthProvider({ children }: { readonly children: ReactNode }) {
   const [ready, setReady] = useState(false);
+  const [settled, setSettled] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
@@ -139,6 +164,9 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
       setUser(storedUser);
     }
     setReady(true);
+    if (storedToken === null || storedUser === null) {
+      setSettled(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -177,7 +205,13 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
           window.localStorage.setItem(userKey, JSON.stringify(next));
         }
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (controller.signal.aborted) {
+          return;
+        }
+        setSettled(true);
+      });
 
     return () => {
       controller.abort();
@@ -206,6 +240,7 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       ready,
+      settled,
       token,
       user,
       signIn: (nextToken, nextUser) => {
@@ -214,6 +249,7 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         window.localStorage.setItem(userKey, JSON.stringify(stored));
         setToken(nextToken);
         setUser(stored);
+        setSettled(true);
       },
       updateUser: (nextUser) => {
         const stored = toUser(nextUser);
@@ -225,9 +261,10 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         window.localStorage.removeItem(userKey);
         setToken(null);
         setUser(null);
+        setSettled(true);
       },
     }),
-    [ready, token, user],
+    [ready, settled, token, user],
   );
 
   return (

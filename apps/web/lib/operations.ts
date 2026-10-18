@@ -5,6 +5,7 @@ const userFields = `
   avatarUrl
   hasPassword
   providers
+  isAdmin
 `;
 
 export const ME_QUERY = `
@@ -211,5 +212,74 @@ export const SUBMIT_SOLUTION = `
         error
       }
     }
+  }
+`;
+
+export const ADMIN_OVERVIEW = `
+  query AdminOverview {
+    adminOverview {
+      usersTotal
+      activeLast7Days
+      activeLast30Days
+      signupsLast7Days
+      signupsLast30Days
+      submissionsTotal
+      passesTotal
+      passRate
+      lessonsCompletedAverage
+      problemsSolvedAverage
+      series {
+        day
+        signups
+        submissions
+        passes
+      }
+      authMethods {
+        method
+        label
+        count
+      }
+      topics {
+        topic
+        problems
+        attempters
+        solvers
+      }
+      progress {
+        label
+        count
+      }
+      users {
+        id
+        email
+        name
+        avatarUrl
+        hasPassword
+        providers
+        createdAt
+        lastActiveAt
+        lessonsCompleted
+        lessonsTotal
+        problemsSolved
+        problemsTotal
+        stars
+        maxStars
+        attempts
+        passes
+        passRate
+        deletable
+        topics {
+          topic
+          solved
+          total
+        }
+      }
+    }
+  }
+`;
+
+export const ADMIN_DELETE_ACCOUNT = `
+  mutation AdminDeleteAccount($userId: ID!) {
+    adminDeleteAccount(userId: $userId)
   }
 `;

@@ -11,6 +11,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { Auth } from "../domain/auth.js";
+import { Admin } from "../domain/admin.js";
 import { OAuth } from "../domain/oauth.js";
 import { Catalog } from "../domain/catalog.js";
 import { Insights } from "../domain/insights.js";
@@ -31,6 +32,7 @@ const UserType = new GraphQLObjectType({
     avatarUrl: { type: GraphQLString },
     hasPassword: { type: new GraphQLNonNull(GraphQLBoolean) },
     providers: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))) },
+    isAdmin: { type: new GraphQLNonNull(GraphQLBoolean) },
   },
 });
 
@@ -182,6 +184,100 @@ const AnalyticsType = new GraphQLObjectType({
   },
 });
 
+const AdminDayPointType = new GraphQLObjectType({
+  name: "AdminDayPoint",
+  fields: {
+    day: { type: new GraphQLNonNull(GraphQLString) },
+    signups: { type: new GraphQLNonNull(GraphQLInt) },
+    submissions: { type: new GraphQLNonNull(GraphQLInt) },
+    passes: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const AdminAuthSliceType = new GraphQLObjectType({
+  name: "AdminAuthSlice",
+  fields: {
+    method: { type: new GraphQLNonNull(GraphQLString) },
+    label: { type: new GraphQLNonNull(GraphQLString) },
+    count: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const AdminTopicStatType = new GraphQLObjectType({
+  name: "AdminTopicStat",
+  fields: {
+    topic: { type: new GraphQLNonNull(GraphQLString) },
+    problems: { type: new GraphQLNonNull(GraphQLInt) },
+    attempters: { type: new GraphQLNonNull(GraphQLInt) },
+    solvers: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const AdminProgressBucketType = new GraphQLObjectType({
+  name: "AdminProgressBucket",
+  fields: {
+    label: { type: new GraphQLNonNull(GraphQLString) },
+    count: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const AdminUserTopicType = new GraphQLObjectType({
+  name: "AdminUserTopic",
+  fields: {
+    topic: { type: new GraphQLNonNull(GraphQLString) },
+    solved: { type: new GraphQLNonNull(GraphQLInt) },
+    total: { type: new GraphQLNonNull(GraphQLInt) },
+  },
+});
+
+const AdminUserType = new GraphQLObjectType({
+  name: "AdminUser",
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    email: { type: new GraphQLNonNull(GraphQLString) },
+    name: { type: new GraphQLNonNull(GraphQLString) },
+    avatarUrl: { type: GraphQLString },
+    hasPassword: { type: new GraphQLNonNull(GraphQLBoolean) },
+    providers: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLString))) },
+    createdAt: { type: new GraphQLNonNull(GraphQLString) },
+    lastActiveAt: { type: GraphQLString },
+    lessonsCompleted: { type: new GraphQLNonNull(GraphQLInt) },
+    lessonsTotal: { type: new GraphQLNonNull(GraphQLInt) },
+    problemsSolved: { type: new GraphQLNonNull(GraphQLInt) },
+    problemsTotal: { type: new GraphQLNonNull(GraphQLInt) },
+    stars: { type: new GraphQLNonNull(GraphQLInt) },
+    maxStars: { type: new GraphQLNonNull(GraphQLInt) },
+    attempts: { type: new GraphQLNonNull(GraphQLInt) },
+    passes: { type: new GraphQLNonNull(GraphQLInt) },
+    passRate: { type: new GraphQLNonNull(GraphQLFloat) },
+    deletable: { type: new GraphQLNonNull(GraphQLBoolean) },
+    topics: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminUserTopicType))) },
+  },
+});
+
+const AdminOverviewType = new GraphQLObjectType({
+  name: "AdminOverview",
+  fields: {
+    usersTotal: { type: new GraphQLNonNull(GraphQLInt) },
+    activeLast7Days: { type: new GraphQLNonNull(GraphQLInt) },
+    activeLast30Days: { type: new GraphQLNonNull(GraphQLInt) },
+    signupsLast7Days: { type: new GraphQLNonNull(GraphQLInt) },
+    signupsLast30Days: { type: new GraphQLNonNull(GraphQLInt) },
+    submissionsTotal: { type: new GraphQLNonNull(GraphQLInt) },
+    passesTotal: { type: new GraphQLNonNull(GraphQLInt) },
+    passRate: { type: new GraphQLNonNull(GraphQLFloat) },
+    lessonsCompletedAverage: { type: new GraphQLNonNull(GraphQLFloat) },
+    problemsSolvedAverage: { type: new GraphQLNonNull(GraphQLFloat) },
+    series: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminDayPointType))) },
+    authMethods: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminAuthSliceType))) },
+    topics: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminTopicStatType))) },
+    progress: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminProgressBucketType))),
+    },
+    users: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(AdminUserType))) },
+  },
+});
+
 const requireString = (value: unknown, message: string): string => {
   if (typeof value !== "string") {
     throw new Error(message);
@@ -254,6 +350,14 @@ export const schema = new GraphQLSchema({
               const user = yield* auth.currentUser;
               return yield* insights.forUser(user.id);
             }),
+          ),
+      },
+      adminOverview: {
+        type: new GraphQLNonNull(AdminOverviewType),
+        resolve: (_parent, _args, context: GraphQLContext) =>
+          execute(
+            context.token,
+            Admin.use((admin) => admin.overview()),
           ),
       },
     },
@@ -420,6 +524,19 @@ export const schema = new GraphQLSchema({
                 password: typeof args.password === "string" ? args.password : null,
                 confirmation: typeof args.confirmation === "string" ? args.confirmation : null,
               }),
+            ),
+          ),
+      },
+      adminDeleteAccount: {
+        type: new GraphQLNonNull(GraphQLBoolean),
+        args: {
+          userId: { type: new GraphQLNonNull(GraphQLID) },
+        },
+        resolve: (_parent, args: { userId?: unknown }, context: GraphQLContext) =>
+          execute(
+            context.token,
+            Admin.use((admin) =>
+              admin.deleteAccount(requireString(args.userId, "That account does not exist.")),
             ),
           ),
       },

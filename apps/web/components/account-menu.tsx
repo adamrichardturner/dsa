@@ -65,6 +65,9 @@ export function AccountMenu() {
           <p className="truncate text-xs text-muted-foreground">{user.email}</p>
         </div>
         <DropdownMenuSeparator />
+        {user.isAdmin ? (
+          <DropdownMenuItem render={<Link href="/admin" />}>Admin</DropdownMenuItem>
+        ) : null}
         <DropdownMenuItem render={<Link href="/settings" />}>
           Settings
         </DropdownMenuItem>
