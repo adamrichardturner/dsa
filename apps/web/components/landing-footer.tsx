@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useSyncExternalStore } from "react";
 import { ArrowUpRight } from "lucide-react";
 import {
   contactEmail,
@@ -58,7 +61,10 @@ type LondonStamp = {
 
 function londonStamp(now: Date): LondonStamp {
   const timeZone = "Europe/London";
-  const year = new Intl.DateTimeFormat("en-GB", { year: "numeric", timeZone }).format(now);
+  const year = new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    timeZone,
+  }).format(now);
   const label = new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "long",
@@ -74,6 +80,30 @@ function londonStamp(now: Date): LondonStamp {
 
   return { year, label, iso };
 }
+
+const emptyStamp: LondonStamp = {
+  year: "",
+  label: "",
+  iso: "",
+};
+
+const subscribeLondonStamp = (): (() => void) => {
+  return () => {};
+};
+
+let currentStamp: LondonStamp | null = null;
+
+const readLondonStamp = (): LondonStamp => {
+  if (currentStamp !== null) {
+    return currentStamp;
+  }
+  currentStamp = londonStamp(new Date());
+  return currentStamp;
+};
+
+const readServerLondonStamp = (): LondonStamp => {
+  return emptyStamp;
+};
 
 function FooterAnchor({ href, label }: FooterLink) {
   if (href.startsWith("#")) {
@@ -94,7 +124,9 @@ function FooterAnchor({ href, label }: FooterLink) {
 function FooterLinks({ title, links }: FooterColumn) {
   return (
     <nav aria-label={title}>
-      <p className="font-mono text-xs tracking-wide text-muted-foreground">{title}</p>
+      <p className="font-mono text-xs tracking-wide text-muted-foreground">
+        {title}
+      </p>
       <ul className="mt-4 space-y-2.5">
         {links.map((link) => (
           <li key={link.href}>
@@ -107,7 +139,12 @@ function FooterLinks({ title, links }: FooterColumn) {
 }
 
 export function LandingFooter() {
-  const stamp = londonStamp(new Date());
+  const stamp = useSyncExternalStore(
+    subscribeLondonStamp,
+    readLondonStamp,
+    readServerLondonStamp,
+  );
+  const year = stamp.year.length > 0 ? ` ${stamp.year}` : "";
 
   return (
     <footer className="mt-auto border-t">
@@ -115,7 +152,9 @@ export function LandingFooter() {
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
           <div className="space-y-5 lg:col-span-5">
             <p className="font-serif text-3xl tracking-tight">{siteName}</p>
-            <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">{siteDescription}</p>
+            <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+              {siteDescription}
+            </p>
             <p className="text-sm text-muted-foreground">{siteDomain}</p>
             <a
               href={creatorUrl}
@@ -137,13 +176,21 @@ export function LandingFooter() {
           </div>
           <div className="grid gap-10 sm:grid-cols-3 lg:col-span-7">
             {columns.map((column) => (
-              <FooterLinks key={column.title} title={column.title} links={column.links} />
+              <FooterLinks
+                key={column.title}
+                title={column.title}
+                links={column.links}
+              />
             ))}
           </div>
         </div>
         <div className="mt-14 flex flex-col gap-2 border-t pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>Copyright © {stamp.year} {creatorName}. All rights reserved.</p>
-          <time dateTime={stamp.iso}>{stamp.label}</time>
+          <p>
+            Copyright ©{year} {creatorName}. All rights reserved.
+          </p>
+          {stamp.label.length === 0 ? null : (
+            <time dateTime={stamp.iso}>{stamp.label}</time>
+          )}
         </div>
       </div>
     </footer>
