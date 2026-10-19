@@ -1,16 +1,29 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { CircleAlert } from "lucide-react";
+import { ArrowRight, CircleAlert } from "lucide-react";
+import { CompletionTick } from "@/components/completion-tick";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import type { PassCompletion } from "@/lib/exercise-order";
 import type { SubmissionView, TestResultView } from "@/lib/types";
+
+export interface SolutionContinuation {
+  readonly completion: PassCompletion;
+  readonly lessonTitle: string;
+  readonly nextExerciseHref: string | null;
+  readonly nextLessonHref: string | null;
+}
 
 export type SolutionNoticeState =
   | { readonly kind: "checking" }
   | { readonly kind: "error"; readonly message: string }
-  | { readonly kind: "result"; readonly outcome: SubmissionView };
+  | {
+      readonly kind: "result";
+      readonly outcome: SubmissionView;
+      readonly continuation: SolutionContinuation | null;
+    };
 
 interface FailureHint {
   readonly id: string;
@@ -109,12 +122,29 @@ const noticeKey = (notice: SolutionNoticeState): string => {
   return "checking";
 };
 
+const exerciseCopy = (hasNextExercise: boolean): string => {
+  if (hasNextExercise) {
+    return "This exercise is done.";
+  }
+  return "This exercise is done. Other exercises in this lesson are still open.";
+};
+
+const lessonCopy = (lessonTitle: string): string => {
+  const title = lessonTitle.trim();
+  if (title.length === 0) {
+    return "Every exercise in this lesson is done.";
+  }
+  return `Every exercise in ${title} is done.`;
+};
+
 export function SolutionNotice({
   notice,
   onDismiss,
+  onNavigate,
 }: {
   readonly notice: SolutionNoticeState | null;
   readonly onDismiss: () => void;
+  readonly onNavigate: (href: string) => void;
 }) {
   const reduceMotion = useReducedMotion() === true;
 
@@ -136,7 +166,11 @@ export function SolutionNotice({
           }
         >
           <div className="pointer-events-auto w-full max-w-md">
-            <NoticeBody notice={notice} onDismiss={onDismiss} />
+            <NoticeBody
+              notice={notice}
+              onDismiss={onDismiss}
+              onNavigate={onNavigate}
+            />
           </div>
         </motion.div>
       )}
@@ -147,9 +181,11 @@ export function SolutionNotice({
 function NoticeBody({
   notice,
   onDismiss,
+  onNavigate,
 }: {
   readonly notice: SolutionNoticeState;
   readonly onDismiss: () => void;
+  readonly onNavigate: (href: string) => void;
 }) {
   if (notice.kind === "checking") {
     return (
@@ -174,27 +210,158 @@ function NoticeBody({
   }
 
   const outcome = notice.outcome;
-  if (outcome.passed) {
+  if (!outcome.passed) {
     return (
-      <Bubble variant="default" align="end" className="w-full max-w-none">
-        <BubbleContent className="w-full space-y-3">
-          <div>
-            <p className="font-medium">Correct</p>
-            <p className="mt-1 opacity-80">{outcome.feedback}</p>
-          </div>
-          <Dismiss onDismiss={onDismiss} tone="on-primary" />
-        </BubbleContent>
-      </Bubble>
+      <FailurePanel
+        title="Not quite"
+        message={outcome.feedback}
+        hints={collectHints(outcome.results)}
+        onDismiss={onDismiss}
+      />
+    );
+  }
+
+  const continuation = notice.continuation;
+  if (continuation === null || continuation.completion === "exercise") {
+    return (
+      <ExerciseCompletePanel
+        message={exerciseCopy(
+          (continuation?.nextExerciseHref ?? null) !== null,
+        )}
+        feedback={outcome.feedback}
+        nextExerciseHref={continuation?.nextExerciseHref ?? null}
+        onDismiss={onDismiss}
+        onNavigate={onNavigate}
+      />
     );
   }
 
   return (
-    <FailurePanel
-      title="Not quite"
-      message={outcome.feedback}
-      hints={collectHints(outcome.results)}
+    <LessonCompletePanel
+      message={lessonCopy(continuation.lessonTitle)}
+      feedback={outcome.feedback}
+      nextLessonHref={continuation.nextLessonHref}
       onDismiss={onDismiss}
+      onNavigate={onNavigate}
     />
+  );
+}
+
+function ExerciseCompletePanel({
+  message,
+  feedback,
+  nextExerciseHref,
+  onDismiss,
+  onNavigate,
+}: {
+  readonly message: string;
+  readonly feedback: string;
+  readonly nextExerciseHref: string | null;
+  readonly onDismiss: () => void;
+  readonly onNavigate: (href: string) => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl bg-card text-card-foreground shadow-xl ring-1 ring-emerald-500/30">
+      <div className="flex gap-3 px-4 py-3">
+        <CompletionTick
+          animate
+          label="Exercise complete"
+          className="mt-0.5 size-6"
+        />
+        <div className="min-w-0 space-y-1">
+          <p className="font-medium text-foreground">Exercise complete</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {message}
+          </p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {feedback}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-2 border-t border-border px-3 py-2">
+        <Dismiss onDismiss={onDismiss} tone="on-card" />
+        {nextExerciseHref === null ? null : (
+          <Button
+            type="button"
+            size="sm"
+            className="h-7 px-2.5"
+            onClick={() => {
+              onNavigate(nextExerciseHref);
+            }}
+          >
+            Next exercise
+            <ArrowRight data-icon="inline-end" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LessonCompletePanel({
+  message,
+  feedback,
+  nextLessonHref,
+  onDismiss,
+  onNavigate,
+}: {
+  readonly message: string;
+  readonly feedback: string;
+  readonly nextLessonHref: string | null;
+  readonly onDismiss: () => void;
+  readonly onNavigate: (href: string) => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl bg-card text-card-foreground shadow-xl ring-1 ring-emerald-500/50">
+      <div className="flex flex-col items-center gap-3 bg-emerald-500/10 px-5 pt-5 pb-4 text-center">
+        <CompletionTick animate label="Lesson complete" className="size-10" />
+        <div className="space-y-1">
+          <p className="font-medium text-foreground">Lesson complete</p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {message}
+          </p>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {feedback}
+          </p>
+        </div>
+      </div>
+      <div className="space-y-2 border-t border-border px-4 py-3">
+        <LessonNext href={nextLessonHref} onNavigate={onNavigate} />
+        <div className="flex justify-end">
+          <Dismiss onDismiss={onDismiss} tone="on-card" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LessonNext({
+  href,
+  onNavigate,
+}: {
+  readonly href: string | null;
+  readonly onNavigate: (href: string) => void;
+}) {
+  if (href === null) {
+    return (
+      <p className="text-center text-sm text-muted-foreground">
+        This is the last lesson.
+      </p>
+    );
+  }
+
+  return (
+    <Button
+      type="button"
+      size="lg"
+      className="h-10 w-full"
+      onClick={() => {
+        onNavigate(href);
+      }}
+    >
+      Next lesson
+      <ArrowRight data-icon="inline-end" />
+    </Button>
   );
 }
 

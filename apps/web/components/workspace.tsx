@@ -24,6 +24,7 @@ import { SuggestedReading } from "@/components/suggested-reading";
 import { SolutionDialog } from "@/components/solution-dialog";
 import {
   SolutionNotice,
+  type SolutionContinuation,
   type SolutionNoticeState,
 } from "@/components/solution-notice";
 import { StuckPrompt } from "@/components/stuck-prompt";
@@ -59,6 +60,7 @@ import {
   allExercisesSolved,
   followingProblem,
   otherExercisesSolved,
+  passCompletion,
   selectProblem,
 } from "@/lib/exercise-order";
 import { annotateLesson, annotateMarkdown } from "@/lib/lesson-keywords";
@@ -85,6 +87,35 @@ const editorRuleColor = (light: boolean): string => {
     return "rgba(0, 0, 0, 0.12)";
   }
   return "rgba(255, 255, 255, 0.12)";
+};
+
+const exercisePath = (pathname: string, search: string, id: string): string => {
+  const params = new URLSearchParams(search);
+  params.set("exercise", id);
+  return `${pathname}?${params.toString()}`;
+};
+
+const continuationForPass = (
+  problems: readonly { readonly id: string; readonly solved: boolean }[],
+  problemId: string,
+  lessonTitle: string,
+  nextExerciseHref: string | null,
+  nextLessonHref: string | null,
+): SolutionContinuation => {
+  if (passCompletion(problems, problemId) === "lesson") {
+    return {
+      completion: "lesson",
+      lessonTitle,
+      nextExerciseHref: null,
+      nextLessonHref,
+    };
+  }
+  return {
+    completion: "exercise",
+    lessonTitle,
+    nextExerciseHref,
+    nextLessonHref: null,
+  };
 };
 
 function WorkspaceBar({
@@ -168,10 +199,6 @@ export function Workspace({ slug }: { readonly slug: string }) {
   }, [result.error, router]);
 
   const lesson = result.data?.lesson ?? null;
-  const problem =
-    lesson === null
-      ? undefined
-      : selectProblem(lesson.problems, searchParams.get("exercise"));
   const [code, setCode] = useState("");
   const [outcome, setOutcome] = useState<SubmissionView | null>(null);
   const [notice, setNotice] = useState<SolutionNoticeState | null>(null);
@@ -183,7 +210,25 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [themeId, setThemeId] = useEditorTheme();
   const refreshSyllabus = useRefreshSyllabus();
   const loadedProblemId = useRef<string | null>(null);
+  const heldProblemId = useRef<string | null>(null);
+  const pinnedSlug = useRef(slug);
   const editorRef = useRef<CodeEditorInstance | null>(null);
+  const requestedExercise = searchParams.get("exercise");
+  if (pinnedSlug.current !== slug) {
+    pinnedSlug.current = slug;
+    heldProblemId.current = null;
+    setNotice(null);
+  }
+  if (requestedExercise !== null) {
+    heldProblemId.current = null;
+  }
+  const problem =
+    lesson === null
+      ? undefined
+      : selectProblem(
+          lesson.problems,
+          requestedExercise ?? heldProblemId.current,
+        );
   const { tick, remember, track, isClean, readCode } = useLessonDraft({
     problemId: problem?.id ?? null,
     code,
@@ -312,10 +357,37 @@ export function Workspace({ slug }: { readonly slug: string }) {
       return;
     }
     setOutcome(next);
-    setNotice({ kind: "result", outcome: next });
-    if (next.passed) {
-      setPassedCode({ problemId, code });
+    if (!next.passed) {
+      setNotice({ kind: "result", outcome: next, continuation: null });
+      reexecute({ requestPolicy: "network-only" });
+      refreshSyllabus();
+      return;
     }
+    heldProblemId.current = problemId;
+    if (searchParams.get("exercise") !== problemId) {
+      router.replace(
+        exercisePath(pathname, searchParams.toString(), problemId),
+      );
+    }
+    const upcomingProblem = followingProblem(lesson.problems, problemId);
+    const nextExerciseHref =
+      upcomingProblem === undefined
+        ? null
+        : exercisePath(pathname, searchParams.toString(), upcomingProblem.id);
+    const nextLessonHref =
+      lesson.nextSlug === null ? null : `/course/${lesson.nextSlug}`;
+    setPassedCode({ problemId, code });
+    setNotice({
+      kind: "result",
+      outcome: next,
+      continuation: continuationForPass(
+        lesson.problems,
+        problemId,
+        lesson.title,
+        nextExerciseHref,
+        nextLessonHref,
+      ),
+    });
     reexecute({ requestPolicy: "network-only" });
     refreshSyllabus();
   };
@@ -381,9 +453,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
       ? `/course/${lesson.nextSlug}`
       : null;
   const exerciseHref = (id: string): string => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("exercise", id);
-    return `${pathname}?${params.toString()}`;
+    return exercisePath(pathname, searchParams.toString(), id);
   };
   const upcoming = followingProblem(lesson.problems, problem.id);
   const upcomingHref =
@@ -589,6 +659,11 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 notice={notice}
                 onDismiss={() => {
                   setNotice(null);
+                }}
+                onNavigate={(href) => {
+                  heldProblemId.current = null;
+                  setNotice(null);
+                  router.push(href);
                 }}
               />
             </div>

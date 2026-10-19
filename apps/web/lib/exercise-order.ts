@@ -78,3 +78,19 @@ export const otherExercisesSolved = (
   }
   return true;
 };
+
+export type PassCompletion = "exercise" | "lesson";
+
+/**
+ * Decides the success state for a pass of the active exercise.
+ * A lesson with one exercise is complete on that pass, because nothing else is left.
+ */
+export const passCompletion = (
+  problems: readonly ExerciseRef[],
+  activeId: string,
+): PassCompletion => {
+  if (otherExercisesSolved(problems, activeId)) {
+    return "lesson";
+  }
+  return "exercise";
+};
