@@ -3,7 +3,13 @@ import { Fraunces, Geist, JetBrains_Mono } from "next/font/google";
 import { Shell } from "@/components/shell";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/lib/auth";
-import { creatorName, siteDescription, siteName, siteUrl, socialImage } from "@/lib/site";
+import {
+  creatorName,
+  siteDescription,
+  siteName,
+  siteUrl,
+  socialImage,
+} from "@/lib/site";
 import { darkIconPath, lightIconPath, themeBootScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import "./globals.css";
@@ -39,7 +45,9 @@ export const metadata: Metadata = {
   ],
   applicationName: siteName,
   icons: {
+    // Google Search does not use SVG favicons, so this PNG is the icon it can show.
     icon: [
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
       {
         url: lightIconPath,
         type: "image/svg+xml",
