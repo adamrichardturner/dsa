@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Editor, { type BeforeMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { cn } from "cn";
@@ -91,8 +91,52 @@ export function CodeEditor({
 }) {
   const theme = getEditorTheme(themeId);
   const overflowHost = useMonacoOverflowHost();
+  const instanceRef = useRef<CodeEditorInstance | null>(null);
+  const emittedValue = useRef(value);
+  const valueRef = useRef(value);
+  const applyingExternal = useRef(false);
+  valueRef.current = value;
+  const options = useMemo(() => {
+    if (overflowHost === null) {
+      return null;
+    }
+    return {
+      fontSize: 14,
+      fontFamily: "JetBrains Mono, ui-monospace, monospace",
+      fontLigatures: false,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      tabSize: 2,
+      padding: { top: 16, bottom: 16 },
+      automaticLayout: true,
+      wordWrap: "on" as const,
+      smoothScrolling: true,
+      renderLineHighlight: "line" as const,
+      fixedOverflowWidgets: true,
+      overflowWidgetsDomNode: overflowHost,
+    };
+  }, [overflowHost]);
 
-  if (overflowHost === null) {
+  useEffect(() => {
+    const instance = instanceRef.current;
+    if (instance === null) {
+      return;
+    }
+    if (value === emittedValue.current) {
+      return;
+    }
+    const model = instance.getModel();
+    if (model === null || model.getValue() === value) {
+      emittedValue.current = value;
+      return;
+    }
+    applyingExternal.current = true;
+    emittedValue.current = value;
+    instance.setValue(value);
+    applyingExternal.current = false;
+  }, [value]);
+
+  if (overflowHost === null || options === null) {
     return <EditorSkeleton />;
   }
 
@@ -101,36 +145,35 @@ export function CodeEditor({
       height="100%"
       language="typescript"
       theme={theme.monacoId}
-      value={value}
+      defaultValue={value}
       onChange={(next) => {
-        onChange(next ?? "");
+        if (applyingExternal.current) {
+          return;
+        }
+        const text = next ?? "";
+        emittedValue.current = text;
+        onChange(text);
       }}
       loading={<EditorSkeleton />}
       beforeMount={prepareEditor}
       onMount={(instance) => {
+        instanceRef.current = instance;
         if (editorRef !== undefined) {
           editorRef.current = instance;
+        }
+        const model = instance.getModel();
+        if (model !== null && model.getValue() !== valueRef.current) {
+          applyingExternal.current = true;
+          emittedValue.current = valueRef.current;
+          instance.setValue(valueRef.current);
+          applyingExternal.current = false;
         }
         if (!autoFocus) {
           return;
         }
         instance.focus();
       }}
-      options={{
-        fontSize: 14,
-        fontFamily: "JetBrains Mono, ui-monospace, monospace",
-        fontLigatures: false,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        tabSize: 2,
-        padding: { top: 16, bottom: 16 },
-        automaticLayout: true,
-        wordWrap: "on",
-        smoothScrolling: true,
-        renderLineHighlight: "line",
-        fixedOverflowWidgets: true,
-        overflowWidgetsDomNode: overflowHost,
-      }}
+      options={options}
     />
   );
 }

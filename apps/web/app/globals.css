@@ -479,6 +479,12 @@
   scroll-margin-top: 2rem;
 }
 
+.monaco-editor .overflow-guard,
+.monaco-editor .monaco-scrollable-element,
+.monaco-overflow-widgets {
+  scroll-behavior: auto;
+}
+
 .monaco-overflow-widgets {
   position: fixed;
   z-index: 40;
