@@ -13,6 +13,7 @@ export interface RunTest {
 export interface TestResult {
   readonly name: string;
   readonly passed: boolean;
+  readonly input: string;
   readonly expected: string;
   readonly received: string;
   readonly error: string | null;
@@ -99,7 +100,24 @@ export interface PreviewLine {
   readonly text: string;
 }
 
-const failed = (tests: readonly RunTest[], feedback: string): RunOutput => {
+const formatCall = (functionName: string, args: readonly unknown[]): string => {
+  const rendered = args.map((arg) => JSON.stringify(arg) ?? "undefined").join(", ");
+  return `${functionName}(${rendered})`;
+};
+
+const callText = (functionName: string, args: readonly unknown[]): string => {
+  const text = formatCall(functionName, args);
+  if (text.length <= 500) {
+    return text;
+  }
+  return `${text.slice(0, 500)}…`;
+};
+
+const failed = (
+  functionName: string,
+  tests: readonly RunTest[],
+  feedback: string,
+): RunOutput => {
   return {
     passed: false,
     testsPassed: 0,
@@ -108,6 +126,7 @@ const failed = (tests: readonly RunTest[], feedback: string): RunOutput => {
     results: tests.map((test) => ({
       name: test.name,
       passed: false,
+      input: callText(functionName, test.args),
       expected: preview(test.expected),
       received: "",
       error: feedback,
@@ -125,11 +144,6 @@ const formatLog = (args: readonly unknown[]): string => {
     parts.push(preview(arg));
   }
   return parts.join(" ");
-};
-
-const formatCall = (functionName: string, args: readonly unknown[]): string => {
-  const rendered = args.map((arg) => JSON.stringify(arg) ?? "undefined").join(", ");
-  return `${functionName}(${rendered})`;
 };
 
 const rejection = (code: string, disallow: readonly string[]): string | null => {
@@ -215,12 +229,12 @@ export const runSolution = (
 ): RunOutput => {
   const reason = rejection(code, disallow);
   if (reason !== null) {
-    return failed(tests, reason);
+    return failed(functionName, tests, reason);
   }
 
   const compiled = compileSolution(code);
   if ("message" in compiled) {
-    return failed(tests, compiled.message);
+    return failed(functionName, tests, compiled.message);
   }
 
   const context = createContext(() => undefined);
@@ -230,12 +244,12 @@ export const runSolution = (
     const script = new vm.Script(compiled.compiled, { filename: "solution.ts" });
     script.runInContext(context, { timeout: 1000 });
   } catch (error) {
-    return failed(tests, errorText(error, "The solution failed to run."));
+    return failed(functionName, tests, errorText(error, "The solution failed to run."));
   }
 
   const exported = context.module.exports[functionName];
   if (!isFunction(exported)) {
-    return failed(tests, `Export a function named ${functionName}.`);
+    return failed(functionName, tests, `Export a function named ${functionName}.`);
   }
 
   const results: TestResult[] = [];
@@ -257,6 +271,7 @@ export const runSolution = (
       results.push({
         name: test.name,
         passed,
+        input: callText(functionName, test.args),
         expected: preview(test.expected),
         received: preview(received),
         error: null,
@@ -266,6 +281,7 @@ export const runSolution = (
       results.push({
         name: test.name,
         passed: false,
+        input: callText(functionName, test.args),
         expected: preview(test.expected),
         received: "",
         error: message,

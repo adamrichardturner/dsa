@@ -421,6 +421,23 @@
   scroll-margin-top: 2rem;
 }
 
+.monaco-overflow-widgets {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  background: transparent;
+  pointer-events: none;
+}
+
+.monaco-overflow-widgets .overflowingContentWidgets,
+.monaco-overflow-widgets .overflowingOverlayWidgets {
+  pointer-events: auto;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html.theme-transition,
   html.theme-transition *,

@@ -120,6 +120,22 @@ describe("runSolution", () => {
       [],
     );
     assert.equal(outcome.passed, true);
+    assert.equal(outcome.results[0]?.input, "countBelow([1,4], 4)");
     assert.equal(outcome.results[0]?.received, "1");
+  });
+
+  it("includes the call when a solution returns the wrong value", () => {
+    const outcome = runSolution(
+      `export function countBelow(): number {
+        return 0;
+      }`,
+      "countBelow",
+      [{ name: "mixed", args: [[1, 4], 4], expected: 1, compare: "exact" }],
+      [],
+    );
+    assert.equal(outcome.passed, false);
+    assert.equal(outcome.results[0]?.input, "countBelow([1,4], 4)");
+    assert.equal(outcome.results[0]?.expected, "1");
+    assert.equal(outcome.results[0]?.received, "0");
   });
 });

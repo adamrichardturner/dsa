@@ -261,6 +261,7 @@ export const SUBMIT_SOLUTION = `
       results {
         name
         passed
+        input
         expected
         received
         error

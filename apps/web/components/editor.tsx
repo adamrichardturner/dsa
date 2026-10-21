@@ -1,6 +1,6 @@
 "use client";
 
-import { type RefObject } from "react";
+import { useLayoutEffect, useState, type RefObject } from "react";
 import Editor, { type BeforeMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { cn } from "cn";
@@ -38,6 +38,27 @@ export function EditorSkeleton() {
 
 export type CodeEditorInstance = editor.IStandaloneCodeEditor;
 
+const mountOverflowHost = (): HTMLDivElement => {
+  const node = document.createElement("div");
+  node.className = "monaco-editor monaco-overflow-widgets";
+  document.body.appendChild(node);
+  return node;
+};
+
+const useMonacoOverflowHost = (): HTMLDivElement | null => {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const node = mountOverflowHost();
+    setHost(node);
+    return () => {
+      node.remove();
+    };
+  }, []);
+
+  return host;
+};
+
 const prepareEditor: BeforeMount = (monaco) => {
   monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
     strict: true,
@@ -69,6 +90,11 @@ export function CodeEditor({
   readonly editorRef?: RefObject<CodeEditorInstance | null>;
 }) {
   const theme = getEditorTheme(themeId);
+  const overflowHost = useMonacoOverflowHost();
+
+  if (overflowHost === null) {
+    return <EditorSkeleton />;
+  }
 
   return (
     <Editor
@@ -102,6 +128,8 @@ export function CodeEditor({
         wordWrap: "on",
         smoothScrolling: true,
         renderLineHighlight: "line",
+        fixedOverflowWidgets: true,
+        overflowWidgetsDomNode: overflowHost,
       }}
     />
   );

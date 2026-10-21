@@ -25,10 +25,13 @@ export type SolutionNoticeState =
       readonly continuation: SolutionContinuation | null;
     };
 
-interface FailureHint {
+interface FailureCase {
   readonly id: string;
-  readonly name: string | null;
-  readonly lines: readonly string[];
+  readonly name: string;
+  readonly input: string;
+  readonly expected: string;
+  readonly received: string;
+  readonly error: string | null;
 }
 
 const capitalize = (value: string): string => {
@@ -38,78 +41,37 @@ const capitalize = (value: string): string => {
   return `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
 };
 
-const linesFor = (test: TestResultView): readonly string[] => {
-  const lines: string[] = [];
-  if (test.error !== null && test.error.length > 0) {
-    lines.push(test.error);
+const resultLine = (
+  item: FailureCase,
+): { readonly label: string; readonly value: string } => {
+  if (item.received.length > 0) {
+    return { label: "Received", value: item.received };
   }
-  if (test.expected.length > 0) {
-    lines.push(`Expected ${test.expected}`);
+  if (item.error !== null && item.error.length > 0) {
+    return { label: "Error", value: item.error };
   }
-  if (test.received.length > 0) {
-    lines.push(`Received ${test.received}`);
-  }
-  return lines;
+  return { label: "Received", value: "—" };
 };
 
-const sameLines = (
-  left: readonly string[],
-  right: readonly string[],
-): boolean => {
-  if (left.length !== right.length) {
-    return false;
-  }
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) {
-      return false;
-    }
-  }
-  return true;
-};
-
-const collectHints = (
+const collectFailures = (
   results: readonly TestResultView[],
-): readonly FailureHint[] => {
-  const failures: {
-    readonly name: string;
-    readonly lines: readonly string[];
-  }[] = [];
-  for (const test of results) {
-    if (test.passed) {
+): readonly FailureCase[] => {
+  const failures: FailureCase[] = [];
+  for (let index = 0; index < results.length; index += 1) {
+    const test = results[index];
+    if (test === undefined || test.passed) {
       continue;
     }
-    failures.push({ name: capitalize(test.name), lines: linesFor(test) });
-  }
-
-  const first = failures[0];
-  if (first === undefined) {
-    return [];
-  }
-
-  let same = true;
-  for (const failure of failures) {
-    if (!sameLines(failure.lines, first.lines)) {
-      same = false;
-    }
-  }
-
-  if (same && first.lines.length > 0) {
-    return [{ id: "shared", name: null, lines: first.lines }];
-  }
-
-  const hints: FailureHint[] = [];
-  for (let index = 0; index < failures.length; index += 1) {
-    const failure = failures[index];
-    if (failure === undefined) {
-      continue;
-    }
-    hints.push({
-      id: `${failure.name}-${index}`,
-      name: failure.name,
-      lines: failure.lines,
+    failures.push({
+      id: `${test.name}-${index}`,
+      name: capitalize(test.name),
+      input: test.input,
+      expected: test.expected,
+      received: test.received,
+      error: test.error,
     });
   }
-  return hints;
+  return failures;
 };
 
 const noticeKey = (notice: SolutionNoticeState): string => {
@@ -203,7 +165,7 @@ function NoticeBody({
       <FailurePanel
         title="Could not check that"
         message={notice.message}
-        hints={[]}
+        cases={[]}
         onDismiss={onDismiss}
       />
     );
@@ -215,7 +177,7 @@ function NoticeBody({
       <FailurePanel
         title="Not quite"
         message={outcome.feedback}
-        hints={collectHints(outcome.results)}
+        cases={collectFailures(outcome.results)}
         onDismiss={onDismiss}
       />
     );
@@ -368,12 +330,12 @@ function LessonNext({
 function FailurePanel({
   title,
   message,
-  hints,
+  cases,
   onDismiss,
 }: {
   readonly title: string;
   readonly message: string;
-  readonly hints: readonly FailureHint[];
+  readonly cases: readonly FailureCase[];
   readonly onDismiss: () => void;
 }) {
   return (
@@ -390,29 +352,36 @@ function FailurePanel({
           </p>
         </div>
       </div>
-      {hints.length > 0 ? (
+      {cases.length > 0 ? (
         <div className="space-y-2 border-t border-border px-4 py-3">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Hints
+            Failed cases
           </p>
-          <ul className="max-h-48 space-y-2 overflow-y-auto">
-            {hints.map((hint) => (
-              <li key={hint.id} className="rounded-lg bg-muted px-3 py-2">
-                {hint.name !== null ? (
+          <ul className="max-h-72 space-y-2 overflow-y-auto">
+            {cases.map((item) => {
+              const result = resultLine(item);
+              return (
+                <li key={item.id} className="rounded-lg bg-muted px-3 py-2">
                   <p className="text-sm font-medium text-foreground">
-                    {hint.name}
+                    {item.name}
                   </p>
-                ) : null}
-                {hint.lines.map((line, index) => (
-                  <p
-                    key={`${hint.id}-${index}`}
-                    className="font-mono text-xs leading-relaxed text-foreground"
-                  >
-                    {line}
-                  </p>
-                ))}
-              </li>
-            ))}
+                  <dl className="mt-1 grid grid-cols-[4.75rem_minmax(0,1fr)] gap-x-2 gap-y-0.5 font-mono text-xs leading-relaxed">
+                    <dt className="text-muted-foreground">Input</dt>
+                    <dd className="min-w-0 break-all text-foreground">
+                      {item.input}
+                    </dd>
+                    <dt className="text-muted-foreground">Expected</dt>
+                    <dd className="min-w-0 break-all text-foreground">
+                      {item.expected}
+                    </dd>
+                    <dt className="text-muted-foreground">{result.label}</dt>
+                    <dd className="min-w-0 break-all text-foreground">
+                      {result.value}
+                    </dd>
+                  </dl>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}

@@ -139,6 +139,7 @@ const TestResultType = new GraphQLObjectType({
   fields: {
     name: { type: new GraphQLNonNull(GraphQLString) },
     passed: { type: new GraphQLNonNull(GraphQLBoolean) },
+    input: { type: new GraphQLNonNull(GraphQLString) },
     expected: { type: new GraphQLNonNull(GraphQLString) },
     received: { type: new GraphQLNonNull(GraphQLString) },
     error: { type: GraphQLString },

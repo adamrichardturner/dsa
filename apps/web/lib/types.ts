@@ -77,6 +77,7 @@ export interface LessonView {
 export interface TestResultView {
   readonly name: string;
   readonly passed: boolean;
+  readonly input: string;
   readonly expected: string;
   readonly received: string;
   readonly error: string | null;
