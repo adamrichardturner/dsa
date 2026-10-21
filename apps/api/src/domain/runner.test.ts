@@ -138,4 +138,30 @@ describe("runSolution", () => {
     assert.equal(outcome.results[0]?.expected, "1");
     assert.equal(outcome.results[0]?.received, "0");
   });
+
+  it("reports the original call when a solution mutates its array", () => {
+    const outcome = runSolution(
+      `export function insertAt(nums: number[], index: number, value: number): number[] {
+        if (index < nums.length) {
+          nums.splice(index, 0, value);
+          return nums.slice();
+        }
+        nums.push(value);
+        return nums.concat(value);
+      }`,
+      "insertAt",
+      [
+        { name: "end", args: [[1], 5, 9], expected: [1, 9], compare: "exact" },
+        { name: "empty", args: [[], 0, 4], expected: [4], compare: "exact" },
+      ],
+      [],
+    );
+
+    assert.equal(outcome.results[0]?.input, "insertAt([1], 5, 9)");
+    assert.equal(outcome.results[0]?.expected, "[1,9]");
+    assert.equal(outcome.results[0]?.received, "[1,9,9]");
+    assert.equal(outcome.results[1]?.input, "insertAt([], 0, 4)");
+    assert.equal(outcome.results[1]?.expected, "[4]");
+    assert.equal(outcome.results[1]?.received, "[4,4]");
+  });
 });

@@ -1,8 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, CircleAlert } from "lucide-react";
-import { CompletionTick } from "@/components/completion-tick";
+import { ArrowRight } from "lucide-react";
+import { cn } from "cn";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -90,6 +90,66 @@ const exerciseCopy = (hasNextExercise: boolean): string => {
   }
   return "This exercise is done. Other exercises in this lesson are still open.";
 };
+
+function ResultMark({
+  tone,
+  label,
+  className,
+}: {
+  readonly tone: "pass" | "fail";
+  readonly label: string;
+  readonly className?: string;
+}) {
+  const failed = tone === "fail";
+
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      className={cn(
+        "result-mark inline-flex shrink-0",
+        failed ? "text-destructive" : "text-emerald-500",
+        className,
+      )}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="size-full overflow-visible"
+        aria-hidden="true"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          className="result-mark-ring"
+        />
+        {failed ? (
+          <path
+            d="M8 8 16 16 M16 8 8 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+            className="result-mark-cross"
+          />
+        ) : (
+          <path
+            d="M6.2 12.6 10.2 16.6 17.8 7.6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="result-mark-tick"
+          />
+        )}
+      </svg>
+    </span>
+  );
+}
 
 const lessonCopy = (lessonTitle: string): string => {
   const title = lessonTitle.trim();
@@ -225,10 +285,10 @@ function ExerciseCompletePanel({
   return (
     <div className="overflow-hidden rounded-xl bg-card text-card-foreground shadow-xl ring-1 ring-emerald-500/30">
       <div className="flex gap-3 px-4 py-3">
-        <CompletionTick
-          animate
+        <ResultMark
+          tone="pass"
           label="Exercise complete"
-          className="mt-0.5 size-6"
+          className="mt-0.5 size-8"
         />
         <div className="min-w-0 space-y-1">
           <p className="font-medium text-foreground">Exercise complete</p>
@@ -276,7 +336,7 @@ function LessonCompletePanel({
   return (
     <div className="overflow-hidden rounded-xl bg-card text-card-foreground shadow-xl ring-1 ring-emerald-500/50">
       <div className="flex flex-col items-center gap-3 bg-emerald-500/10 px-5 pt-5 pb-4 text-center">
-        <CompletionTick animate label="Lesson complete" className="size-10" />
+        <ResultMark tone="pass" label="Lesson complete" className="size-12" />
         <div className="space-y-1">
           <p className="font-medium text-foreground">Lesson complete</p>
           <p className="text-sm leading-relaxed text-muted-foreground">
@@ -339,12 +399,9 @@ function FailurePanel({
   readonly onDismiss: () => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl bg-card text-card-foreground shadow-xl ring-1 ring-foreground/10">
+    <div className="overflow-hidden rounded-xl bg-card text-card-foreground shadow-xl ring-1 ring-destructive/35">
       <div className="flex gap-3 px-4 py-3">
-        <CircleAlert
-          className="mt-0.5 size-4 shrink-0 text-destructive"
-          aria-hidden="true"
-        />
+        <ResultMark tone="fail" label={title} className="mt-0.5 size-8" />
         <div className="min-w-0 space-y-1">
           <p className="font-medium text-foreground">{title}</p>
           <p className="text-sm leading-relaxed text-muted-foreground">

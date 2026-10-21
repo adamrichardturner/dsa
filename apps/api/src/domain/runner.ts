@@ -113,6 +113,22 @@ const callText = (functionName: string, args: readonly unknown[]): string => {
   return `${text.slice(0, 500)}…`;
 };
 
+const copyValue = (value: unknown): unknown => {
+  try {
+    return structuredClone(value);
+  } catch {
+    return value;
+  }
+};
+
+const copyArgs = (args: readonly unknown[]): unknown[] => {
+  const copied: unknown[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    copied.push(copyValue(args[index]));
+  }
+  return copied;
+};
+
 const failed = (
   functionName: string,
   tests: readonly RunTest[],
@@ -256,8 +272,9 @@ export const runSolution = (
   let testsPassed = 0;
 
   for (const test of tests) {
+    const input = callText(functionName, test.args);
     context.__fn = exported;
-    context.__args = test.args;
+    context.__args = copyArgs(test.args);
     context.__result = undefined;
 
     try {
@@ -271,7 +288,7 @@ export const runSolution = (
       results.push({
         name: test.name,
         passed,
-        input: callText(functionName, test.args),
+        input,
         expected: preview(test.expected),
         received: preview(received),
         error: null,
@@ -281,7 +298,7 @@ export const runSolution = (
       results.push({
         name: test.name,
         passed: false,
-        input: callText(functionName, test.args),
+        input,
         expected: preview(test.expected),
         received: "",
         error: message,

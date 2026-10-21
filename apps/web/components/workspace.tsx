@@ -95,6 +95,22 @@ const exercisePath = (pathname: string, search: string, id: string): string => {
   return `${pathname}?${params.toString()}`;
 };
 
+const minimumCheckMs = 2000;
+
+const wait = (ms: number): Promise<void> => {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+};
+
+const waitForMinimumCheck = async (startedAt: number): Promise<void> => {
+  const remaining = minimumCheckMs - (Date.now() - startedAt);
+  if (remaining <= 0) {
+    return;
+  }
+  await wait(remaining);
+};
+
 const continuationForPass = (
   problems: readonly { readonly id: string; readonly solved: boolean }[],
   problemId: string,
@@ -202,6 +218,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [code, setCode] = useState("");
   const [outcome, setOutcome] = useState<SubmissionView | null>(null);
   const [notice, setNotice] = useState<SolutionNoticeState | null>(null);
+  const [holdingCheck, setHoldingCheck] = useState(false);
   const [terminal, setTerminal] = useState<CodeTerminalState>({ kind: "idle" });
   const [resetOpen, setResetOpen] = useState(false);
   const [solutionOpen, setSolutionOpen] = useState(false);
@@ -340,56 +357,63 @@ export function Workspace({ slug }: { readonly slug: string }) {
 
   const onSubmit = async () => {
     const problemId = problem.id;
+    const startedAt = Date.now();
+    setHoldingCheck(true);
     setNotice({ kind: "checking" });
-    const response = await submit({ problemId, code });
-    if (loadedProblemId.current !== problemId) {
-      return;
-    }
-    const next = response.data?.submitSolution;
-    if (next === undefined) {
+    try {
+      const response = await submit({ problemId, code });
+      await waitForMinimumCheck(startedAt);
+      if (loadedProblemId.current !== problemId) {
+        return;
+      }
+      const next = response.data?.submitSolution;
+      if (next === undefined) {
+        setNotice({
+          kind: "error",
+          message: graphqlErrorMessage(
+            response.error,
+            "Could not check that solution.",
+          ),
+        });
+        return;
+      }
+      setOutcome(next);
+      if (!next.passed) {
+        setNotice({ kind: "result", outcome: next, continuation: null });
+        reexecute({ requestPolicy: "network-only" });
+        refreshSyllabus();
+        return;
+      }
+      heldProblemId.current = problemId;
+      if (searchParams.get("exercise") !== problemId) {
+        router.replace(
+          exercisePath(pathname, searchParams.toString(), problemId),
+        );
+      }
+      const upcomingProblem = followingProblem(lesson.problems, problemId);
+      const nextExerciseHref =
+        upcomingProblem === undefined
+          ? null
+          : exercisePath(pathname, searchParams.toString(), upcomingProblem.id);
+      const nextLessonHref =
+        lesson.nextSlug === null ? null : `/course/${lesson.nextSlug}`;
+      setPassedCode({ problemId, code });
       setNotice({
-        kind: "error",
-        message: graphqlErrorMessage(
-          response.error,
-          "Could not check that solution.",
+        kind: "result",
+        outcome: next,
+        continuation: continuationForPass(
+          lesson.problems,
+          problemId,
+          lesson.title,
+          nextExerciseHref,
+          nextLessonHref,
         ),
       });
-      return;
-    }
-    setOutcome(next);
-    if (!next.passed) {
-      setNotice({ kind: "result", outcome: next, continuation: null });
       reexecute({ requestPolicy: "network-only" });
       refreshSyllabus();
-      return;
+    } finally {
+      setHoldingCheck(false);
     }
-    heldProblemId.current = problemId;
-    if (searchParams.get("exercise") !== problemId) {
-      router.replace(
-        exercisePath(pathname, searchParams.toString(), problemId),
-      );
-    }
-    const upcomingProblem = followingProblem(lesson.problems, problemId);
-    const nextExerciseHref =
-      upcomingProblem === undefined
-        ? null
-        : exercisePath(pathname, searchParams.toString(), upcomingProblem.id);
-    const nextLessonHref =
-      lesson.nextSlug === null ? null : `/course/${lesson.nextSlug}`;
-    setPassedCode({ problemId, code });
-    setNotice({
-      kind: "result",
-      outcome: next,
-      continuation: continuationForPass(
-        lesson.problems,
-        problemId,
-        lesson.title,
-        nextExerciseHref,
-        nextLessonHref,
-      ),
-    });
-    reexecute({ requestPolicy: "network-only" });
-    refreshSyllabus();
   };
 
   const onRun = async () => {
@@ -433,7 +457,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
         submit: "bg-zinc-100 text-zinc-950 hover:bg-white",
         rule: editorRuleColor(false),
       };
-  const checking = submitState.fetching;
+  const checking = submitState.fetching || holdingCheck;
   const running = runState.fetching;
   const busy = checking || running;
   const editorReady = loadedProblemId.current === problem.id;
