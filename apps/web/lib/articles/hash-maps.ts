@@ -5,38 +5,34 @@ export const hashMapArticles: readonly Article[] = [
     "hash-maps",
     "How a Hash Map Remembers What You Have Already Seen",
     "Hash maps",
-    "A hash map associates unique keys with values and supports lookup, insertion, and update in O(1) expected time. Remembering earlier values turns Two Sum from a quadratic pair search into one linear pass.",
-    ["hash map", "hash maps"],
+    "A hash map associates unique keys with values. Expected O(1) lookup can replace a repeated scan, as the one-pass Two Sum algorithm demonstrates.",
+    ["hash map", "hash maps", "two sum"],
     `
-A hash map associates each **unique key** with a value. Given a key, it uses a hash function to choose where to look instead of scanning every entry. Lookup, insertion, and update therefore take O(1) **expected** time, while k distinct entries occupy O(k) space.
+A **hash map** stores a value under a unique key. A hash function turns the key into a bucket location, so lookup, insertion, and update take O(1) expected time rather than scanning all entries.
 
-This is a space-for-time tradeoff. Store useful facts from the input already visited, and later questions become lookups. Two Sum is the classic example: a nested search examines O(n²) pairs, while a hash table records earlier numbers and finishes in O(n) expected time.
+The key design question is not “where can I use a table?” It is:
+
+> What fact from the processed input will a later step need, and what must the value recover?
+
+In Two Sum, the key is a number already seen and the value is its index. The stored index lets us return positions, not merely prove that a complement exists.
 
 \`\`\`mermaid
-flowchart LR
-  key["Key: 18"] --> hash["hash(18)"]
-  hash --> slot["Bucket or slot"]
-  slot --> entry["Entry: 18 → value"]
+flowchart TD
+  A["Read value at current index"] --> B["complement = target - value"]
+  B --> C{"Complement stored?"}
+  C -->|yes| D["Return stored index and current index"]
+  C -->|no| E["Store value -> current index"]
+  E --> F{"More values?"}
+  F -->|yes| A
+  F -->|no| G["Return null"]
 \`\`\`
-
-## How it works
-
-A hash function deterministically converts a key into an integer hash. The table reduces that hash to an array position. A correct table also stores the key because distinct keys can select the same position. It compares keys after reaching that position to distinguish collisions.
-
-For Two Sum, the key is a number already visited and the value is an index where it occurred. Store the index, not only membership, because the answer requires positions.
-
-For each number, check whether \`target\` minus the number is already stored. When it is, the positions are the stored index and the current index. When it is not, store the index you just passed. Check before you store, so the current index is not a partner for itself. On 2, 2 with target 4, the second 2 finds the first 2 already stored.
-
-A nested loop scans the rest of the array at every index. One thousand elements is about half a million pair checks. The map does a \`get\` and, on a miss, a \`set\`. That is O(n) time on average and O(n) extra memory.
-
-\`Map\` keeps a numeric key as a number. A plain object turns it into a string, so \`record[2]\` and \`record["2"]\` name the same property. This example uses that conversion intentionally. Index 0 is a real hit, so absence must be tested with \`undefined\`, not truthiness.
 
 \`\`\`ts
 function twoSum(
   values: readonly number[],
   target: number,
 ): readonly [number, number] | null {
-  const indexByValue: Record<string, number | undefined> = {};
+  const firstIndexByValue: Record<string, number | undefined> = {};
 
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index];
@@ -44,188 +40,184 @@ function twoSum(
       continue;
     }
 
-    const earlierIndex = indexByValue[target - value];
+    const complement = target - value;
+    const earlierIndex = firstIndexByValue[complement];
     if (earlierIndex !== undefined) {
       return [earlierIndex, index];
     }
 
-    indexByValue[value] = index;
+    firstIndexByValue[value] ??= index;
   }
 
   return null;
 }
 
-console.log(twoSum([2, 7, 11, 15], 9));
-console.log(twoSum([2, 2], 4));
-console.log(twoSum([1, 2, 3], 10));
+console.log(twoSum([2, 7, 11, 15], 9)); // [0, 1]
+console.log(twoSum([2, 2], 4)); // [0, 1]
+console.log(twoSum([1, 2, 3], 10)); // null
 \`\`\`
 
-Output: \`[0, 1]\`, \`[0, 1]\`, then \`null\`.
+This version intentionally uses a plain object. JavaScript converts numeric property keys to strings, so key \`2\` is stored as \`"2"\`. That conversion is harmless here because every key originates from a number and the values are only looked up the same way.
 
-## A numeric example
+## Why lookup comes before insertion
 
-Take the array 2, 7, 11, 15 and target 9.
+At the start of iteration \`i\), the table contains values only from indexes smaller than \`i\). This loop invariant guarantees that a match uses two distinct positions. If the current value were inserted first, \`[3]\` with target 6 could incorrectly match index 0 with itself.
 
-At index 0 the number is 2. The complement 7 is absent, so you store index 0 under the key 2. At index 1 the number is 7. The complement 2 is at index 0. The positions are 0 and 1.
+Duplicates still work: for \`[2, 2]\` and target 4, the first 2 is stored; the second 2 finds it. The nullish assignment preserves the first index, though returning one valid pair would also permit overwriting after a miss.
+
+## Worked trace
+
+For \`[2, 7, 11, 15]\` and target 9:
 
 | Index | Value | Complement | Table before lookup | Action |
 | --- | --- | --- | --- | --- |
-| 0 | 2 | 7 | empty | Store 2 → 0 |
-| 1 | 7 | 2 | 2 → 0 | Return [0, 1] |
+| 0 | 2 | 7 | empty | store 2 → 0 |
+| 1 | 7 | 2 | 2 → 0 | return [0, 1] |
 
-The algorithm stops as soon as it finds one pair. A different specification—return every pair, every unique value pair, or the number of pairs—needs different duplicate handling. Always establish the required result before choosing what the table stores.
+The specification asks for one pair, so returning immediately is correct. Returning every pair would require a different table value, such as a list of earlier indexes, and careful duplicate semantics.
 
-## Cost
+## Complexity
 
-The one-pass algorithm is O(n) expected time and O(k) auxiliary space, where k is the number of distinct values stored before it stops; k is at most n. Each iteration performs at most one lookup and one insertion. Those operations are O(1) expected, so n iterations are O(n) expected.
+The loop performs at most one expected-O(1) lookup and one expected-O(1) insertion per element. Total time is O(n) expected and auxiliary space is O(k), where \`k <= n\` is the number of distinct stored values. In contrast, checking every pair takes O(n²) time and O(1) auxiliary space.
 
-Resizing a backing array occasionally costs O(k), but geometric resizing spreads that work across many insertions. Insertion is O(1) amortized as well as expected under ordinary hashing assumptions. “Expected” describes collision behavior; “amortized” describes occasional resizing.
+“Expected” concerns how well hashing distributes keys. “Amortized” concerns occasional expensive operations, such as growing the backing array, spread over many insertions. Hash-table insertion is commonly both expected O(1) and amortized O(1), but not worst-case O(1).
 
-| Approach | Time | Extra space | What you store |
-| --- | --- | --- | --- |
-| Nested loops over pairs | O(n²) worst case | O(1) | A few integers |
-| Hash table in one pass | O(n) expected | O(k), at most O(n) | Index under the number you saw |
-| Chained map, every key in one slot | Can degrade toward O(n) per lookup | O(n) | The same entries, one long chain |
-| Plain object with numeric keys | O(n) average | O(n) | The key becomes a string |
+## Edge cases and mistakes
 
-## In the course
-
-Two Sum reads left to right, asks for the complement, then stores the index just passed. The reusable design questions are: What fact is the key? What information must the value recover? What represents absence? Should a duplicate preserve the first value, overwrite with the latest value, or increment a count?
-
-## Common mistakes
-
-Storing the value and forgetting the index. The complement test can succeed and you still cannot return positions.
-
-Storing the current number before you look up the complement. A value that is half the target can then match its own index. Check first. Store after the miss.
-
-Treating a \`get\` result of 0 as a miss. Index 0 is a legal position. Absence is \`undefined\`.
-
-Using an object for numeric keys and then comparing a key to a number with \`===\`. The object stored the string \`"2"\`. \`Map\` keeps the number you passed to \`set\`.
-
-Claiming guaranteed O(1). Hash-table operations are expected O(1), not a worst-case promise. State whether a bound is expected, amortized, or worst-case.
-
-## When to use it
-
-Use a hash map when the question is about a key you have already seen, and a scan to answer it would nest. Complements, counts, first indices, and duplicate checks are the usual forms. Use \`Map\` when the key is a number or another value that should not become a property name. Use it when O(n) extra memory is acceptable and O(n) average time is the bound you want.
-
-## When not to
-
-Skip the table when the array is sorted and two pointers can answer with O(1) auxiliary space. It is also a poor fit for range queries, sorted traversal, strict worst-case operation bounds, or a memory limit that forbids O(n) auxiliary space. A balanced search tree supports ordered operations in O(log n).
-
-## FAQ
-
-### Why does Two Sum store the index?
-
-The answer is positions. The key is the number you saw. The value is the index. The number alone tells you the complement occurred and does not tell you where.
-
-### Why prefer Map over a plain object for numeric keys?
-
-\`Map\` keeps the key as a number. A plain object turns it into a string, so 2 and \`"2"\` share one property. \`Map\` also accepts object keys, exposes \`size\`, and does not mix entries with inherited object properties.
-
-### What happens when a key is inserted twice?
-
-Its value is updated; keys are unique. Whether an algorithm should preserve the first index, overwrite with the latest index, or increment a count depends on the problem.
-
-### What time and space should you quote?
-
-O(n) expected time and O(n) auxiliary space in the worst case. Individual lookups and insertions are O(1) expected.
+- Index 0 is a valid answer. Check against \`undefined\), not truthiness.
+- Store the index because the result requires positions.
+- Check before storing to prevent self-matching.
+- Decide whether duplicate keys preserve the first value, replace it, or accumulate a count.
+- Plain object keys are strings or symbols and can have prototype concerns. For controlled numeric keys, the object above is sufficient; \`Object.create(null)\` is another option when prototype-free storage is required.
+- If the input is already sorted, two pointers can solve the value-pair version in O(n) time and O(1) auxiliary space.
 
 ## Related
 
-- [What Is a Hash Collision? Why O(1) Is Only an Average](/articles/collisions)
+- [What Is a Hash Collision? Why O(1) Is Only Expected](/articles/collisions)
 - [What Is the Space-for-Time Tradeoff in Algorithms?](/articles/space-for-time)
-`,
+  `,
   ),
   defineArticle(
     "collisions",
-    "What Is a Hash Collision? Why O(1) Is Only an Average",
+    "What Is a Hash Collision? Why O(1) Is Only Expected",
     "Hash maps",
-    "A collision is two keys landing in the same slot, so a lookup may inspect more than one entry. That is why a hash map is O(1) on average, not a promise about every call.",
-    ["collision"],
+    "A collision occurs when distinct keys select the same bucket. Correct collision resolution preserves results but can increase lookup time.",
+    ["collision", "separate chaining", "hash function"],
     `
-A collision is two keys landing in the same slot, so a lookup may inspect more than one entry. A hash function turns a key into a slot, and the two keys often sit in a small chain on that slot. That is why a hash map is O(1) on average, not a promise about every call. You plan for the average, and for the sizes in this course the map is still the right tool versus a scan.
+A **hash collision** occurs when distinct keys select the same bucket. Collisions are unavoidable when a large key space is compressed into a finite table. They do not make a correct hash table return the wrong value; they make it inspect more candidates.
 
 \`\`\`mermaid
-flowchart TD
-  A["Hash key 2"] --> B["Slot 2"]
-  C["Hash key 18"] --> B
-  B --> D["One slot, two entries"]
-  D --> E["Lookup walks the chain"]
-  E --> F["Average stays O(1)"]
+flowchart LR
+  A["key: ab"] --> H1["hash"]
+  B["key: ba"] --> H2["hash"]
+  H1 --> S["bucket 3"]
+  H2 --> S
+  S --> C["ab -> 10"]
+  C --> D["ba -> 20"]
 \`\`\`
 
-## How it works
+Two common resolution strategies are:
 
-The map hashes a key into a slot. An empty slot is one step for \`set\` and \`get\`. Two keys in one slot stay together, often as a small chain, and a lookup walks that chain until the key matches. You do not implement the hash function. \`Map\` already has one.
+- **Separate chaining:** each bucket stores a collection of entries.
+- **Open addressing:** entries stay in the array and probing searches alternative slots.
 
-The sentence to keep: average constant time, extra memory, and a collision is why the constant is not a guarantee. If every key lands in one slot, the chain has length n and a lookup degrades toward O(n). A pass of those lookups can degrade toward quadratic work. That worst case is real. Average chain length stays short when keys spread out, and the average is what you plan for. A hash \`get\` is constant time only on average. An array index does not have this chain.
+The complete teaching implementation below uses separate chaining. Its simple hash sums character codes, so \`"ab"\` and \`"ba"\` deliberately collide.
 
 \`\`\`ts
-const indexByValue = new Map<number, number>();
-indexByValue.set(2, 0);
-indexByValue.set(18, 3);
+type Entry = {
+  key: string;
+  value: number;
+};
 
-const atTwo = indexByValue.get(2);
-const atEighteen = indexByValue.get(18);
+class ChainedHashTable {
+  private readonly buckets: Entry[][];
+
+  constructor(bucketCount: number) {
+    if (!Number.isInteger(bucketCount) || bucketCount <= 0) {
+      throw new RangeError("bucketCount must be a positive integer.");
+    }
+
+    this.buckets = Array.from({ length: bucketCount }, () => []);
+  }
+
+  set(key: string, value: number): void {
+    const bucket = this.bucketFor(key);
+
+    for (const entry of bucket) {
+      if (entry.key !== key) {
+        continue;
+      }
+      entry.value = value;
+      return;
+    }
+
+    bucket.push({ key, value });
+  }
+
+  get(key: string): number | undefined {
+    const bucket = this.bucketFor(key);
+
+    for (const entry of bucket) {
+      if (entry.key === key) {
+        return entry.value;
+      }
+    }
+
+    return undefined;
+  }
+
+  private bucketFor(key: string): Entry[] {
+    let hash = 0;
+
+    for (const character of key) {
+      hash += character.codePointAt(0) ?? 0;
+    }
+
+    return this.buckets[hash % this.buckets.length] ?? [];
+  }
+}
+
+const table = new ChainedHashTable(4);
+table.set("ab", 10);
+table.set("ba", 20);
+table.set("ab", 30);
+
+console.log(table.get("ab")); // 30
+console.log(table.get("ba")); // 20
+console.log(table.get("missing")); // undefined
 \`\`\`
 
-## A numeric example
+## What the chain preserves
 
-With 8 slots, a teaching hash can use the remainder modulo 8. Key 2 goes to slot 2. Key 18 also goes to slot 2, because 18 divided by 8 leaves remainder 2. The slot holds key 2 at index 0, then key 18 at index 3. Lookup of 2 returns on the first entry. Lookup of 18 checks 2, then 18, and returns 3. Two steps, and the stored index is still correct.
+Every entry stores its original key as well as its value. Lookup first reaches the bucket, then compares keys inside that bucket. Updating \`"ab"\` changes only the entry whose key equals \`"ab"\`; the colliding \`"ba"\` entry remains intact.
 
-If 1,000 keys all landed in that slot, a lookup of the last key would walk 1,000 entries. That is the O(n) worst case, not the average. A scan of 1,000 values pays that kind of cost every time. One short chain does not make the scan cheaper, so for the sizes in this course the map stays the right tool versus a scan.
+The bucket invariant is:
 
-## Cost
+> Each logical key appears at most once, in the bucket selected by its hash.
 
-On average, \`get\` and \`set\` are O(1), and extra space is O(n) for the entries. One collision is a few comparisons, which is already more than a single jump, so O(1) is not a promise about every call. If every key lands in one slot, a chained lookup is O(n) and a loop of lookups can become O(n²). You plan for the average. You mention the worst case so that word stays honest.
+The implementation's fallback empty array is unreachable after constructor validation, but it keeps indexed access safe under strict TypeScript settings. Production tables also resize to control their **load factor**, usually defined as entries divided by buckets.
 
-| Situation | Lookup cost | What happened |
-| --- | --- | --- |
-| Short chains, the average | O(1) | The hash spread the keys |
-| Two keys in one slot | A few comparisons | One collision, one short chain |
-| Every key in one slot | O(n) worst case | The chain is a list |
-| No map, scan the array | O(n) every time | You planned for the scan |
+## Complexity
 
-## In the course
+Let \`n\` be the number of entries and \`b\` the number of buckets. With a good hash function and controlled load factor, expected chain length is O(n / b), treated as O(1) when the table grows with the data. Thus \`get\` and \`set\` are expected O(1).
 
-You will not write a hash function. \`Map\` already places the key. The O(1) beside \`get\` is an average, and the map costs extra memory. Keep the sentence: average constant time, extra memory, and a collision is why the constant is not a guarantee. For the sizes here, a short chain does not send you back to a nested scan.
+If all \`n\` keys collide, one chain has length \`n\). Lookup and update become O(n) worst case, and \`n\` such operations can total O(n²). Space remains O(n + b).
 
-## Common mistakes
+## Edge cases and mistakes
 
-Dropping the word average. The accurate sentence is O(1) on average. One call can walk a chain.
+- Never identify an entry by hash alone; distinct keys can have the same hash.
+- Inserting an existing key should update it, not create a duplicate logical key.
+- A poor hash function or too many entries for too few buckets creates long chains.
+- Taking a remainder requires a positive bucket count.
+- Mutable object keys are dangerous in schemes whose hash can change after insertion.
+- Do not conclude that one collision defeats hashing. Short chains are compatible with expected constant-time operations.
 
-Throwing the map away because a collision is possible. For the sizes here, the map still beats a scan. The worst-case chain is a reason to speak carefully.
-
-Writing your own hash in the exercise. The bug then lives in the slot math, and the lesson was the key and the value. Call \`get\` and \`set\`.
-
-Assuming a collision makes the result wrong. A correct map still returns the value for the key you asked for. The chain separates the two keys. The cost changes. The stored answer stays.
-
-## When to use it
-
-Use the map, collisions included, when you need average constant lookups and you can spend O(n) extra memory. Two Sum style memory, counts, and duplicate checks at the sizes in this course all sit here. Say average when you state the cost. The collision explains that word.
-
-## When not to
-
-Skip the map when you need a worst-case bound for every key, including a cluster in one slot. A balanced tree is O(log n) under its balance rule and it keeps order. Also skip the map for a tiny array you can scan by hand, or when you needed sorted keys.
-
-## FAQ
-
-### Does one collision make the map the wrong tool?
-
-No. A short chain is a few extra comparisons. For the sizes in this course, keep the map when the alternative is a scan.
-
-### What is the worst case of a chained hash map?
-
-If every key lands in one slot, the chain has length n and a lookup can take O(n). A loop of those lookups can degrade toward O(n²). You plan for the average, where chains stay short.
-
-### Do you implement the hash function here?
-
-You do not. \`Map\` turns a key into a slot. You call \`get\` and \`set\`, and you keep the sentence: average constant time, extra memory, and a collision is why the constant is not a guarantee.
+Use a hash table for fast expected lookup when extra memory is acceptable. Use a balanced search tree when sorted traversal or O(log n) worst-case operations matter.
 
 ## Related
 
 - [How a Hash Map Remembers What You Have Already Seen](/articles/hash-maps)
 - [What Does O(1) Mean? Constant-Time Work That Stays Flat](/articles/constant-time)
-`,
+  `,
   ),
 ];

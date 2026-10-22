@@ -26,6 +26,8 @@ The data is often defined the same way. A nested list is either a number or a li
 
 You could write the same walk with an explicit stack. Push the current piece, pop it, and push the smaller pieces it contains. Recursion is that stack hidden in the calls. A call pushes a frame, and a return pops it. Waiting frames combine results only after a base case returns.
 
+A termination argument has two parts: choose a measure that cannot decrease forever, and prove every recursive call makes it smaller. For factorial the measure is \`n\`; it decreases by 1 and stops at 1 or 0. A base case that exists but cannot be reached is no better than no base case.
+
 \`\`\`ts
 const factorial = (n: number): number => {
   if (!Number.isInteger(n) || n < 0) {
@@ -41,6 +43,8 @@ console.log(factorial(0)); // 1
 console.log(factorial(4)); // 24
 \`\`\`
 
+Expected output: \`1\`, then \`24\`.
+
 ## A numeric example
 
 Factorial of 4 is 4 * factorial(3). That call is 3 * factorial(2), which is 2 * factorial(1). Factorial of 1 is 1, and that call stops. factorial(0) is also 1, so the code stops for either value. Reject negative and non-integer inputs: without that precondition, subtracting 1 does not model the mathematical factorial problem and may never reach a base case.
@@ -48,6 +52,10 @@ Factorial of 4 is 4 * factorial(3). That call is 3 * factorial(2), which is 2 * 
 The multiplications happen on the way back. factorial(1) returns 1. factorial(2) computes 2 * 1 = 2. factorial(3) computes 3 * 2 = 6. factorial(4) computes 4 * 6 = 24. The products are 1, then 2, then 6, then 24. At the deepest point, 4 frames are live, holding 4, 3, 2, and 1. Each return pops 1 frame.
 
 A nested sum uses the same shape. [1, [2, [3], 4], 5] is a list, so you sum the pieces. 1 contributes 1. The smaller list [2, [3], 4] is 2, plus the list [3], plus 4. The call on [3] sees a number, returns 3, and stops. The inner list is 2 + 3 + 4 = 9. The outer list is 1 + 9 + 5 = 15.
+
+## Why it is correct
+
+Use induction on \`n\`. The base cases \`n = 0\` and \`n = 1\` return 1, which is the definition of factorial at those values. For \`n > 1\`, assume \`factorial(n - 1)\` correctly returns \`(n - 1)!\`. The function returns \`n * factorial(n - 1)\`, so it returns \`n * (n - 1)! = n!\`. The argument decreases by 1 and the input is a non-negative integer, so every call eventually reaches a base case.
 
 ## Cost
 
@@ -80,6 +88,10 @@ Use recursion when the input is already a smaller copy of itself. Nested lists, 
 ## When not to
 
 Summing a flat array is a loop. A recursive version spends 1 frame per element and does not make the problem clearer. A chain as deep as a large input can overflow a correct function, because a few thousand frames are enough. Use a loop, or a stack you allocate yourself. When the same smaller problem repeats, fill a table later instead of recomputing it.
+
+## Try it
+
+Write the \`Nested\` type and a recursive \`flatten\` function. Trace the maximum live stack depth for \`[1, [2, [3]]]\`. Test a number, an empty array, and an input deep enough to motivate an explicit stack.
 
 ## FAQ
 
@@ -139,6 +151,9 @@ const binarySearch = (
   while (lo <= hi) {
     const mid = lo + Math.floor((hi - lo) / 2);
     const value = values[mid];
+    if (value === undefined) {
+      return -1;
+    }
     if (value === target) {
       return mid;
     }
@@ -157,6 +172,8 @@ console.log(binarySearch(numbers, 4)); // -1
 console.log(binarySearch([], 4)); // -1
 \`\`\`
 
+Expected output: \`3\`, then \`-1\`, then \`-1\`.
+
 ## A numeric example
 
 Search for 7 in [1, 3, 5, 7, 9].
@@ -166,6 +183,10 @@ lo is 0 and hi is 4. The middle is 0 + Math.floor((4 - 0) / 2) = 2, and the valu
 lo is 3 and hi is 4. The middle is 3 + Math.floor((4 - 3) / 2) = 3, and the value is 7. That equals the target. Return 3.
 
 Search for 4 in the same array. lo is 0 and hi is 4. The middle value is 5, which is too large, so the answer is at most one before the middle. hi becomes 1. lo is 0 and hi is 1. The middle is 0, and the value 1 is too small, so lo becomes 1. The only remaining value is 3, still too small, so lo becomes 2. lo is 2 and hi is 1. The range is empty. Return -1. A million sorted entries takes about 20 comparisons, because 2^20 is 1,048,576.
+
+## Why it is correct
+
+At the start of every iteration, the invariant says that any matching index is in \`[lo, hi]\`. If the middle value is smaller than the target, sorted order proves that every index through \`mid\` is too small, so setting \`lo = mid + 1\` discards no answer. The larger case is symmetric. A match is returned immediately. If \`lo > hi\`, the invariant's candidate range is empty, so returning \`-1\` is correct. Both updates remove the middle index, which also proves termination.
 
 ## Cost
 
@@ -196,6 +217,10 @@ If duplicates are allowed, this version returns whichever matching middle it enc
 ## When not to
 
 Do not use it on unsorted data. Do not sort a large array only to answer 1 membership question, because the sort costs more than 1 linear scan. A linked list is a poor fit, because reaching the middle is not O(1). If the array holds only a handful of values, a scan is easier to get right.
+
+## Try it
+
+Return the first index of a target in an array that may contain duplicates. Save a matching index, continue to the left, and prove that the saved index remains valid when the search range becomes empty. Test duplicates at both ends.
 
 ## FAQ
 
@@ -250,12 +275,16 @@ const bubbleSort = (input: readonly number[]): number[] => {
   while (unsortedEnd > 0) {
     let swapped = false;
     for (let i = 0; i < unsortedEnd; i += 1) {
-      if (values[i] <= values[i + 1]) {
+      const left = values[i];
+      const right = values[i + 1];
+      if (left === undefined || right === undefined) {
+        throw new Error("The input must be a dense number array");
+      }
+      if (left <= right) {
         continue;
       }
-      const held = values[i];
-      values[i] = values[i + 1];
-      values[i + 1] = held;
+      values[i] = right;
+      values[i + 1] = left;
       swapped = true;
     }
     if (!swapped) {
@@ -271,6 +300,8 @@ console.log(bubbleSort(input)); // [1, 2, 4, 7]
 console.log(input); // [4, 2, 7, 1]
 \`\`\`
 
+Expected output: \`[1, 2, 4, 7]\`, then \`[4, 2, 7, 1]\`.
+
 ## A numeric example
 
 Take 1 pass over [4, 2, 7, 1]. Four values give you 3 neighbour pairs.
@@ -280,6 +311,10 @@ Compare 4 and 2. They are out of order, so swap. The array is [2, 4, 7, 1]. Comp
 The pass made 2 swaps. The largest value, 7, sits at the end. The prefix [2, 4, 1] is not sorted, because 4 is still before 1. A later pass has to swap that pair. You are finished only when a pass swaps nothing.
 
 JavaScript's default sort compares values as strings unless you pass a compare function. [10, 2, 1].sort() can yield [1, 10, 2] because "10" < "2" as strings. The first character decides: "1" comes before "2", so "10" comes before "2", and the shorter string "1" comes before "10". For numbers, pass (a, b) => a - b. Then [10, 2, 1] becomes [1, 2, 10]. The name sort does not mean the numeric order you assumed.
+
+## Why it is correct
+
+During a pass, the largest value seen so far is moved to the right whenever it meets a smaller neighbour. It therefore reaches \`unsortedEnd\` by the end of the pass. That establishes the settled-suffix invariant: every index after the new \`unsortedEnd\` is final. Repeating the argument settles one more position per pass. A pass with no swaps proves every adjacent pair is ordered; by transitivity, the whole array is ordered.
 
 ## Cost
 
@@ -312,6 +347,10 @@ Use bubble sort when you want to watch neighbour pairs, or when you are showing 
 ## When not to
 
 Do not reach for bubble sort when the input can grow. About 50 million comparisons for 10,000 values is a bad trade next to a linearithmic sort. Do not use a hand-written bubble sort to dodge a compare function. If you call the built-in sort on numbers, pass (a, b) => a - b. Otherwise the name sort does not mean the numeric order you assumed.
+
+## Try it
+
+Instrument the function to count comparisons and swaps. Compare sorted, reversed, and nearly sorted arrays of the same length. Predict each count before running the code, then explain why the early stop changes the best case but not the worst case.
 
 ## FAQ
 
@@ -349,6 +388,17 @@ flowchart TD
   sortRight --> merge
 \`\`\`
 
+\`\`\`mermaid
+flowchart LR
+  heads["Compare the two run heads"] --> choose{"Which head is smaller?"}
+  choose -->|left or equal| takeLeft["Copy left head; advance left"]
+  choose -->|right| takeRight["Copy right head; advance right"]
+  takeLeft --> remaining{"Is either run empty?"}
+  takeRight --> remaining
+  remaining -->|no| heads
+  remaining -->|yes| tail["Append the untouched tail"]
+\`\`\`
+
 ## How it works
 
 If the array has fewer than 2 elements, it is already sorted. An empty array and a 1-element array are the base case. Otherwise split into 2 halves, as evenly as you can. Sort the left half by the same rule. Sort the right half by the same rule. Then merge the 2 sorted runs.
@@ -367,12 +417,17 @@ const merge = (
   let rightIndex = 0;
 
   while (leftIndex < left.length && rightIndex < right.length) {
-    if (left[leftIndex] <= right[rightIndex]) {
-      result.push(left[leftIndex]);
+    const leftValue = left[leftIndex];
+    const rightValue = right[rightIndex];
+    if (leftValue === undefined || rightValue === undefined) {
+      throw new Error("Both runs must be dense number arrays");
+    }
+    if (leftValue <= rightValue) {
+      result.push(leftValue);
       leftIndex += 1;
       continue;
     }
-    result.push(right[rightIndex]);
+    result.push(rightValue);
     rightIndex += 1;
   }
   return [
@@ -397,6 +452,8 @@ console.log(mergeSort(numbers)); // [-3, 1, 2, 2, 4, 5]
 console.log(numbers); // [5, 1, 4, 2, 2, -3]
 \`\`\`
 
+Expected output: \`[-3, 1, 2, 2, 4, 5]\`, then \`[5, 1, 4, 2, 2, -3]\`.
+
 ## A numeric example
 
 Merge the sorted runs [1, 4, 8] and [2, 3, 9]. Start one pointer on 1 and the other on 2.
@@ -406,6 +463,10 @@ Compare 1 and 2. Take 1. The result is [1], and the left pointer sits on 4. Comp
 When one half runs out, append the rest. The right run still holds 9, so the merged array is [1, 2, 3, 4, 8, 9]. Six values were written, once each. The pointers only moved forward. You never rescanned a half, because each head was the smallest value still on that side.
 
 Those runs come from the same rule on smaller arrays. [8] has fewer than 2 elements, so that call stops. You merge only after both sides come back sorted.
+
+## Why it is correct
+
+The recursive claim is: \`mergeSort\` returns a sorted permutation of its input. Arrays shorter than 2 are already sorted. For a larger array, assume the recursive calls return sorted permutations of the two halves. During \`merge\`, \`result\` is sorted and contains exactly the consumed prefixes. The smaller remaining head is the smallest value not yet written, so appending it preserves that invariant. Copying the final tail completes a sorted permutation of both halves, and therefore of the original input.
 
 ## Cost
 
@@ -440,6 +501,10 @@ Use merge sort when you need O(n log n) time in every case, including sorted and
 ## When not to
 
 Do not use this version when you refuse the extra arrays and a library sort is acceptable. Quicksort uses less extra memory, and many libraries reach for it. Its worst case is worse, and the explanation is longer. One sort you can draw is enough. While learning this one, do not call the built-in sort and skip the merge.
+
+## Try it
+
+Generalize \`mergeSort\` to accept a typed compare function, then sort records by score while preserving the original order of equal scores. Explain why choosing the left item on equality provides stability.
 
 ## FAQ
 

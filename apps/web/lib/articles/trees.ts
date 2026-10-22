@@ -107,6 +107,12 @@ You touch each node once, with a constant amount of work, so n nodes take O(n) t
 
 The table is the depth walk. Searching for one value is a later cost, and it depends on the height.
 
+## Practice
+
+1. Trace \`maxDepth\` on a root whose left child is a leaf and whose right child has two more levels. Write the return value beside each node before running code.
+2. Add \`minDepth\`, the number of nodes on the shortest root-to-leaf path. A node with one missing child is the important case: the missing side is not a path to a leaf.
+3. Rewrite \`maxDepth\` iteratively with a queue of \`{ node, depth }\` records. Check that the recursive and iterative versions agree on empty, single-node, balanced, and skewed trees.
+
 ## In the course
 
 \`maxDepth\` takes a level-order list and returns the node count on the longest path. The lesson tree returns 3, one node returns 1, an empty list returns 0, and [1, 2, null, 3] returns 3. Call \`buildTree\`, then use the recursive rule. The lesson list has length 7 and depth 3, so length is the wrong number. Missing returns 0. A real node returns 1 plus the deeper child.
@@ -139,12 +145,27 @@ A missing child is empty, so it contributes 0. A leaf is a real node with missin
 
 One branch finishes before the other because the walk is depth-first. You keep the larger child result, so the number stays the same if you swap the order. The call stack changes. The longest path does not.
 
+## Structural facts worth proving
+
+For any non-empty tree with \(n\) nodes, there are exactly \(n - 1\) edges. Every node except the root has one parent edge, so counting those incoming edges proves the formula. A binary tree is **full** when every node has either zero or two children, **complete** when its last level fills from the left, and **perfect** when every internal node has two children and all leaves share a level. These words are not interchangeable: heaps need completeness, while recursive depth works for every shape.
+
+\`\`\`mermaid
+flowchart LR
+  binary["Binary<br/>at most two children"] --> full["Full<br/>zero or two children"]
+  binary --> complete["Complete<br/>last level fills left"]
+  full --> perfect["Perfect<br/>full and equal leaf depth"]
+  complete --> perfect
+\`\`\`
+
+The recursive invariant also gives a proof template for many tree algorithms: define exactly what a call returns for one subtree, establish the empty-tree result, assume the child calls satisfy the definition, then combine them for the parent. Traversal order determines *when* you combine; the invariant determines *what* the answer means.
+
 ## Related
 
 Read the ordered tree next, then the search that also finishes one branch before the other.
 
 - [What Is a Binary Search Tree? Left Smaller, Right Larger](/articles/binary-search-trees)
 - [How Does Depth-First Search Explore One Branch First?](/articles/depth-first-search)
+- [How Do Preorder, Inorder, and Postorder Traverse a Tree?](/articles/tree-traversals)
 
     `,
   ),
@@ -259,6 +280,12 @@ One search or insertion follows one path, so it costs O(h), where h is the curre
 
 The first row is a balanced tree, or inserts that landed on both sides. The second row is sorted input and no repair. The search code is the same.
 
+## Practice
+
+1. Insert \`[8, 3, 10, 1, 6, 14, 4, 7, 13]\` by hand, then write the comparisons used to find 7 and 12.
+2. Write \`smallest(node)\` by following one direction only. State why the BST invariant makes that endpoint the minimum.
+3. Write a validator that carries lower and upper bounds into each subtree. Test a tree where every parent-child pair looks valid but a grandchild violates the root's bound.
+
 ## In the course
 
 \`bstContains\` inserts \`values\` from left to right, then reports whether \`target\` is present. Smaller goes left, larger goes right, and equals stay out. [8, 3, 10, 1, 6] contains 6 and does not contain 7. [4, 2, 6] contains the root 4. An empty list does not contain 1. \`.includes\`, \`.indexOf\`, and \`new Set\` skip the walk, and the runner rejects them. Sorted input still returns the right boolean, at a cost equal to the length of the list.
@@ -291,12 +318,29 @@ Each step drops a side, so the step count is the height. Both sides have to grow
 
 The boolean can be right while every child link goes unused. The exercise is the walk: start at the root, smaller goes left, larger goes right, and null means absent.
 
+## Deletion completes the data structure
+
+Search and insertion are only two BST operations. Deletion has three structural cases. A leaf can be detached. A node with one child can be replaced by that child. A node with two children can copy the smallest value in its right subtree—the inorder successor—then delete that successor from the right subtree. The successor has no left child, so the second deletion is one of the simpler cases.
+
+\`\`\`mermaid
+flowchart TD
+  remove["Delete matching node"] --> children{"How many children?"}
+  children -->|"0"| leaf["Return null"]
+  children -->|"1"| one["Return the only child"]
+  children -->|"2"| successor["Find minimum in right subtree"]
+  successor --> copy["Copy successor value"]
+  copy --> deleteAgain["Delete successor on right"]
+\`\`\`
+
+The deletion invariant is the same global ordering rule, not merely valid parent-child comparisons. Finding and repairing one root-to-leaf path costs O(h). In a production tree, duplicate policy, parent links, stored metadata, and balancing repairs must all agree with deletion; that is why deletion is usually the operation that exposes an incomplete implementation.
+
 ## Related
 
 Binary search throws away half of a sorted array. A balanced tree keeps this walk near log n when the insert order is poor.
 
 - [What Is Binary Search? Throw Away Half of a Sorted Array](/articles/binary-search)
 - [What Is a Balanced Tree? AVL, Red-Black, and Height](/articles/balanced-trees)
+- [How Do Preorder, Inorder, and Postorder Traverse a Tree?](/articles/tree-traversals)
 
     `,
   ),
@@ -339,23 +383,47 @@ flowchart LR
 \`\`\`
 
 \`\`\`ts
-const heavierSide = (leftHeight: number, rightHeight: number): string => {
-  const balance = rightHeight - leftHeight;
-  if (balance > 1) {
-    return "right";
-  }
-  if (balance < -1) {
-    return "left";
-  }
-  return "neither";
+type AvlNode = {
+  value: number;
+  left: AvlNode | null;
+  right: AvlNode | null;
 };
 
-console.log(heavierSide(1, 3));
-console.log(heavierSide(3, 1));
-console.log(heavierSide(2, 2));
+const rotateLeft = (root: AvlNode): AvlNode => {
+  const pivot = root.right;
+  if (pivot === null) {
+    return root;
+  }
+
+  root.right = pivot.left;
+  pivot.left = root;
+  return pivot;
+};
+
+const inOrder = (node: AvlNode | null): number[] => {
+  if (node === null) {
+    return [];
+  }
+
+  return [...inOrder(node.left), node.value, ...inOrder(node.right)];
+};
+
+const root: AvlNode = {
+  value: 1,
+  left: null,
+  right: {
+    value: 2,
+    left: null,
+    right: { value: 3, left: null, right: null },
+  },
+};
+
+console.log(inOrder(root));
+const balancedRoot = rotateLeft(root);
+console.log(balancedRoot.value, inOrder(balancedRoot));
 \`\`\`
 
-The example prints \`right\`, \`left\`, and \`neither\`. A balance factor with magnitude at most 1 satisfies the AVL height condition at that node; “neither” here does not mean the two heights must be equal.
+The example prints \`[1, 2, 3]\` and then \`2 [1, 2, 3]\`. The root changes, but in-order traversal does not: preserving that sorted sequence is the rotation's key correctness invariant. Returning the unchanged root when no right child exists also makes the helper total for every node.
 
 A rotation is a local tree move. A node and its child change parent-child roles while preserving the BST's in-order sequence. It is not the array rotation from week one. Same English word, different operation. An array rotation slides the front of a contiguous block to the back. A tree rotation changes links. When someone says balanced, ask which invariant and update procedure keep the height bounded.
 
@@ -389,6 +457,12 @@ Search costs the height. One rotation rewires a constant number of links, so the
 
 The nodes occupy O(n) memory. Implementations also store O(1) metadata per node, such as an AVL height or a red-black color, so total memory remains O(n). A recursive update can use O(log n) call-stack space; an implementation with parent links can walk upward iteratively. A sorted array never needs this move. Binary search throws away half by index.
 
+## Practice
+
+1. Draw the result of a left rotation at 2 in the tree \`2 → 4\`, where 4 has children 3 and 5. Verify the in-order sequence before and after.
+2. Compute every node's AVL balance factor in the seven-node example. Then append 8 and 9 on the right and identify the first unbalanced ancestor.
+3. Explain why a rotation is O(1) even though checking whether an update caused imbalance is O(log n).
+
 ## In the course
 
 The binary search tree lesson is where the warning sits. Sorted inserts make a straight line, and search becomes O(n). AVL and red-black are the names of the trees that rotate when an insert or a delete would make one side too tall. You do not implement a rotation this month. The tests ask for a boolean, so a spine can still pass. Week one rotation moves the front of an array to the back. That code does not shorten a tree.
@@ -420,6 +494,23 @@ You do not implement a rotation this month. Those trees rotate when an insert or
 ### Can the left-and-right rule be true and the tree still be slow?
 
 Yes. Sorted inserts put every node on one side. The rule holds, the picture is a linked list stood on end, and search is O(n). The comparison alone does not keep the height near log n.
+
+## AVL and red-black trade-offs
+
+AVL trees enforce a tighter height condition and therefore tend to make fewer comparisons during lookup. They may perform more rotations during update. Red-black trees permit a looser shape, use one color bit per node, and bound the longest root-to-leaf path to at most twice the shortest corresponding black-height path. That looser invariant often means fewer update repairs. Both still guarantee O(log n) search, insertion, and deletion.
+
+A single rotation repairs an outside-heavy shape. An inside-heavy shape needs two rotations: first rotate the child toward the outside, then rotate the unbalanced node. Choosing a rotation from only the sign of one balance factor is therefore insufficient; the child’s balance identifies the single or double case.
+
+\`\`\`mermaid
+flowchart TD
+  bad["Node has balance magnitude 2"] --> direction["Inspect heavy child"]
+  direction --> outside["Outside-heavy: one rotation"]
+  direction --> inside["Inside-heavy: rotate child, then node"]
+  outside --> restored["BST order and height invariant restored"]
+  inside --> restored
+\`\`\`
+
+The key invariant during every rotation is inorder preservation. If the sorted inorder sequence changes, the links were rewired incorrectly even when the resulting picture looks balanced.
 
 ## Related
 
@@ -484,7 +575,7 @@ The example prints \`0\` and then \`1 2\`. Call \`parentIndex\` only for a non-r
 
 Insert writes at the next open index, then swaps upward while the value belongs above its parent: smaller, in a min-heap, or larger, in a max-heap. Removing the root moves the last value into the hole and swaps downward, with the smaller child or the larger child. Both walks are one path. Height is about log n, so both are O(log n). Reading the root is O(1).
 
-For the kth largest, keep a min-heap of size k. Push each value, and if the size passes k, pop the smallest. Anything smaller than the root cannot be one of the k largest. The root is the smallest survivor, which is the kth largest. Duplicates count separately.
+For the kth largest, keep a min-heap of size k. Push each value, and if the size passes k, pop the smallest. Anything removed cannot be one of the k largest values seen so far. The root is the smallest survivor, which is the kth largest after the final input. Duplicates count separately.
 
 \`\`\`mermaid
 flowchart LR
@@ -497,6 +588,106 @@ flowchart LR
   more -->|yes| next
   more -->|no| answer["Root is kth largest"]
 \`\`\`
+
+\`\`\`ts
+class MinHeap {
+  private readonly values: number[] = [];
+
+  get size(): number {
+    return this.values.length;
+  }
+
+  push(value: number): void {
+    this.values.push(value);
+    let index = this.values.length - 1;
+
+    while (index > 0) {
+      const parent = Math.floor((index - 1) / 2);
+      const parentValue = this.values[parent];
+      const currentValue = this.values[index];
+      if (parentValue === undefined || currentValue === undefined) {
+        return;
+      }
+      if (parentValue <= currentValue) {
+        return;
+      }
+
+      this.values[parent] = currentValue;
+      this.values[index] = parentValue;
+      index = parent;
+    }
+  }
+
+  popMinimum(): number | undefined {
+    const minimum = this.values[0];
+    const last = this.values.pop();
+    if (minimum === undefined || last === undefined) {
+      return undefined;
+    }
+    if (this.values.length === 0) {
+      return minimum;
+    }
+
+    this.values[0] = last;
+    let index = 0;
+
+    while (true) {
+      const left = 2 * index + 1;
+      const right = left + 1;
+      let smallest = index;
+      const currentValue = this.values[index];
+      if (currentValue === undefined) {
+        return minimum;
+      }
+      let smallestValue = currentValue;
+
+      const leftValue = this.values[left];
+      if (leftValue !== undefined && leftValue < smallestValue) {
+        smallest = left;
+        smallestValue = leftValue;
+      }
+      const rightValue = this.values[right];
+      if (rightValue !== undefined && rightValue < smallestValue) {
+        smallest = right;
+        smallestValue = rightValue;
+      }
+      if (smallest === index) {
+        return minimum;
+      }
+
+      this.values[index] = smallestValue;
+      this.values[smallest] = currentValue;
+      index = smallest;
+    }
+  }
+
+  peek(): number | undefined {
+    return this.values[0];
+  }
+}
+
+const kthLargest = (numbers: readonly number[], k: number): number | undefined => {
+  if (k < 1 || k > numbers.length) {
+    return undefined;
+  }
+
+  const candidates = new MinHeap();
+  for (const number of numbers) {
+    candidates.push(number);
+    if (candidates.size > k) {
+      candidates.popMinimum();
+    }
+  }
+
+  return candidates.peek();
+};
+
+console.log(kthLargest([3, 2, 1, 5, 6, 4], 3));
+console.log(kthLargest([2, 2], 2));
+console.log(kthLargest([], 1));
+\`\`\`
+
+Expected output is \`4\`, \`2\`, and \`undefined\`. After each input, the invariant is: the heap contains the largest \`min(itemsSeen, k)\` values seen so far, and its root is their minimum. The bounds check gives invalid \`k\` values an explicit result instead of reading a missing root.
 
 ## A numeric example
 
@@ -516,6 +707,12 @@ Reading the root is O(1). Insert and remove-root are O(log n). The size-k heap s
 | Sort the whole array | O(n log n) | depends on the sort |
 
 The complete shape makes the height \`floor(log2(n)) + 1\` for a non-empty heap, which makes O(log n) updates unconditional. A binary search tree gets that bound only when it stays balanced. A heap swaps values along an index path; it does not rotate links.
+
+## Practice
+
+1. Starting from \`[4, 6, 5]\`, push 2 and record every array after a swap. Check both the complete-shape and min-heap invariants after each step.
+2. Change the size-k strategy to find the kth smallest. State which heap order you need and which extreme must leave when the heap grows past k.
+3. Add a \`replaceMinimum(value)\` operation that replaces the root and sifts down once. Explain when it can save work in the kth-largest loop.
 
 ## In the course
 
@@ -548,6 +745,21 @@ You kept k values and threw away anything smaller than the root. Those discarded
 ### Does sorting the array also count as correct?
 
 Sorting those six values still gives 4 as the 3rd largest. The sort orders more than you asked, at O(n log n). The size-k heap is O(n log k) and keeps only the candidates. Either result can pass.
+
+## Building a heap in linear time
+
+Repeated insertion builds a heap in O(n log n), but bottom-up **heapify** is O(n). Start at the last internal node, \`floor(n / 2) - 1\`, and sift each internal node downward toward index 0. Most nodes are close to the leaves and can move only one or two levels; only a few nodes are high enough to move far. Summing those bounded movements gives O(n), not O(n log n).
+
+\`\`\`mermaid
+flowchart RL
+  leaves["Leaves<br/>already valid heaps"] --> low["Sift low parents down"]
+  low --> high["Continue toward index 0"]
+  high --> root["Whole array satisfies heap order"]
+\`\`\`
+
+A priority queue is the abstract interface—insert an item and remove the highest-priority item. A binary heap is one implementation. Stable tie order is not guaranteed by the heap invariant; if equal priorities must leave in arrival order, compare a monotonically increasing sequence number after comparing priority.
+
+Heap sort uses bottom-up heapify and then repeatedly moves the root to the shrinking end of the array. It runs in O(n log n) time with O(1) auxiliary array space, but typical heap sort is not stable.
 
 ## Related
 

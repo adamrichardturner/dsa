@@ -24,10 +24,23 @@ A node holds a value and next. next is another node, or nothing. You start with 
 
 Rewiring is O(1) only when you already hold the node. To insert after current, point the new node's next at the old current.next, then point current.next at the new node. That is 2 writes. Later nodes stay where they are. Nothing slides. Finding current from the head is a separate O(n) walk. The constant-time claim is the pointer writes, not the search.
 
+The central invariant is reachability: starting at \`head\` and repeatedly
+following \`next\` must visit every list node exactly once and then reach
+\`null\`. An accidental early \`null\` loses a suffix. A pointer back to an
+earlier node creates a cycle, so an ordinary traversal never finishes.
+
 Reversing turns every next around. Keep previous, current, and the next you are about to lose. previous starts as nothing. current starts as the head. Copy current.next into a local before you change it, or the rest of the list is gone. Point current back at previous. Then step all 3 forward: previous becomes current, and current becomes the saved next. When current runs out, previous is the new head, and the old head points at nothing.
 
+\`\`\`mermaid
+flowchart LR
+  before["1 -> 2 -> 3 -> null"] --> save["Save next before rewiring"]
+  save --> partial["null <- 1 <- 2   3 -> null"]
+  partial --> after["null <- 1 <- 2 <- 3"]
+\`\`\`
+
 Here is the complete iterative reversal. The helper that converts the list to an
-array makes both the starting state and the result visible.
+array makes each mutation visible. \`insertAfter\` and \`removeAfter\` also show
+the constant number of pointer writes behind an O(1) splice.
 
 \`\`\`ts
 interface ListNode {
@@ -45,6 +58,23 @@ function toArray(head: ListNode | null): number[] {
   }
 
   return values;
+}
+
+function insertAfter(node: ListNode, value: number): ListNode {
+  const inserted: ListNode = { value, next: node.next };
+  node.next = inserted;
+  return inserted;
+}
+
+function removeAfter(node: ListNode): number | undefined {
+  const removed = node.next;
+  if (removed === null) {
+    return undefined;
+  }
+
+  node.next = removed.next;
+  removed.next = null;
+  return removed.value;
 }
 
 function reverse(head: ListNode | null): ListNode | null {
@@ -67,14 +97,27 @@ const head: ListNode = {
 };
 
 console.log("before:", toArray(head).join(" -> "));
+insertAfter(head, 4);
+console.log("insert:", toArray(head).join(" -> "));
+console.log("removed:", removeAfter(head));
 const reversed = reverse(head);
 console.log("after:", toArray(reversed).join(" -> "));
 \`\`\`
 
-The output is \`before: 1 -> 2 -> 3\` followed by
-\`after: 3 -> 2 -> 1\`. When the loop ends, \`current\` is null and
-\`previous\` is the new head. Skip \`savedNext\` and the rest of the list is
-lost on the first write.
+The output is:
+
+\`\`\`text
+before: 1 -> 2 -> 3
+insert: 1 -> 4 -> 2 -> 3
+removed: 4
+after: 3 -> 2 -> 1
+\`\`\`
+
+Detaching the removed node is not required to preserve the remaining list, but
+it makes that node's new state unambiguous. During reversal, the processed
+prefix points backward through \`previous\`, while \`current\` still starts the
+unprocessed suffix. \`savedNext\` is the bridge that prevents that suffix from
+being lost.
 
 ## A numeric example
 
@@ -114,6 +157,11 @@ In a **circular linked list**, the tail points back to the head instead of null.
 It is useful for round-robin processing. A traversal must stop when it returns
 to its starting node; waiting for null would loop forever. Empty and one-node
 lists deserve explicit tests in every variant.
+
+For a non-circular singly linked list, useful boundary tests are an empty list,
+a one-node list, insertion after the tail, removal after the tail, and a
+two-node reversal. They exercise every place where \`head\`, \`next\`, or the
+tail can become \`null\`.
 
 ## In the course
 
@@ -190,6 +238,12 @@ match the opener that just came off. A mismatch means unbalanced. Popping an
 empty stack means a closer arrived with no opener waiting. Anything left at the
 end was never closed.
 
+A useful loop invariant is: after scanning a prefix, the stack contains exactly
+the unmatched openers from that prefix, ordered from oldest at the bottom to
+newest at the top. Pushing an opener preserves it. A matching closer removes
+the only opener it is allowed to close. A mismatch proves that no later
+character can repair the nesting.
+
 A counter stores quantities, so it can match counts and still accept a crossed
 string. The stack stores which opener is still waiting. This complete checker
 also ignores non-bracket characters, which makes it useful on expressions:
@@ -243,6 +297,13 @@ console.log(bracketsAreBalanced("]")); // false
 expected opener, so an unmatched closer fails immediately. The final length
 check catches unmatched openers.
 
+\`\`\`text
+true
+false
+false
+false
+\`\`\`
+
 ## A numeric example
 
 Walk "([])" and write the stack after each character. Start empty, [].
@@ -276,6 +337,11 @@ Time and space for a stack used this way stay easy to say if you keep the top at
 | Shift or unshift at the front | O(n) | O(1) beyond the array |
 
 Time for the scan is O(n). Extra space is the unmatched openers: O(n) when every character is an opener. push and pop stay O(1) at the end if you leave the middle alone. shift on every pop makes the scan O(n²).
+
+The empty string and a string without brackets both return \`true\`: there is no
+unmatched opener or closer. That behavior is deliberate because this version
+validates brackets inside general text. A parser that rejects other characters
+would need a different input policy, not a different stack algorithm.
 
 ## In the course
 
@@ -333,17 +399,13 @@ An empty pop means a closer arrived with no opener waiting. Items left at the en
 The call stack is the stack the runtime uses for calls. Each call pushes a frame, and each return pops it. A frame holds the arguments, the return address, and the locals. Recursion without a base case keeps pushing until the runtime refuses another frame, so the call overflows instead of spinning in one loop.
 
 \`\`\`mermaid
-sequenceDiagram
-  participant Caller
-  participant Fact3
-  participant Fact2
-  participant Base
-  Caller->>Fact3: factorial of 3
-  Fact3->>Fact2: factorial of 2
-  Fact2->>Base: factorial of 1
-  Base-->>Fact2: return 1
-  Fact2-->>Fact3: return 2
-  Fact3-->>Caller: return 6
+flowchart LR
+  caller["Caller"] -->|"factorial(3)"| fact3["Frame: n = 3"]
+  fact3 -->|"factorial(2)"| fact2["Frame: n = 2"]
+  fact2 -->|"factorial(1)"| base["Base frame: n = 1"]
+  base -->|"return 1"| fact2
+  fact2 -->|"return 2"| fact3
+  fact3 -->|"return 6"| caller
 \`\`\`
 
 ## How it works
@@ -353,6 +415,11 @@ A call pushes a frame. The frame holds the arguments, the return address, and th
 Recursion pushes your own function. factorial of 3 and factorial of 2 are two frames, each with its own n. The deeper frame was pushed last, so it finishes first. The runtime owns that stack.
 
 The base case is the call that stops. It returns without pushing another frame. In the diagram, that call is factorial of 1. What must be true when a frame pops is that the smaller call has already returned. The current frame combines that answer with its own argument, then pops.
+
+A recursive algorithm needs two obligations. First, the base case must be
+correct on its own. Second, every recursive call must move toward that case.
+For factorial, non-negative \`n\` decreases by 1, so the variant \`n\` cannot
+decrease forever without reaching 1 or 0.
 
 A missing base case never starts the pops. Each call pushes another frame until
 the runtime refuses another one. That is overflow. It is not one frame spinning
@@ -385,6 +452,16 @@ The calls print in the order 3, 2, 1. The returns print in the reverse order:
 1, 2, 6. The final line is \`answer: 6\`. That reversal is the stack's
 last-in, first-out rule.
 
+\`\`\`text
+call factorial(3)
+call factorial(2)
+call factorial(1)
+return 1 from factorial(1)
+return 2 from factorial(2)
+return 6 from factorial(3)
+answer: 6
+\`\`\`
+
 ## A numeric example
 
 Define factorial of 1 as 1, and factorial of n as n times factorial of n minus 1. Compute factorial of 3.
@@ -403,10 +480,16 @@ Time and stack space follow the depth of the calls, not the number of variables 
 | --- | --- | --- |
 | One call and its return | O(1) inside that frame | O(1) for the frame |
 | Factorial of n with a base case | O(n) | O(n) frames |
-| Recursion that halves the argument each call | O(log n) frames of depth | O(log n) |
+| Constant work while halving n each call | O(log n) | O(log n) frames |
 | No base case | Runs until overflow | Hits the runtime limit |
 
 Factorial does constant work in each of n frames, so time is O(n) and stack space is O(n). The frames are memory even though you allocated no array. A split that finishes one half before the other keeps about log n frames on that path. Factorial's depth is n. Past the runtime's limit, the pops never start.
+
+This implementation validates the mathematical domain, but JavaScript
+\`number\` still has a finite safe-integer range. Larger factorials eventually
+lose integer precision and then overflow to \`Infinity\`. Use \`bigint\` when
+exact large results are part of the requirement; that changes arithmetic cost,
+not the recursion pattern.
 
 ## In the course
 
@@ -468,7 +551,9 @@ flowchart LR
   enq["Enqueue at the back"] --> waiting["1 then 2 then 3"]
   waiting --> deq["Dequeue from the front"]
   deq --> first["1 leaves first"]
-  first --> slide["Later items slide left"]
+  first --> choice{"Array representation"}
+  choice -->|shift| slide["Later items slide left"]
+  choice -->|head index| advance["Advance head; move nothing"]
 \`\`\`
 
 ## How it works
@@ -476,6 +561,11 @@ flowchart LR
 Enqueue joins the back. Dequeue leaves from the front. You do not take the newest item. That would be a stack.
 
 A TypeScript array can push at the back and shift from the front. shift does not only drop index 0. It moves every later element one slot left, so an array of n elements moves n minus 1 of them. One dequeue is O(n).
+
+For the moving-head representation below, the live queue is always the range
+from \`head\` through \`items.length - 1\`. Values before \`head\` have already
+left. Enqueue extends the right side of that range; dequeue returns its
+leftmost value and advances \`head\`. This invariant is the FIFO proof.
 
 For tiny teaching examples, that shift can be acceptable. In production, a
 head index, a circular buffer, a linked deque, or two stacks avoids repeated
@@ -540,7 +630,17 @@ console.log(line.dequeue()); // undefined
 The values leave in insertion order. No dequeue shifts another value. This
 simple representation can retain consumed slots until the queue empties; a
 circular buffer can reuse those slots when a long-lived queue needs bounded
-storage.
+storage. Also, because \`undefined\` is a legal generic value, callers that
+enqueue \`undefined\` should inspect \`length\` before dequeueing if they must
+distinguish an empty queue from a stored \`undefined\`.
+
+\`\`\`text
+10
+20
+1
+30
+undefined
+\`\`\`
 
 ## Cost
 
@@ -550,16 +650,18 @@ Time and space for a queue depend on which end you remove from.
 | --- | --- | --- |
 | Enqueue with push at the back | O(1) | O(1) per stored item |
 | Dequeue with shift at the front | O(n) | O(1) beyond the items |
-| Dequeue with a head index | O(1) | O(1) beyond the backing array |
+| Dequeue with a head index | O(1) | May retain consumed backing slots |
 | Either end on a deque | O(1) | O(1) per stored item |
 | Two-stack queue | O(1) amortized | O(1) per stored item |
 | n enqueues and n dequeues using shift | O(n²) | O(n) for the line |
 
 Space for the waiting items is O(n). One \`shift\` dequeue adds O(1) extra
 space, but its time is O(n) because of the slide. Repeating it n times is
-O(n²). A head-index or deque implementation gives O(1) dequeue. A two-stack
-queue gives O(1) amortized dequeue: one transfer may cost O(n), but each item
-crosses from the input stack to the output stack at most once.
+O(n²). A head index gives O(1) dequeue but can retain consumed slots until a
+reset or compaction. A circular buffer or linked deque gives O(1) dequeue
+without that retention pattern. A two-stack queue gives O(1) amortized
+dequeue: one transfer may cost O(n), but each item crosses from the input stack
+to the output stack at most once.
 
 ## In the course
 
@@ -583,6 +685,11 @@ circular buffer, and a linked deque have different constants and worst cases.
 shift on an empty array returns nothing. Test for an empty queue before you use the front.
 
 Sorting the line, or popping the newest vertex, leaves the queue. A vertex and a distance still join at the back and leave from the front.
+
+Marking a graph vertex visited only when it leaves the queue can enqueue the
+same vertex many times. Mark it when it enters the queue. Then each discovered
+vertex has one queue position, and the usual O(V + E) breadth-first-search bound
+is preserved.
 
 ## When to use it
 
@@ -645,6 +752,12 @@ A doubly linked deque stores a front pointer, a back pointer, and a size. Every
 node has \`previous\` and \`next\` links. An end operation reconnects at most
 two nodes; it never walks through the deque, so all four end operations are
 O(1).
+
+Its representation invariant has four parts: an empty deque has both ends
+\`null\`; a non-empty deque has \`front.previous === null\` and
+\`back.next === null\`; neighbouring links agree in both directions; and
+\`count\` equals the number of reachable nodes. Every method below restores all
+four before returning.
 
 The empty and one-node cases are the important boundaries. In an empty deque,
 both pointers are null. In a one-node deque, both pointers name the same node.
@@ -717,6 +830,7 @@ class Deque<T> {
 
     next.previous = null;
     this.front = next;
+    node.next = null;
     return node.value;
   }
 
@@ -736,6 +850,7 @@ class Deque<T> {
 
     previous.next = null;
     this.back = previous;
+    node.previous = null;
     return node.value;
   }
 }
@@ -753,6 +868,13 @@ console.log(deque.length); // 0
 
 The output is 1, 3, 2, then 0. Both ends are available, and removing one end
 does not move the middle values.
+
+\`\`\`text
+1
+3
+2
+0
+\`\`\`
 
 ## A numeric example
 
@@ -775,6 +897,10 @@ The linked deque uses O(n) nodes and two links per node. A circular-buffer deque
 also gives O(1) amortized end operations in an array by using modular indices
 and occasionally resizing. The linked representation offers simple pointer
 updates; the circular buffer generally has better memory locality.
+
+Although each linked end operation is worst-case O(1), allocation and garbage
+collection still add real constant costs. Big O compares growth rates; it does
+not claim that every O(1) representation is equally fast.
 
 ## In the course
 

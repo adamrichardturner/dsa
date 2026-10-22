@@ -21,7 +21,7 @@ flowchart LR
 
 Start with an empty map. For each value, read the current count, add one, and write it back. A missing key starts at zero. After one pass the map holds every tally, and the time is O(n) if each update is O(1) on average. The extra space is O(n) when every value is unique.
 
-The most frequent value is the key with the largest count. Walk the array once and remember the winner as you update. If two values share that count, keep the one that appears earlier. Store the first index beside the count, and replace the winner only when the new count is strictly greater, or when the counts match and the new value starts earlier.
+The most frequent value is the key with the largest final count. A second walk over the original array considers candidates in first-appearance order. Replace the winner only when a count is strictly larger. Equal counts therefore leave the earlier candidate in place without storing first indexes separately.
 
 A counter for one target does not need a map. The map is the tool when you do not know which value will win, or when several targets share the same pass.
 
@@ -59,6 +59,14 @@ Expected output: \`2\`, then \`null\`. The second pass visits 4 before 2, but 2 
 
 For \`[4, 2, 4, 2, 2]\`, the first pass builds \`{ "2": 3, "4": 2 }\`. The second pass first makes 4 the winner with count 2, then replaces it with 2 because 3 is larger. Later copies do not change the result.
 
+## Why it is correct
+
+After the first loop has processed a prefix, \`counts[String(value)]\` equals the number of copies of that value in the prefix. Updating exactly the next value preserves that invariant, so the completed table has every final frequency. The second loop keeps the highest-frequency value seen so far. Because it updates only for a strictly larger count, equal-frequency values cannot displace the one encountered first.
+
+## Cost
+
+The two sequential passes take O(n) time, not O(2n): constants disappear in asymptotic notation. With \`u\` distinct values, the count object uses O(u) extra space, at most O(n). Empty input returns \`null\`.
+
 ## In the course
 
 Hash maps introduce the complement. The next lesson, Counting with a map, asks for the tally of one target and then for the most frequent value, with the earliest value winning a tie. See also [How a Hash Map Remembers What You Have Already Seen](/articles/hash-maps).
@@ -82,6 +90,10 @@ Do not build the map when you only need a sum or a single comparison. A counter 
 ## Problem-solving checklist
 
 State what each key and value mean. Decide the empty-input result and tie rule before coding. Test one unique winner, one tie, one repeated value, and the empty array. Finally, check that no loop restarts a count from scratch.
+
+## Extension exercise
+
+Return both the winning value and its count without a second counting pass. Preserve the earliest value on a tie, and explain which state must be updated together.
   `,
   ),
   defineArticle(
@@ -110,24 +122,36 @@ Binary search keeps an inclusive range. When the middle matches and you still ne
 
 \`\`\`ts
 function rotateLeft(nums: readonly number[], steps: number): number[] {
+  if (!Number.isInteger(steps)) {
+    throw new RangeError("steps must be an integer");
+  }
   if (nums.length === 0) {
     return [];
   }
 
-  const remainder = steps % nums.length;
+  const remainder = ((steps % nums.length) + nums.length) % nums.length;
   return nums.slice(remainder).concat(nums.slice(0, remainder));
 }
 
 console.log(rotateLeft([1, 2, 3, 4], 4));
 console.log(rotateLeft([1, 2, 3, 4], 5));
+console.log(rotateLeft([1, 2, 3, 4], -1));
 console.log(rotateLeft([], 3));
 \`\`\`
 
-Expected output: \`[1, 2, 3, 4]\`, then \`[2, 3, 4, 1]\`, then \`[]\`. The examples exercise the full-turn, one-past-a-full-turn, and empty-input boundaries.
+Expected output: \`[1, 2, 3, 4]\`, then \`[2, 3, 4, 1]\`, then \`[4, 1, 2, 3]\`, then \`[]\`. The examples exercise the full-turn, one-past-a-full-turn, negative-step, and empty-input boundaries.
 
 ## Worked example
 
 With length 4 and 5 steps, \`5 % 4\` is 1. The half-open slices are \`nums.slice(1) = [2, 3, 4]\` and \`nums.slice(0, 1) = [1]\`; joining them gives \`[2, 3, 4, 1]\`.
+
+## Why it is correct
+
+The normalized remainder \`r\` is always in \`[0, length)\`. Every original index from \`r\` onward appears first, in order, and every index before \`r\` appears afterward, also in order. The two half-open slices are disjoint and together contain every input index exactly once, so the result is precisely a left rotation by \`r\`.
+
+## Cost
+
+Computing the boundary is O(1). Slicing and concatenating copy n values, so the operation is O(n) time and O(n) extra space. The early return avoids taking a remainder by zero for an empty array.
 
 ## In the course
 
@@ -152,6 +176,10 @@ Do not "fix" a wrong answer by adding or subtracting one until a single example 
 ## Problem-solving checklist
 
 Write whether each boundary is inclusive or exclusive. Trace the empty and one-element cases on paper. For a shrinking search range, prove that every update removes at least one index. Test the first valid index, the last valid index, and the first invalid index.
+
+## Extension exercise
+
+Implement \`sliceInclusive(values, start, end)\` without mutating the input. Reject invalid bounds explicitly, and test the difference between an empty half-open range and a one-element inclusive range.
   `,
   ),
   defineArticle(
@@ -213,6 +241,14 @@ console.log(pairSum([1, 3, 4, 6, 8], 20));
 
 Expected output: \`[1, 3]\`, then \`[-1, -1]\`. For target 10, the first total is 9, so the left pointer moves; 3 + 8 is 11, so the right pointer moves; 3 + 6 then matches.
 
+## Why it is correct
+
+Suppose the current sum is too small. Pairing the current left value with any index left of \`right\` cannot produce a larger sum, so that left index cannot belong to a solution still under consideration. Moving \`left\` discards only impossible pairs. If the sum is too large, the symmetric argument makes \`right\` safe to discard. A returned pair was checked directly, and crossing pointers means every legal pair has been ruled out.
+
+## Cost
+
+Each iteration moves at least one pointer inward, and neither pointer moves backward. There are at most n - 1 moves, so time is O(n) and extra space is O(1). This is better than checking all O(n²) pairs, but only because the input is sorted.
+
 ## In the course
 
 Sorted squares move the end whose square is larger. The next lesson uses the same inward shape for a palindrome and for the indexes of a pair. The earlier pair-sum exercise on the sorted-squares page only asks for a boolean. The follow-up asks for the indexes.
@@ -236,6 +272,10 @@ Do not use them to find a pair in an unsorted array of arbitrary numbers. The di
 ## Problem-solving checklist
 
 Name the fact that makes a discard safe; here it is ascending order. Decide whether pointers may meet. Trace which candidate pairs disappear after each move. Test a match at the ends, a match inside, no match, and fewer than two values.
+
+## Extension exercise
+
+Return every unique value pair that reaches the target in a sorted array with duplicates. After a match, skip repeated values on both sides and explain why that cannot discard a new value pair.
   `,
   ),
   defineArticle(
@@ -268,6 +308,9 @@ function shortestAtLeast(
   nums: readonly number[],
   target: number,
 ): number {
+  if (target <= 0) {
+    throw new RangeError("target must be positive");
+  }
   let left = 0;
   let sum = 0;
   let best = nums.length + 1;
@@ -298,6 +341,14 @@ Expected output: \`2\`, then \`0\`. In the first call, the window \`[4, 3]\` is 
 
 At right index 4, the window \`[3, 1, 2, 4]\` totals 10. Repeated shrinking records lengths 4 and 3 before the sum falls below 7. Adding the final 3 creates \`[2, 4, 3]\`; shrinking once more discovers \`[4, 3]\` with length 2.
 
+## Why it is correct
+
+Before each right-edge advance, every window ending earlier has already been considered. Once the sum reaches the target, the current window qualifies. Removing values from the left tests every shorter window with the same right edge until the sum no longer qualifies. Non-negative values guarantee that further shrinking cannot restore a too-small sum, so no qualifying candidate is skipped. The smallest recorded length is therefore optimal.
+
+## Cost
+
+The right pointer advances n times. The left pointer also advances at most n times across the entire run, even though it sits inside a nested \`while\` loop. Total time is O(n), and the scalar state uses O(1) extra space. With negative values, this monotonic argument fails.
+
 ## In the course
 
 The sliding-window lesson keeps k fixed so the update is obvious. Grow, then shrink is the next lesson. A [prefix sum](/articles/prefix-sums) can answer a range too. You do not need one while the window already holds the sum.
@@ -321,80 +372,10 @@ Do not use it when the slice does not have to be contiguous. A subset of any ind
 ## Problem-solving checklist
 
 Write the window invariant, including whether it is valid before or after shrinking. Confirm that every value is non-negative before relying on monotonic sums. Record the answer at the exact moment the invariant says it is valid. Test no solution, one-element success, and success at each end.
-  `,
-  ),
-  defineArticle(
-    "prefix-sums",
-    "What Is a Prefix Sum? Range Totals from a Running Total",
-    "Arrays",
-    "A prefix sum at index i is the total of every value up to i. The sum of a later range is the difference of two prefixes, after one pass that built them.",
-    ["prefix sum"],
-    `
-A prefix sum at index i is the sum of the array from the start through i. After one O(n) pass, the sum of any later range is a subtraction.
 
-\`\`\`mermaid
-flowchart LR
-  build["One pass writes prefix at i"] --> ask["Sum from left to right"]
-  ask --> diff["prefix at right, minus prefix just before left"]
-\`\`\`
+## Extension exercise
 
-## How it works
-
-Let \`prefix[0]\` be the first value, and \`prefix[i]\` be \`prefix[i - 1] + nums[i]\`. The sum from index \`left\` to index \`right\`, inclusive, is \`prefix[right] - prefix[left - 1]\`. When \`left\` is 0 there is no earlier prefix, so the sum is just \`prefix[right]\`.
-
-That difference is O(1) per question. If you answer many ranges, the build cost is paid once. A sliding window that only cares about the current slice does not need the whole table. It already adds the value that enters and subtracts the value that leaves, which is a prefix difference of length one.
-
-\`\`\`ts
-function buildPrefix(nums: readonly number[]): number[] {
-  const prefix = [0];
-  for (const value of nums) {
-    prefix.push((prefix[prefix.length - 1] ?? 0) + value);
-  }
-  return prefix;
-}
-
-function rangeSum(
-  prefix: readonly number[],
-  left: number,
-  right: number,
-): number {
-  return (prefix[right + 1] ?? 0) - (prefix[left] ?? 0);
-}
-
-const prefix = buildPrefix([2, 1, 5, 3]);
-console.log(prefix);
-console.log(rangeSum(prefix, 1, 2));
-\`\`\`
-
-Expected output: \`[0, 2, 3, 8, 11]\`, then \`6\`. The leading zero makes every inclusive range use the same formula: subtract the prefix before \`left\` from the prefix after \`right\`.
-
-## Worked example
-
-For indexes 1 through 2, \`prefix[3]\` totals the first three values and \`prefix[1]\` totals the values before index 1. Their difference is \`8 - 2 = 6\`, which equals \`1 + 5\`.
-
-## In the course
-
-Sliding window mentions a prefix sum as another way to total a range, then stays with the window because the exercises only need the current slice. Reach for the table when you will ask many ranges, or when the left edge jumps instead of walking forward.
-
-## Common mistakes
-
-Forgetting the empty prefix before index 0, and subtracting \`prefix[left]\` instead of \`prefix[left - 1]\`. That drops \`nums[left]\` from the range.
-
-Building the prefixes and then still scanning the range. The subtraction was the point.
-
-Using a prefix of counts when you needed a prefix of values, or the other way around. The stored number has to be the thing you will subtract.
-
-## When to use it
-
-Use a prefix sum when range totals are the question and you can afford an O(n) table. It pairs well with a later binary search on the prefixes when the array is made of non-negative numbers.
-
-## When not to
-
-Do not build it for a single left-to-right window. The running sum already is the difference you need.
-
-## Problem-solving checklist
-
-Define whether \`prefix[i]\` includes index \`i\`; a leading-zero table avoids a special case. Translate one range by hand before coding. Test a range at index 0, a one-value range, the whole array, and an empty input.
+Write the longest-window variant for a sum at most a positive limit. State exactly when the window is valid, and test zeros because they can extend a valid window without changing its sum.
   `,
   ),
   defineArticle(
@@ -463,6 +444,14 @@ Expected output: \`[3, 2, 1]\`. On each iteration, \`saved\` still points to the
 
 Initially the split is \`null | 1 -> 2 -> 3\`. After one rewire it is \`1 -> null | 2 -> 3\`; after two it is \`2 -> 1 -> null | 3\`. The final rewire leaves \`3 -> 2 -> 1 -> null\`, and \`previous\` points to 3.
 
+## Why it is correct
+
+At the top of each iteration, \`previous\` heads a correctly reversed prefix and \`current\` heads the untouched suffix. Saving \`current.next\` preserves access to that suffix; redirecting the link adds exactly one node to the reversed prefix. Advancing both names restores the invariant. When the suffix is empty, the reversed prefix contains every original node, so \`previous\` is the new head.
+
+## Cost
+
+Each of n nodes is visited and rewired once, giving O(n) time. The three references use O(1) extra space. This mutates the list; building a separate reversed list would preserve the input but require O(n) new nodes.
+
 ## In the course
 
 Linked lists introduce the three names and then ask you to reverse. The following lesson uses two pointers instead: one with a head start for the nth node from the end, and a slow pointer with a fast pointer for the middle. Same list, different jobs.
@@ -486,6 +475,10 @@ Do not reach for three pointers when a second pointer with a head start answers 
 ## Problem-solving checklist
 
 Draw the reversed prefix and unreversed suffix separated by a bar. Save the suffix before changing a link. Test null, one node, and two nodes. Confirm that the old head ends with \`next: null\` and that you return \`previous\`, not \`current\`.
+
+## Extension exercise
+
+Reverse only the first \`k\` nodes and reconnect the untouched suffix. Define the behavior for \`k = 0\), \`k\` larger than the list, and an empty list before coding.
   `,
   ),
   defineArticle(
@@ -523,7 +516,7 @@ function merge(
     const leftValue = left[i];
     const rightValue = right[j];
     if (leftValue === undefined || rightValue === undefined) {
-      break;
+      throw new Error("Both runs must be dense number arrays");
     }
     if (leftValue <= rightValue) {
       merged.push(leftValue);
@@ -545,6 +538,14 @@ Expected output: \`[1, 2, 3, 4, 8, 9]\`. Once the left run is exhausted, the rem
 ## Worked example
 
 The head comparisons are 1 versus 2, 4 versus 2, 4 versus 3, 4 versus 9, and 8 versus 9. They contribute \`[1, 2, 3, 4, 8]\`; the untouched right tail contributes \`[9]\`.
+
+## Why it is correct
+
+Before every comparison, \`merged\` is sorted and contains exactly the consumed prefixes of both runs. Because each run is sorted, the smaller head is the smallest remaining value anywhere, so copying it preserves the invariant. Once a run is empty, the other tail is already sorted and no smaller unwritten value exists. Appending it completes a sorted result containing every input value once.
+
+## Cost
+
+Each pointer advances only forward, at most once per value. Merging lengths \`a\` and \`b\` therefore takes O(a + b) time and O(a + b) result space. The input runs are not mutated. Stability comes from taking the left head when values are equal.
 
 ## In the course
 
@@ -569,6 +570,10 @@ Do not merge unsorted slices and expect a sorted result. The smaller-head rule i
 ## Problem-solving checklist
 
 Verify both inputs are already sorted. State what each pointer means and why everything before it is finished. Test one empty run, unequal lengths, duplicates, and values that all come from one side first. Check that the leftovers are copied.
+
+## Extension exercise
+
+Merge records with a typed comparison function. Preserve left-before-right order for equal keys, then demonstrate stability with two records that have the same score but different names.
   `,
   ),
   defineArticle(
@@ -608,6 +613,9 @@ interface HeapIndexes {
 }
 
 function heapIndexes(index: number): HeapIndexes {
+  if (!Number.isInteger(index) || index < 0) {
+    throw new RangeError("index must be a non-negative integer");
+  }
   const parent = index === 0 ? null : Math.floor((index - 1) / 2);
   return {
     parent,
@@ -625,6 +633,14 @@ Expected output: \`{ parent: null, left: 1, right: 2 }\`, then \`{ parent: 1, le
 ## Worked example
 
 Index 4 is the right child of index 1 because \`Math.floor((4 - 1) / 2) = 1\`. Its own children would occupy indexes 9 and 10. In a heap of length 7 those children do not exist, even though the formulas still produce their positions.
+
+## Why it is correct
+
+Level-order storage places the two children of index \`i\` immediately after all children of earlier indexes, at \`2i + 1\` and \`2i + 2\`. For any non-root child \`c\`, both members of its sibling pair reduce to the same parent under \`Math.floor((c - 1) / 2)\`. These formulas describe positions; existence still requires an array-length check.
+
+## Cost
+
+Every formula uses a constant number of arithmetic operations, so parent and child calculations are O(1) time and O(1) space. Heap insertion or removal is O(log n) because it may repeat a parent-or-child step once per tree level.
 
 ## In the course
 
@@ -649,6 +665,10 @@ Do not use heap indexes for a binary search tree that can be sparse. A missing l
 ## Problem-solving checklist
 
 Separate an index from the value stored there. Handle the root's missing parent explicitly. Before reading a child, compare its index with \`heap.length\`. Test the root, a left child, a right child, and a leaf on an incomplete last level.
+
+## Extension exercise
+
+Given a min-heap array, verify the parent rule for every existing child. Return the first violating pair of indexes, or \`null\`; do not attempt to repair the heap.
   `,
   ),
   defineArticle(
@@ -717,6 +737,14 @@ Expected output: \`[0, 1, 2]\`. Vertex 2 is marked when vertex 0 enqueues it, so
 
 Start with queue \`[0]\` and mark 0. Processing 0 marks and queues 1 and 2. Processing 1 sees 0 and 2 already marked. Processing 2 sees only marked neighbours. The queue empties after exactly three vertex visits despite the cycle.
 
+## Why it is correct
+
+Every queued vertex is reachable: the start is reachable from itself, and each newly queued neighbour extends an existing path by one edge. Conversely, when a reachable vertex is processed, every unmarked neighbour is queued, so induction on path length shows that every vertex reachable from the start is eventually discovered. Mark-on-enqueue ensures each vertex enters the queue at most once, even in a cycle.
+
+## Cost
+
+With adjacency lists, each reached vertex is processed once and each outgoing adjacency entry is inspected once. A full traversal is O(V + E) time and O(V) extra space for marks, the queue, and the returned order. An adjacency matrix would require O(V²) inspection instead.
+
 ## In the course
 
 Graphs introduce the mark-on-enqueue rule, then ask whether you can reach a vertex and what the shortest path is. The next lesson asks for the component size and whether the walk reaches every vertex from 0 through count - 1. See [breadth-first search](/articles/breadth-first-search) for the queue that carries the marks.
@@ -740,6 +768,10 @@ Do not use a visited set to block a tree recursion that is supposed to see both 
 ## Problem-solving checklist
 
 Decide what a vertex identifier is and use one representation consistently. Mark when scheduling work, not when finishing it. Include the start in the visited structure. Test a cycle, an isolated vertex, disconnected components, and two paths to the same neighbour.
+
+## Extension exercise
+
+Return all connected components of an undirected graph. Start a new search from each unvisited vertex and prove that every vertex appears in exactly one returned component.
   `,
   ),
   defineArticle(
@@ -747,7 +779,7 @@ Decide what a vertex identifier is and use one representation consistently. Mark
     "What Is a Half-Open Interval? Why Touching Meetings Do Not Overlap",
     "Patterns",
     "A half-open interval includes the start and excludes the end. Two meetings that touch at that endpoint do not overlap, which is the rule interval scheduling relies on.",
-    ["farthest reach"],
+    ["half-open interval", "interval overlap"],
     `
 A half-open interval \`[start, end)\` contains every time from the start up to, but not including, the end. A meeting that ends at 3 and a meeting that starts at 3 do not overlap. One person can attend both.
 
@@ -768,9 +800,14 @@ Interval scheduling sorts by finishing time and repeatedly takes the interval th
 type Interval = readonly [start: number, end: number];
 
 function maximumNonOverlapping(intervals: readonly Interval[]): Interval[] {
-  const ordered = intervals
-    .slice()
-    .sort((left, right) => left[1] - right[1] || left[0] - right[0]);
+  const compareByFinish = (left: Interval, right: Interval): number => {
+    const finishDifference = left[1] - right[1];
+    if (finishDifference !== 0) {
+      return finishDifference;
+    }
+    return left[0] - right[0];
+  };
+  const ordered = intervals.slice().sort(compareByFinish);
   const chosen: Interval[] = [];
   let availableFrom = Number.NEGATIVE_INFINITY;
 
@@ -793,6 +830,14 @@ Expected output: \`[[1, 3], [3, 5]]\`. The first two intervals touch at 3 but do
 ## Worked example
 
 Sorting by finish gives \`[1, 3)\`, \`[3, 5)\`, then \`[2, 6)\`. Choose the first and set \`availableFrom\` to 3. The second starts at 3, so it is compatible and moves the boundary to 5. The last starts at 2, before 5, so skip it.
+
+## Why it is correct
+
+Consider an optimal schedule's first interval. The greedy interval finishes no later because it has the earliest finish overall. Replacing the optimal first interval with the greedy one cannot make any later interval unavailable. The remaining problem is the same scheduling problem after that finish time, so repeating this exchange argument proves that every greedy choice can belong to an optimal schedule.
+
+## Cost
+
+Sorting n intervals takes O(n log n) time; the selection scan takes O(n). The copied ordering and chosen result use O(n) space, while the caller's input remains unchanged. If intervals were already sorted by finish time, selection alone would be linear.
 
 ## In the course
 
@@ -817,6 +862,10 @@ Do not use a half-open overlap test on closed intervals that include both ends. 
 ## Problem-solving checklist
 
 Write the interval convention before choosing a comparison. Build a counterexample for each proposed greedy sorting rule. Test touching intervals, nested intervals, equal finishes, and an empty list. Preserve the input if mutation is not part of the contract.
+
+## Extension exercise
+
+Write separate overlap predicates for half-open and closed intervals. Use the same endpoint-touching example to show why the two predicates must disagree.
   `,
   ),
   defineArticle(
@@ -849,7 +898,7 @@ function permutations(nums: readonly number[]): number[][] {
   const path: number[] = [];
   const used = nums.map(() => false);
 
-  const search = () => {
+  const search = (): void => {
     if (path.length === nums.length) {
       results.push(path.slice());
       return;
@@ -885,6 +934,14 @@ Expected output: \`[[1, 2], [2, 1]]\`, then \`[[]]\`. The empty permutation is o
 
 Choose 1, then 2, and save \`[1, 2]\`. Undo 2 and then 1. Choose 2, then 1, and save \`[2, 1]\`. Every recursive return restores both \`path\` and \`used\` to the state the caller had.
 
+## Why it is correct
+
+At depth \`d\`, the path contains \`d\` distinct input indexes. The loop tries every index not yet used, so every legal next choice is explored. A path of length n is one complete ordering and is copied exactly once. Any permutation determines one unique sequence of index choices, so all permutations appear and none repeat when the input values are distinct.
+
+## Cost
+
+There are n! results, each of length n, so producing the output takes O(n · n!) time and O(n · n!) result space. The active path, flags, and recursion use O(n) auxiliary space. Duplicate input values require an additional skip rule if value-distinct output is desired; this version treats positions as distinct.
+
 ## In the course
 
 Backtracking lists subsets, where order does not matter and the tests compare a set. The next lesson lists permutations and then ordered picks of length k. The choose, explore, undo rhythm is the same. The choice is different: which unused value comes next, not whether the next value is included.
@@ -908,6 +965,10 @@ Do not list permutations when you only need a count, or when order does not matt
 ## Problem-solving checklist
 
 Define one search state in words: the path plus which indexes are used. Identify the completion condition. Pair every mutation with its undo. Test empty and one-value inputs, then verify that \`n\` distinct values produce \`n!\` rows without changing the input.
+
+## Extension exercise
+
+Support duplicate input values without returning duplicate permutations. Sort a copy, skip equal unused choices at the same depth, and explain why indexes still need separate used flags.
   `,
   ),
   defineArticle(
@@ -915,7 +976,7 @@ Define one search state in words: the path plus which indexes are used. Identify
     "What Is Tabulation? Filling a Dynamic-Programming Table Upward",
     "Patterns",
     "Tabulation writes answers from the base case toward the size you were asked for. Each cell is one sentence: the answer for this size, built from smaller cells.",
-    ["tabulation"],
+    ["bottom-up table"],
     `
 Tabulation is the loop form of dynamic programming. You fill a table from the smallest sizes to the one the question asked for. Memoisation is the other repair: a recursive call checks a cache before it repeats work. Both store overlapping answers. The loop makes the order obvious.
 
@@ -939,6 +1000,9 @@ function maximumLoot(houses: readonly number[]): number {
   let oneBack = 0;
 
   for (const money of houses) {
+    if (money < 0) {
+      throw new RangeError("house values must be non-negative");
+    }
     const take = twoBack + money;
     const skip = oneBack;
     const current = Math.max(take, skip);
@@ -958,6 +1022,14 @@ Expected output: \`12\`, then \`0\`. The best choice takes houses worth 2, 9, an
 ## Worked example
 
 The best totals after each house are 2, 7, 11, 11, and 12. At the house worth 9, taking gives \`2 + 9 = 11\` and skipping gives 7. At the house worth 3, taking gives \`7 + 3 = 10\`, so skipping preserves 11.
+
+## Why it is correct
+
+After processing each house, \`oneBack\` is the best legal total for the prefix ending there, and \`twoBack\` is the best total for the prefix before the previous house. An optimal solution either skips the current house and keeps \`oneBack\`, or takes it and must add its value to \`twoBack\`. Those cases are exhaustive and disjoint, so their maximum is the optimal value for the new prefix.
+
+## Cost
+
+The loop processes each house once, for O(n) time. Two accumulated states replace an O(n) table, so auxiliary space is O(1). If the actual chosen house indexes are required, keep the table and reconstruct the decisions, trading O(n) space for that information.
 
 ## In the course
 
@@ -982,6 +1054,10 @@ Do not build a table for a problem whose subproblems do not overlap. A plain rec
 ## Problem-solving checklist
 
 Write exactly what one state means before writing its recurrence. List base cases from that meaning, not from a similar problem. For each transition, name every legal choice and the smaller state it uses. Test empty, one-state, and two-state inputs before a longer example.
+
+## Extension exercise
+
+Return both the maximum loot and the chosen house indexes. A scalar recurrence is no longer enough for reconstruction, so decide what additional decision information each state must retain.
   `,
   ),
 ];

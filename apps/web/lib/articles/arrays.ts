@@ -68,6 +68,9 @@ function insertAt(
 const original = [4, 8, 15, 16];
 console.log(insertAt(original, 1, 7));
 console.log(original);
+// Output:
+// [4, 7, 8, 15, 16]
+// [4, 8, 15, 16]
 \`\`\`
 
 Expected output is \`[4, 7, 8, 15, 16]\`, followed by the unchanged input \`[4, 8, 15, 16]\`.
@@ -144,12 +147,16 @@ flowchart LR
 
 A full turn of n steps restores an n-element array. Therefore only \`steps % n\` matters. Rotating four elements by 5 steps is the same as rotating by 1.
 
-Handle the empty array before taking a remainder: remainder by zero produces \`NaN\`. The implementation below also accepts negative steps. A negative left rotation is a right rotation, and the normalization \`((steps % n) + n) % n\` always produces an offset from 0 through \`n - 1\`.
+Handle the empty array before taking a remainder: remainder by zero produces \`NaN\`. A rotation count must be an integer because “half an array position” has no meaning. The implementation below also accepts negative steps. A negative left rotation is a right rotation, and the normalization \`((steps % n) + n) % n\` always produces an offset from 0 through \`n - 1\`.
 
 The suffix from the offset becomes the front, and the prefix before the offset becomes the back.
 
 \`\`\`ts
 function rotateLeft(values: readonly number[], steps: number): number[] {
+  if (!Number.isInteger(steps)) {
+    throw new RangeError("steps must be an integer");
+  }
+
   if (values.length === 0) {
     return [];
   }
@@ -163,6 +170,11 @@ console.log(rotateLeft(values, 1));
 console.log(rotateLeft(values, 5));
 console.log(rotateLeft(values, -1));
 console.log(values);
+// Output:
+// [2, 3, 4, 1]
+// [2, 3, 4, 1]
+// [4, 1, 2, 3]
+// [1, 2, 3, 4]
 \`\`\`
 
 Expected output is \`[2, 3, 4, 1]\`, \`[2, 3, 4, 1]\`, \`[4, 1, 2, 3]\`, and finally the unchanged input \`[1, 2, 3, 4]\`.
@@ -277,6 +289,9 @@ function sortedSquares(values: readonly number[]): number[] {
 
 console.log(sortedSquares([-4, -1, 0, 3, 10]));
 console.log(sortedSquares([-7, -3, -1]));
+// Output:
+// [0, 1, 9, 16, 100]
+// [1, 9, 49]
 \`\`\`
 
 Expected output is \`[0, 1, 9, 16, 100]\` and \`[1, 9, 49]\`.
@@ -380,6 +395,9 @@ function maxWindowSum(values: readonly number[], width: number): number | null {
 
 console.log(maxWindowSum([2, 1, 5, 1, 3, 2], 3));
 console.log(maxWindowSum([4, 2], 3));
+// Output:
+// 9
+// null
 \`\`\`
 
 Expected output is \`9\` and \`null\`. Returning \`null\` distinguishes “no valid window” from a valid maximum sum of 0 or a negative number.
@@ -425,6 +443,9 @@ function shortestAtLeast(
 
 console.log(shortestAtLeast([1, 2, 3, 4], 6));
 console.log(shortestAtLeast([1, 1], 5));
+// Output:
+// 2
+// null
 \`\`\`
 
 Expected output is \`2\` and \`null\`.
@@ -535,6 +556,11 @@ console.log(prefix);
 console.log(rangeSum(prefix, 1, 4));
 console.log(rangeSum(prefix, 0, 2));
 console.log(rangeSum(prefix, 2, 2));
+// Output:
+// [0, 3, 4, 8, 10]
+// 7
+// 4
+// 0
 \`\`\`
 
 Expected output is \`[0, 3, 4, 8, 10]\`, then \`7\`, \`4\`, and \`0\`.

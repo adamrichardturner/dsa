@@ -28,7 +28,7 @@ Big O is an upper bound on growth: \`O(f(n))\` says that, beyond some input size
 
 You count steps, not wall-clock seconds. A step is a comparison, an index read, or an addition. A faster machine finishes each of those sooner. Big O stays the same, because the speed of the machine is one of the constants the notation tells you to set aside.
 
-A constant factor is a multiplier that does not depend on the length of the input. Three checks on every element is still a single pass. Double the input and that work still roughly doubles, which is why the label is O(n) after the three is dropped. The three is worth knowing when you compare two linear functions on a short array. It does not pick the winner once one function is a single pass and the other is a loop inside a loop, and the input has grown large.
+A constant factor is a multiplier that does not depend on the length of the input. Three checks on every element is still a single pass. Double the input and that work still roughly doubles, which is why the label is O(n) after the three is dropped. The three is still worth knowing when you compare two linear functions on realistic inputs. Big O predicts long-run growth; it does not by itself predict which implementation is faster for a particular small input.
 
 Naming the loops is enough. You do not need a formal proof. One loop from the first index through the last is linear. A second loop started for each index is quadratic, because nested loops multiply: n times n. Add a later pass and the label can stay O(n²), since Big O keeps the dominant term and drops lower-order ones.
 
@@ -166,7 +166,7 @@ You should know how to read an array by index and how \`push\` adds an element a
 
 ## How it works
 
-Reading \`nums[0]\` is a jump, not a walk from the head. The runtime takes the address of the first slot and reads it. It does not visit later elements on the way, and a longer array does not add steps to that read.
+In the standard array model, reading \`nums[0]\` is a jump, not a walk from the head. It does not visit later elements on the way, and a longer array does not add steps to that read. JavaScript engines choose their own internal array representations, but indexed access on an ordinary dense array still has the O(1) behavior the model describes.
 
 Flat is the whole claim. A constant-time step can still be heavy: a hash, a bounds check, a write. Constant does not mean instant, and it does not mean tiny. It means the step count holds still while n changes. If doubling the array doubles the steps, you have left O(1).
 
@@ -229,7 +229,7 @@ Amortized and worst case split for push; expected and worst case split for a has
 
 Counting values strictly below a limit is not constant-time work. Each value can change the count. On 1, 4, 2, 8 with limit 4, \`nums[0]\` is 1, which is below 4, and that jump says nothing about 4, 2, or 8. The count is 2 only after those later values are seen.
 
-Inside a one-pass count, reading the current slot, comparing it with the limit, and adding one to a counter are each O(1). You do that bundle once per element, so the function is linear. A helper that looks like one step and scans the array is not constant. Calling it from the loop leaves linear time as well. That extra scan is the habit to retire.
+Inside a one-pass count, reading the current slot, comparing it with the limit, and adding one to a counter are each O(1). You do that bundle once per element, so the function is linear. A helper that looks like one step and scans the array is not constant. Calling that O(n) helper from each of n loop iterations makes the total O(n²). That repeated scan is the habit to retire.
 
 ## Common mistakes
 
@@ -314,6 +314,7 @@ const linearSearch = (values: readonly number[], target: number): number => {
       return index;
     }
   }
+
   return -1;
 };
 
@@ -376,7 +377,7 @@ A search may break on the first hit. A count of every qualifying value has to ke
 
 Returning \`-1\` inside the first nonmatching iteration is a correctness bug. One mismatch proves only that the current index is not the answer. Return \`-1\` after the loop has exhausted every candidate.
 
-Two loops one after another add, so two scans stay O(n). A loop inside a loop multiplies. An inner scan of the rest leaves linear time.
+Two loops one after another add, so two scans stay O(n). A loop inside a loop multiplies. Starting a scan of the remaining values for each outer element makes the total quadratic.
 
 The lucky early stop is not the cost to quote for linear search. If the value is missing, you looked at everything.
 
@@ -386,7 +387,7 @@ Use one linear pass when each element can affect the answer and you have no sort
 
 ## When not to
 
-Do not start a fresh scan of the rest of the array when the current element already answers the question. That move leaves linear time. Do not plan on linear search once the array is sorted and you are testing membership. Binary search throws away half of what remains on each comparison. A count of values below a limit also does not stop at the first qualifier.
+Do not start a fresh scan of the rest of the array when the current element already answers the question. That repeated scan turns linear work into quadratic work. Do not plan on linear search once the array is sorted and you are testing membership. Binary search throws away half of what remains on each comparison. A count of values below a limit also does not stop at the first qualifier.
 
 ## FAQ
 
@@ -445,6 +446,10 @@ A quadratic pass plus a later linear pass is still quadratic, because Big O keep
 
 \`\`\`ts
 const countUnorderedPairs = (size: number): number => {
+  if (!Number.isInteger(size) || size < 0) {
+    throw new RangeError("size must be a non-negative integer");
+  }
+
   let pairs = 0;
   for (let first = 0; first < size; first++) {
     for (let second = first + 1; second < size; second++) {

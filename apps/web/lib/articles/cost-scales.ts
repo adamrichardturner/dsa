@@ -27,19 +27,47 @@ Keep this sentence true after every edit: if the target is present, its index is
 
 The same count is a tree height. A balanced tree has about log n nodes from the root to a leaf. AVL and red-black trees rotate so the height stays there. You do not write those rotations here. A straight line of inserts has height n, and the same walk is linear.
 
-The bugs are usually off by one. Compute the middle as \`lo\` plus half the distance to \`hi\`.
+The bugs are usually off by one. Compute the middle as \`lo\` plus half the distance to \`hi\`. The complete search below moves a bound beyond \`mid\` on every unsuccessful comparison, so the candidate interval strictly shrinks.
 
 \`\`\`ts
-const values = [2, 4, 6, 8, 10, 12, 14, 16];
-const target = 14;
-let lo = 0;
-let hi = values.length - 1;
-const mid = lo + Math.floor((hi - lo) / 2);
-const middle = values[mid];
+function binarySearch(
+  values: readonly number[],
+  target: number,
+): number {
+  let low = 0;
+  let high = values.length - 1;
 
-if (middle !== undefined && middle < target) {
-  lo = mid + 1;
+  while (low <= high) {
+    const middle = low + Math.floor((high - low) / 2);
+    const value = values[middle];
+
+    if (value === target) {
+      return middle;
+    }
+
+    if (value === undefined) {
+      throw new Error("binarySearch expects a dense array");
+    }
+
+    if (value > target) {
+      high = middle - 1;
+      continue;
+    }
+
+    low = middle + 1;
+  }
+
+  return -1;
 }
+
+const values = [2, 4, 6, 8, 10, 12, 14, 16];
+console.log(binarySearch(values, 14));
+console.log(binarySearch(values, 15));
+console.log(binarySearch([], 3));
+// Output:
+// 6
+// -1
+// -1
 \`\`\`
 
 ## A numeric example
@@ -132,18 +160,78 @@ You leave the band when you need less order, or when the input is already ordere
 
 Sorted squares are the case where the existing order is the whole trick. A sorted array of negatives and positives does not have sorted squares, because a large negative becomes a large positive. The biggest squares sit at the two ends. Square both ends, write the larger square at the back of the result, and move the pointer that produced it. The pointers cross the array once, so the walk is O(n).
 
-JavaScript's default \`sort\` is lexicographic unless you pass a compare function. The array 10, 2, 1 becomes 1, 10, 2. For numbers, pass a function that subtracts. The neighbour-swap sort and that default are in [Why Is Bubble Sort O(n²)? Neighbour Swaps Until It Settles](/articles/bubble-sort).
+JavaScript's default \`sort\` is lexicographic unless you pass a compare function. The array 10, 2, 1 becomes 1, 10, 2. For numbers, pass a function that subtracts. Also remember that \`sort\` mutates its array; use \`values.toSorted((left, right) => left - right)\` when you need a sorted copy. The neighbour-swap sort and the default comparison are discussed in [Why Is Bubble Sort O(n²)? Neighbour Swaps Until It Settles](/articles/bubble-sort).
 
 \`\`\`ts
-const byNumber = (left: number, right: number): number => {
-  return left - right;
-};
+function merge(
+  left: readonly number[],
+  right: readonly number[],
+): number[] {
+  const result: number[] = [];
+  let leftIndex = 0;
+  let rightIndex = 0;
 
-const ordered = [10, 2, 1].sort(byNumber);
-const left = -4;
-const right = 10;
-const largerSquare = left * left > right * right ? left * left : right * right;
+  while (leftIndex < left.length && rightIndex < right.length) {
+    const leftValue = left[leftIndex];
+    const rightValue = right[rightIndex];
+
+    if (leftValue === undefined || rightValue === undefined) {
+      throw new Error("merge expects dense arrays");
+    }
+
+    if (leftValue <= rightValue) {
+      result.push(leftValue);
+      leftIndex += 1;
+      continue;
+    }
+
+    result.push(rightValue);
+    rightIndex += 1;
+  }
+
+  while (leftIndex < left.length) {
+    const value = left[leftIndex];
+    if (value === undefined) {
+      throw new Error("merge expects dense arrays");
+    }
+
+    result.push(value);
+    leftIndex += 1;
+  }
+
+  while (rightIndex < right.length) {
+    const value = right[rightIndex];
+    if (value === undefined) {
+      throw new Error("merge expects dense arrays");
+    }
+
+    result.push(value);
+    rightIndex += 1;
+  }
+
+  return result;
+}
+
+function mergeSort(values: readonly number[]): number[] {
+  if (values.length < 2) {
+    return values.slice();
+  }
+
+  const middle = Math.floor(values.length / 2);
+  const left = mergeSort(values.slice(0, middle));
+  const right = mergeSort(values.slice(middle));
+  return merge(left, right);
+}
+
+const values = [10, 2, 1, 7, 3];
+console.log(mergeSort(values));
+console.log(values);
+// Output:
+// [1, 2, 3, 7, 10]
+// [10, 2, 1, 7, 3]
 \`\`\`
+
+The base case returns a copy of a zero- or one-element run. Larger calls sort two halves and merge them. Choosing from the left on a tie makes this merge **stable**: equal keys keep their original relative order. The original input remains unchanged.
 
 ## A numeric example
 
@@ -228,21 +316,47 @@ flowchart LR
 
 A nested loop can use a few local variables, O(1) extra space, and still be slow because each element starts another pass. Storing a fact you would otherwise recompute is the trade. That store is part of the cost.
 
-A hash map makes a later \`get\` O(1) on average. For Two Sum the key is a number you already passed and the value is its index. You ask whether \`target - number\` is stored. A hit is the pair. A miss means you store the index you just passed. The nested scan walked the rest of the array for that question. The map costs O(n) extra memory.
+A hash table makes a later lookup O(1) on average. In TypeScript, a \`Map\` or a plain object can provide that table. For Two Sum the key is a number you already passed and the value is its index. You ask whether \`target - number\` is stored. A hit is the pair. A miss means you store the index you just passed. The nested scan walked the rest of the array for that question. The table costs O(n) extra memory.
 
 Memoisation stores an answer so recursion does not recompute it. Before you recurse, look up this state. On a hit, return the stored answer. On a miss, compute it, store it, and return it. The key has to be the whole state. A partial key reuses the wrong answer.
 
 A sliding window stores a running total so the next slice does not start from zero. The next window is the old sum, minus the value that left, plus the value that entered. One number, an O(1) update, O(1) extra space. A handful of variables is O(1) extra space. A map entry per element, or a memo entry per state, is O(n).
 
 \`\`\`ts
-const seen = new Map<number, number>();
-seen.set(2, 0);
+function twoSum(
+  values: readonly number[],
+  target: number,
+): [number, number] | null {
+  const seen: Record<string, number> = {};
 
-let windowSum = 1 + 2;
-windowSum = windowSum - 1 + 3;
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (value === undefined) {
+      throw new Error("twoSum expects a dense array");
+    }
 
-const earlier = seen.get(9 - 7);
+    const complementKey = String(target - value);
+    const earlierIndex = seen[complementKey];
+    if (earlierIndex !== undefined) {
+      return [earlierIndex, index];
+    }
+
+    seen[String(value)] = index;
+  }
+
+  return null;
+}
+
+console.log(twoSum([2, 7, 11, 15], 9));
+console.log(twoSum([3, 3], 6));
+console.log(twoSum([1, 2, 3], 10));
+// Output:
+// [0, 1]
+// [0, 1]
+// null
 \`\`\`
+
+The lookup happens before the current value is stored, so one array position cannot pair with itself. Checking \`earlierIndex !== undefined\` is important because index 0 is a valid match.
 
 ## A numeric example
 

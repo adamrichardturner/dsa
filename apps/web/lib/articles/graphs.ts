@@ -49,11 +49,20 @@ const buildUndirectedGraph = (
   vertexCount: number,
   edges: readonly Edge[],
 ): number[][] => {
-  const neighbours = Array.from({ length: vertexCount }, () => [] as number[]);
+  const neighbours = Array.from(
+    { length: vertexCount },
+    (): number[] => [],
+  );
 
   for (const [from, to] of edges) {
-    neighbours[from].push(to);
-    neighbours[to].push(from);
+    const fromNeighbours = neighbours[from];
+    const toNeighbours = neighbours[to];
+    if (fromNeighbours === undefined || toNeighbours === undefined) {
+      continue;
+    }
+
+    fromNeighbours.push(to);
+    toNeighbours.push(from);
   }
 
   return neighbours;
@@ -63,6 +72,10 @@ const reachableFrom = (
   neighbours: readonly (readonly number[])[],
   start: number,
 ): number[] => {
+  if (neighbours[start] === undefined) {
+    return [];
+  }
+
   const visited = Array.from({ length: neighbours.length }, () => false);
   const stack = [start];
   const reached: number[] = [];
@@ -75,7 +88,8 @@ const reachableFrom = (
     }
 
     reached.push(vertex);
-    for (const neighbour of neighbours[vertex]) {
+    const adjacent = neighbours[vertex] ?? [];
+    for (const neighbour of adjacent) {
       if (visited[neighbour]) {
         continue;
       }
@@ -102,6 +116,14 @@ console.log(reachableFrom(graph, 0));
 
 Expected output: the adjacency lists \`[[1, 2], [0, 2, 3], [1, 0], [1], []]\`, followed by a traversal containing \`0, 1, 2, 3\`. Vertex 4 remains isolated. The exact DFS order depends on the order in which neighbours are pushed.
 
+\`\`\`mermaid
+stateDiagram-v2
+  [*] --> Undiscovered
+  Undiscovered --> Scheduled: mark and push/enqueue
+  Scheduled --> Processed: remove and scan neighbours
+  Processed --> Processed: later edges are ignored
+\`\`\`
+
 ## A numeric example
 
 The edges are 0–1, 1–2, 2–0, and 1–3. Four vertices, four edges. From 0 you reach 1 and 2 in one step. You reach 3 in two steps, and the only door is the edge from 1. There is no edge from 0 to 3 or from 2 to 3.
@@ -120,6 +142,12 @@ From 0 to 2 the direct edge is 1 step and the route through 1 is 2 steps, so few
 | Memory for the visited marks | O(V) |
 
 V is vertices and E is edges. One slot per vertex stores the mark. A search that marks each vertex once is O(V + E). Skip the marks and the cycle 0–1–2 has no bound. The same three edges can be lapped for as long as the machine runs.
+
+## Practice
+
+1. Add isolated vertex 5 to the example and predict searches from 0 and from 5 before running them.
+2. Convert the undirected builder into a directed builder. Find a pair of vertices where reachability works in one direction but not the other.
+3. Write \`componentCount\`: start one traversal from every still-unvisited vertex. State an invariant for the outer loop and test a graph with a cycle plus two isolated vertices.
 
 ## In the course
 
@@ -153,12 +181,30 @@ Deciding to visit happens before the visit. Wait until dequeue and neighbours pu
 
 In this course, yes. Undirected means 0 to 1 is also 1 to 0. A directed edge would not promise the return. Store one direction and paths that should exist look missing.
 
+## Degree, paths, and components
+
+The **degree** of an undirected vertex is its number of incident edge ends. Summing all degrees counts every edge twice, once at each endpoint, so the result is \(2E\). This handshake lemma is a useful representation check: after building a simple undirected adjacency list, the sum of row lengths should be twice the edge-list length.
+
+A **walk** may repeat vertices and edges. A **trail** does not repeat edges. A **simple path** does not repeat vertices. A connected component is a maximal set in which every pair is joined by a path. Running BFS or DFS from every still-unvisited vertex labels all components in O(V + E).
+
+\`\`\`mermaid
+flowchart LR
+  scan["Scan every vertex"] --> seen{"Already visited?"}
+  seen -->|yes| scan
+  seen -->|no| search["Run BFS or DFS"]
+  search --> label["Label one whole component"]
+  label --> scan
+\`\`\`
+
+Self-loops, parallel edges, and directed edges are valid in some graph models, but algorithms must state whether they allow them. A self-loop immediately forms a cycle. Parallel edges affect edge counts and weighted choices. This course’s examples are simple unless a lesson explicitly says otherwise.
+
 ## Related
 
 The neighbour store is what a search asks, and the layer walk is how you count equal-cost edges.
 
 - [What Is an Adjacency List? Neighbours of Each Vertex](/articles/adjacency-lists)
 - [How Does Breadth-First Search Find the Fewest Edges?](/articles/breadth-first-search)
+- [How Do Directed Cycles and Topological Order Work?](/articles/directed-acyclic-graphs)
     `,
   ),
   defineArticle(
@@ -176,6 +222,13 @@ flowchart TD
   onePass --> row0["0: 1, 2"]
   onePass --> row1["1: 0, 2"]
   onePass --> row2["2: 1, 0"]
+\`\`\`
+
+\`\`\`mermaid
+flowchart LR
+  e01["read 0—1"] --> s1["0: [1]<br/>1: [0]<br/>2: []"]
+  s1 -->|"read 1—2"| s2["0: [1]<br/>1: [0, 2]<br/>2: [1]"]
+  s2 -->|"read 0—2"| s3["0: [1, 2]<br/>1: [0, 2]<br/>2: [1, 0]"]
 \`\`\`
 
 ## How it works
@@ -209,14 +262,20 @@ const buildAdjacencyList = (
   vertexCount: number,
   edges: readonly Edge[],
 ): number[][] => {
-  const neighbours = Array.from<number[]>(
+  const neighbours = Array.from(
     { length: vertexCount },
-    () => [],
+    (): number[] => [],
   );
 
   for (const [from, to] of edges) {
-    neighbours[from].push(to);
-    neighbours[to].push(from);
+    const fromNeighbours = neighbours[from];
+    const toNeighbours = neighbours[to];
+    if (fromNeighbours === undefined || toNeighbours === undefined) {
+      continue;
+    }
+
+    fromNeighbours.push(to);
+    toNeighbours.push(from);
   }
 
   return neighbours;
@@ -246,6 +305,12 @@ Expected output is \`[[1, 2], [0, 2], [1, 0], []]\`, then \`[1, 2]\`, then \`[]\
 | Store the list | O(V + E) |
 
 V is vertices and E is edges. Each undirected edge adds two entries, and that factor of 2 disappears in the big-O. Five vertices and three edges would still be 25 matrix cells, mostly absences. Mark each vertex once during the search and the neighbour walks add up to O(V + E) again.
+
+## Practice
+
+1. Build the lists for \`[0, 2]\`, \`[2, 3]\`, and \`[2, 4]\`, including an empty row for vertex 1.
+2. Add input validation that reports an edge endpoint outside \`0..vertexCount - 1\` instead of skipping it. Decide whether returning a result or throwing best fits your caller.
+3. For a graph with V = 10,000 and E = 20,000, compare how many edge slots an undirected list stores with how many cells a matrix allocates.
 
 ## In the course
 
@@ -278,6 +343,22 @@ The edge is undirected. 0 to 1 means 1 to 0. One push is one direction. Skip the
 ### Why not a table of every pair?
 
 A table answers "is this edge present?" in O(1) and stores missing edges too. These searches ask for the neighbours of one vertex, in time proportional to how many there are, in O(V + E) space.
+
+## Representation invariants
+
+For a simple undirected graph, every stored \`u → v\` entry must have one matching \`v → u\` entry, every endpoint must be in range, and no row should contain the same neighbour twice. For a directed graph, symmetry is intentionally absent. For a weighted graph, each neighbour entry carries both an endpoint and a weight. State the model before validating the representation.
+
+\`\`\`mermaid
+flowchart TD
+  model{"Graph model"} -->|undirected| symmetric["Store both directions"]
+  model -->|directed| outgoing["Store outgoing direction only"]
+  model -->|weighted| payload["Store neighbour plus weight"]
+  symmetric --> validate["Validate endpoint range"]
+  outgoing --> validate
+  payload --> validate
+\`\`\`
+
+Adding a vertex to an adjacency list is O(1) amortized when ids are appended consecutively. Adding an edge is O(1) amortized if duplicates are allowed or already ruled out by the input. Removing an edge or testing whether a particular edge exists costs O(degree) with unsorted neighbour arrays because the row must be searched.
 
 ## Related
 
@@ -315,6 +396,14 @@ Level order on a tree is the same walk: root, then children, then grandchildren.
 
 Mark when you first enqueue, not when you dequeue. While a vertex sits unmarked in the queue, every neighbour that can see it enqueues another copy. Those copies waste work and can blow up the queue. Carry the distance with the vertex, or store it when you enqueue. If the queue empties and the target was never marked, there is no path. The distance from a vertex to itself is 0, before you have walked anywhere.
 
+\`\`\`mermaid
+flowchart LR
+  q0["queue: [0]<br/>d(0)=0"] --> q1["process 0<br/>queue: [1, 2]<br/>d=1"]
+  q1 --> q2["process 1<br/>queue: [2, 3]<br/>d(3)=2"]
+  q2 --> q3["process 2<br/>queue: [3]"]
+  q3 --> q4["process 3<br/>queue: [4]<br/>d(4)=3"]
+\`\`\`
+
 The queue below uses a moving front index instead of \`Array.shift()\`, so dequeue is O(1). A distance of −1 also serves as the visited mark: any non-negative value means the vertex has already been discovered.
 
 \`\`\`ts
@@ -323,6 +412,10 @@ const shortestDistance = (
   start: number,
   target: number,
 ): number => {
+  if (neighbours[start] === undefined || neighbours[target] === undefined) {
+    return -1;
+  }
+
   const distance = Array.from({ length: neighbours.length }, () => -1);
   const queue = [start];
   let front = 0;
@@ -331,17 +424,26 @@ const shortestDistance = (
   while (front < queue.length) {
     const vertex = queue[front];
     front += 1;
-
-    if (vertex === target) {
-      return distance[vertex];
+    if (vertex === undefined) {
+      continue;
     }
 
-    for (const neighbour of neighbours[vertex]) {
+    if (vertex === target) {
+      return distance[vertex] ?? -1;
+    }
+
+    const currentDistance = distance[vertex];
+    const adjacent = neighbours[vertex];
+    if (currentDistance === undefined || adjacent === undefined) {
+      continue;
+    }
+
+    for (const neighbour of adjacent) {
       if (distance[neighbour] !== -1) {
         continue;
       }
 
-      distance[neighbour] = distance[vertex] + 1;
+      distance[neighbour] = currentDistance + 1;
       queue.push(neighbour);
     }
   }
@@ -388,6 +490,12 @@ From 0 to 0 the distance is 0, before 1 or 2 are touched. From 0 to a missing 3 
 
 Enqueue each vertex once and the neighbour scans sum to a constant times E, so the walk is O(V + E). Avoid \`Array.shift()\`: it is O(n) per call because every later entry slides down. A moving front index preserves first-in, first-out order without those repeated shifts.
 
+## Practice
+
+1. Trace the queue and distance array after every dequeue in the example. Circle the moment the shortest distance to 4 becomes final.
+2. Store a predecessor for every discovered vertex and return the path \`[0, 1, 3, 4]\` (or the equally short path through 2), not only distance 3.
+3. Test an invalid start, an isolated start, a self-path, two tied shortest paths, and a disconnected target. Explain each return value.
+
 ## In the course
 
 Return the edge count from \`start\` to \`end\`. Return 0 when they are the same vertex. Return -1 when no path exists. Every edge costs the same, so build the lists, enqueue the start at distance 0, mark on enqueue, and carry the distance. The public triangle answers 1. A disconnected pair answers -1. The line 0–1–2–3 answers 3, one hop at a time, with no shortcut. Level order on a tree is this queue: grandchildren wait behind children, just as distance 2 waits behind distance 1.
@@ -418,6 +526,19 @@ No path. In the exercise that is -1. 0 is only the distance from a vertex to its
 
 Yes. One edge from the root, then two, and so on. Same queue. The payload is a tree node instead of an integer id.
 
+## Multi-source BFS
+
+Sometimes distance means “how far from the nearest source?” Put every source in the queue at distance 0 before the loop, mark all of them, then run the ordinary algorithm. This is not several BFS runs: one shared frontier lets the earliest layer claim each vertex, preserving O(V + E) time.
+
+\`\`\`mermaid
+flowchart LR
+  a["Source A<br/>0"] --> layer1["Nearest layer<br/>1"]
+  b["Source B<br/>0"] --> layer1
+  layer1 --> layer2["Next layer<br/>2"]
+\`\`\`
+
+The queue invariant is precise: before each dequeue, queued vertices appear in nondecreasing distance order, and every discovered vertex has its final unweighted distance. This invariant proves both early exit on the target and predecessor-based path reconstruction. If neighbour order changes, one chosen shortest path may change, but its length cannot.
+
 ## Related
 
 The queue is the order this walk depends on, and the weighted case is the algorithm this course only names.
@@ -444,6 +565,19 @@ flowchart LR
   d0 ---|"short edge waits"| d4
 \`\`\`
 
+\`\`\`mermaid
+flowchart TD
+  enter0["enter 0"] --> enter1["enter 1"]
+  enter1 --> enter2["enter 2"]
+  enter2 --> enter3["enter 3"]
+  enter3 --> enter4["enter 4"]
+  enter4 --> leave4["finish 4"]
+  leave4 --> leave3["finish 3"]
+  leave3 --> leave2["finish 2"]
+  leave2 --> leave1["finish 1"]
+  leave1 --> leave0["finish 0"]
+\`\`\`
+
 ## How it works
 
 Mark the start and dive down the first unmarked neighbour, then the next, until that vertex has nowhere new to go. Come back and try the neighbour you skipped. Coming back is a function return, which pops the call stack, or a pop from a stack you allocated. Both are the same kind of order: finish one branch, then resume the one that was waiting.
@@ -459,6 +593,10 @@ const depthFirstOrder = (
   neighbours: readonly (readonly number[])[],
   start: number,
 ): number[] => {
+  if (neighbours[start] === undefined) {
+    return [];
+  }
+
   const visited = Array.from({ length: neighbours.length }, () => false);
   const stack = [start];
   const order: number[] = [];
@@ -471,10 +609,13 @@ const depthFirstOrder = (
     }
 
     order.push(vertex);
-    const adjacent = neighbours[vertex];
+    const adjacent = neighbours[vertex] ?? [];
 
     for (let i = adjacent.length - 1; i >= 0; i -= 1) {
       const neighbour = adjacent[i];
+      if (neighbour === undefined) {
+        continue;
+      }
       if (visited[neighbour]) {
         continue;
       }
@@ -525,6 +666,12 @@ A straight line of V vertices uses V stack frames before anyone returns. That is
 
 The time bound matches breadth-first search: vertices plus the neighbour entries you scan. A straight line is the expensive stack, O(V). A bushy graph stays shallower and can still report a long path first. Stack space and path quality are different facts.
 
+## Practice
+
+1. Reverse only vertex 0's neighbour list and predict the new DFS order. Verify that the reached set does not change.
+2. Write a recursive version and make its order match the iterative version. Identify where the call stack stores the work represented by the explicit stack.
+3. Extend the traversal to detect a cycle in an undirected graph by carrying each vertex's parent. Explain why seeing the parent edge is not a cycle.
+
 ## In the course
 
 The graphs exercise wants fewest edges, so you submit a breadth-first search. This walk is for reachability, a connected piece, or the tree-depth recursion you already wrote. It answers whether you can get there and which vertices are in this component. It does not answer the shortest path. You meet the same dive in backtracking, on choices you generate, and you mark on the way in if you sketch it. Reachability must match between a stack and recursion. The printed order need not.
@@ -555,12 +702,28 @@ That branch was first in the neighbour list. The short edge waits until the long
 
 Yes. One child finishes before the other. A tree has no cycle, so you can skip a visited set. The order is still dive, then the sibling.
 
+## Entry and exit times
+
+A recursive DFS has two meaningful events for each vertex: discovery before exploring neighbours and finish after every neighbour returns. Recording increasing entry and exit times reveals nesting. In a DFS forest, one vertex is an ancestor of another exactly when its time interval contains the other interval.
+
+\`\`\`mermaid
+flowchart LR
+  enterParent["Enter parent"] --> edge["Explore child edge"]
+  edge --> enterChild["Enter child"]
+  enterChild --> exploreChild["Explore child's neighbours"]
+  exploreChild --> exitChild["Exit child"]
+  exitChild --> resumeParent["Return to and exit parent"]
+\`\`\`
+
+That finish order supports topological sorting in directed acyclic graphs, while a directed edge to a currently active ancestor proves a cycle. An undirected cycle check is different: the edge back to the immediate parent is expected and must be ignored. “Visited” alone is therefore enough for reachability but not enough to classify every kind of cycle.
+
 ## Related
 
 The same dive shows up when the neighbours are choices you can undo, and the layer walk is what you switch to for hop count.
 
 - [What Is Backtracking? Choose, Explore, Then Undo](/articles/backtracking)
 - [How Does Breadth-First Search Find the Fewest Edges?](/articles/breadth-first-search)
+- [How Do Directed Cycles and Topological Order Work?](/articles/directed-acyclic-graphs)
     `,
   ),
   defineArticle(
@@ -577,6 +740,13 @@ flowchart LR
   w0["0: cost 0"] ---|"weight 1"| w1["1: cost 1"]
   w1 ---|"weight 2"| w2["2: cost 3"]
   w0 ---|"weight 10"| w2
+\`\`\`
+
+\`\`\`mermaid
+flowchart LR
+  start["best: [0, ∞, ∞]"] --> settle0["settle 0<br/>best: [0, 1, 10]"]
+  settle0 --> settle1["settle 1<br/>relax 1→2<br/>best: [0, 1, 3]"]
+  settle1 --> settle2["settle 2<br/>final: [0, 1, 3]"]
 \`\`\`
 
 ## How it works
@@ -602,6 +772,9 @@ const dijkstra = (
     () => Number.POSITIVE_INFINITY,
   );
   const settled = Array.from({ length: graph.length }, () => false);
+  if (graph[start] === undefined) {
+    return distance;
+  }
   distance[start] = 0;
 
   for (let count = 0; count < graph.length; count += 1) {
@@ -611,22 +784,36 @@ const dijkstra = (
       if (settled[candidate]) {
         continue;
       }
-      if (vertex !== -1 && distance[candidate] >= distance[vertex]) {
+      const candidateDistance =
+        distance[candidate] ?? Number.POSITIVE_INFINITY;
+      const chosenDistance =
+        vertex === -1
+          ? Number.POSITIVE_INFINITY
+          : (distance[vertex] ?? Number.POSITIVE_INFINITY);
+      if (candidateDistance >= chosenDistance) {
         continue;
       }
 
       vertex = candidate;
     }
 
-    if (vertex === -1 || distance[vertex] === Number.POSITIVE_INFINITY) {
+    const currentDistance = distance[vertex];
+    if (
+      vertex === -1 ||
+      currentDistance === undefined ||
+      currentDistance === Number.POSITIVE_INFINITY
+    ) {
       break;
     }
 
     settled[vertex] = true;
 
-    for (const edge of graph[vertex]) {
-      const via = distance[vertex] + edge.weight;
-      if (via >= distance[edge.to]) {
+    const adjacent = graph[vertex] ?? [];
+    for (const edge of adjacent) {
+      const via = currentDistance + edge.weight;
+      const previousDistance =
+        distance[edge.to] ?? Number.POSITIVE_INFINITY;
+      if (via >= previousDistance) {
         continue;
       }
 
@@ -679,6 +866,12 @@ The first time you settle 2, the cost is 3, along 0–1–2. The direct edge is 
 
 A heap push or pop follows the height of the heap. With lazy duplicate entries, each successful relaxation may add an entry, giving O((V + E) log V) time and O(V + E) auxiliary space in the worst case. The scanning version is easier to study but costs O(V²). In either version, the next vertex is the smallest total, not the oldest arrival.
 
+## Practice
+
+1. Add vertex 3 with edges 0–3 of weight 8 and 2–3 of weight 1. Trace every successful relaxation and the final distances.
+2. Store predecessors and reconstruct the cheapest path to each reachable vertex. Keep \`Infinity\` and no predecessor for an unreachable vertex.
+3. Create a three-vertex negative-edge example where settling a vertex early becomes unsafe. Use it to explain precisely which proof step requires non-negative weights.
+
 ## In the course
 
 The graphs lesson names Dijkstra and stops. Weighted shortest paths are a heap plus this walk, one step further than the course goes. Your function counts unweighted edges. It returns 0 when start and target match, and -1 when the target is never reached. The pairs are \`[from, to]\` with no weight to read.
@@ -710,6 +903,22 @@ A queue pops the oldest vertex. A min-heap pops the smallest total so far, so co
 ### Do I need to handle a negative weight?
 
 No. A negative weight can undercut a vertex you already settled, so Dijkstra's proof no longer applies. This course does not ask you to handle that case. Bellman–Ford is the standard next algorithm to study; it can also detect a reachable negative cycle.
+
+## Proof invariant and edge cases
+
+At the start of each iteration, every settled vertex has its true shortest distance, and every finite unsettled distance is the cost of a concrete discovered path. Selecting the smallest unsettled distance is safe because extending any other unsettled path adds a non-negative weight and cannot undercut it. Relaxation preserves the second claim by storing only costs of real paths.
+
+Zero-weight edges are valid; “non-negative” does not mean “positive.” Unreachable vertices remain at infinity. A directed weighted edge must be stored only in its stated direction. Parallel edges are harmless because relaxation keeps the cheaper resulting total. Reject \`NaN\`, negative, and non-finite weights at the input boundary, since comparisons with invalid numeric values can silently break the invariant.
+
+\`\`\`mermaid
+flowchart LR
+  finite["Finite tentative distance<br/>a real discovered path"] --> choose["Choose smallest"]
+  choose --> settled["Settle permanently"]
+  settled --> relax["Relax outgoing edges"]
+  relax --> finite
+\`\`\`
+
+To reconstruct a path, store \`previous[neighbour] = vertex\` whenever relaxation improves the neighbour. After settling the target, follow predecessors backward and reverse the result. Distance and predecessor must update together or the reported route may not have the reported cost.
 
 ## Related
 
