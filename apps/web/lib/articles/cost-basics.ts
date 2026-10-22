@@ -18,6 +18,12 @@ flowchart TD
   nest --> square["O(n²) growth"]
 \`\`\`
 
+## Before you begin
+
+You only need arrays, \`for\` loops, and multiplication. In this article, **n** means the number of values in the input array. An **elementary operation** is one small, fixed piece of work, such as reading an index, comparing two numbers, or incrementing a counter.
+
+Big O is an upper bound on growth: \`O(f(n))\` says that, beyond some input size, the work grows no faster than a constant multiple of \`f(n)\`. In everyday algorithm discussion, people often use “O(n)” to mean a tight linear growth rate. The formal tight-bound notation is **Theta**, written \`Θ(n)\`. The examples here have tight bounds, so the familiar O labels describe their actual growth shapes.
+
 ## How it works
 
 You count steps, not wall-clock seconds. A step is a comparison, an index read, or an addition. A faster machine finishes each of those sooner. Big O stays the same, because the speed of the machine is one of the constants the notation tells you to set aside.
@@ -40,9 +46,26 @@ for (let i = 0; i < n; i++) {
   }
 }
 console.log(steps, pairs);
+// Expected output: 10 100
 \`\`\`
 
 The first loop adds one step per element. The second loop multiplies, because the inner loop runs a full pass for every value of i. You can see the product in the indentation.
+
+## Combining costs
+
+Analyze one block at a time, then combine the blocks. Consecutive blocks add their costs; nested work multiplies them. Finally, keep the fastest-growing term.
+
+\`\`\`mermaid
+flowchart TD
+  start["Read the code in blocks"] --> sequence{"Blocks sequential or nested?"}
+  sequence -->|"Sequential"| add["Add costs"]
+  sequence -->|"Nested"| multiply["Multiply costs"]
+  add --> simplify["Keep the dominant term"]
+  multiply --> simplify
+  simplify --> examples["O(n + n²) = O(n²)"]
+\`\`\`
+
+For example, one scan followed by a nested pair of loops costs \`O(n + n²)\`, which simplifies to \`O(n²)\`. Two consecutive scans cost \`O(n + n) = O(2n) = O(n)\`.
 
 ## A numeric example
 
@@ -57,6 +80,8 @@ At 1,000 elements the scan does about 1,000 steps. The nested loops do about 1,0
 Time is how the step count grows with n. Extra space is memory you allocate beyond the input you were handed. A scan that keeps a counter is O(n) time and O(1) extra space. A loop inside a loop over the same array is O(n²) time, and it can still be O(1) extra space if all it keeps is a counter. The slow shape and the allocating shape are separate facts.
 
 For these plain loops the average case and the worst case match. Every index is visited the same way no matter what the values are. A structure you meet later, such as a hash map, can split those two cases. A loop you wrote does not. Read the rows as the shapes you can point at in the code.
+
+Unless a course question says otherwise, report the worst-case time. Also name every independent input size. Comparing every value in an array of length \`n\` with every value in a different array of length \`m\` is \`O(nm)\`, not automatically \`O(n²)\`.
 
 | Operation | Time | Extra space |
 | --- | --- | --- |
@@ -80,6 +105,8 @@ O(3n) keeps a constant the notation drops. Three passes are O(n). Say the three 
 Loops one after another add, so two scans are still O(n). Nested loops multiply. Read the indentation before you decide.
 
 A helper can hide a loop. A call that walks the array is not one step. Name the loops inside it.
+
+Using one letter for two independent inputs can hide useful information. Preserve \`n\` and \`m\` when the input lengths can differ.
 
 ## When to use it
 
@@ -105,6 +132,10 @@ No. Three passes over an array are O(n), and a sentence next to the code can sti
 
 No. Name the loops. One loop over the input is O(n), and a loop inside that loop is O(n²). The course wants the sentence you can check against the code you just wrote.
 
+### Is O(n) exactly n operations?
+
+No. It describes a growth class. A linear algorithm might do \`3n + 7\` elementary operations. Constants and lower-order terms affect real runtime, but they do not change the linear growth label.
+
 ## Related
 
 - [What Is Linear Time O(n)? One Pass and Linear Search](/articles/linear-time)
@@ -115,19 +146,23 @@ No. Name the loops. One loop over the input is O(n), and a loop inside that loop
     "constant-time",
     "What Does O(1) Mean? Constant-Time Work That Stays Flat",
     "Cost",
-    "O(1) means the work stays flat as the input grows. Reading one array slot or pushing onto the end does not get slower just because the array is longer.",
+    "O(1) means work stays flat as input grows. Reading a known array slot is constant time; dynamic-array append is O(1) amortized across a sequence of pushes.",
     ["O(1)"],
     `
-O(1) means the work stays flat as the input grows. Reading one array slot, or pushing a value onto the end, does not get slower just because the array is longer. Constant does not mean the step is instant, and it does not mean the work is tiny. It means the amount of work holds still while n changes.
+O(1) means the work stays flat as the input grows. Reading a known array slot is constant time. Appending to a dynamic array is usually constant work but can trigger a costly resize, so its stronger description is O(1) amortized across many pushes. Constant does not mean instant or tiny; it means the amount of work does not grow with n.
 
 \`\`\`mermaid
 flowchart LR
   slot["Read slot 0"] --> jump["One jump"]
-  push["Push at the end"] --> avg["O(1) on average"]
+  push["Sequence of end pushes"] --> avg["O(1) amortized each"]
   jump --> flat["Work stays flat"]
   avg --> flat
   helper["Helper that scans"] --> line["O(n) work"]
 \`\`\`
+
+## Before you begin
+
+You should know how to read an array by index and how \`push\` adds an element at the end. Here, **n** is the current number of elements. O(1) does not mean “one source-code line” or “one CPU instruction.” It means the number of operations is bounded by a constant that does not depend on n.
 
 ## How it works
 
@@ -135,9 +170,9 @@ Reading \`nums[0]\` is a jump, not a walk from the head. The runtime takes the a
 
 Flat is the whole claim. A constant-time step can still be heavy: a hash, a bounds check, a write. Constant does not mean instant, and it does not mean tiny. It means the step count holds still while n changes. If doubling the array doubles the steps, you have left O(1).
 
-Pushing at the end is O(1) on average. The new value is written past the last used index, and nothing in front of it slides. When storage is full, that one push copies into a larger block and costs O(n). Across many pushes the copy is rare, so the average per push stays constant.
+In the standard dynamic-array model, pushing at the end is O(1) **amortized**. The new value is usually written after the last used index, and nothing in front of it slides. When storage is full, one push may copy the elements into a larger block and cost O(n). Amortized analysis spreads those occasional resize costs across the whole sequence of pushes. It is a guarantee about a sequence of operations, not a probability about an average input.
 
-A hash map get is O(1) on average. The key is hashed, the map jumps toward a slot, and a typical key is found with work that does not track n. One unlucky key can land in a crowded slot and take longer. The average is the number to quote. The unlucky key is not a guarantee.
+A hash map get is O(1) expected time under the usual assumptions about hashing and resizing. The key is hashed, the map jumps toward a bucket, and a typical lookup does work that does not track n. Many colliding keys can make a lookup O(n) in the worst case. “Expected” depends on the hash behavior; “amortized” describes cost across an operation sequence. They are different ideas.
 
 A helper that looks like one step can still scan. If the body walks from the first index to the last, the cost is the walk. A loop over the input is not constant time, however short the call looks.
 
@@ -149,15 +184,31 @@ for (let i = 0; i < nums.length; i++) {
   visits = visits + 1;
 }
 console.log(first, visits);
+// Expected output: 4 10
 \`\`\`
 
 The assignment to first is the jump. The loop visits every index, so a helper built like that loop is not O(1).
+
+## Why append can be amortized O(1)
+
+Suppose capacity doubles whenever it fills. Most pushes write one value. Rare resize pushes copy the current values first, but doubling ensures that another resize cannot happen immediately.
+
+\`\`\`mermaid
+flowchart LR
+  p1["Push: one write"] --> p2["Push: one write"]
+  p2 --> resize["Full: copy and write"]
+  resize --> spare["New spare capacity"]
+  spare --> more["Many one-write pushes"]
+  more --> result["O(1) amortized per push"]
+\`\`\`
+
+For eight pushes, resize copies might move 1, then 2, then 4 existing elements. The total copying is 7, less than the 8 pushes themselves. Over a long sequence, the geometric sum of copies stays proportional to the number of pushes.
 
 ## A numeric example
 
 Read slot 0 on 10 numbers: one jump. Read slot 0 on 10,000 numbers: still one jump. The second array is 1,000 times longer, and the read did not pick up extra steps.
 
-Push 8 values while storage doubles whenever it fills. Copies can move 1, then 2, then 4 elements: 7 copies across 8 pushes, about one extra copied element per push. At 1,024 pushes the copies still add up to less than two passes of the final length, so the average stays a small constant. The push that hits a full buffer is the slow one.
+Push 8 values while storage doubles whenever it fills. Copies can move 1, then 2, then 4 elements: 7 copies across 8 pushes, about one extra copied element per push. At 1,024 pushes the copies still add up to less than the final length. Including the 1,024 writes, the whole sequence remains O(n), so its amortized cost is O(1) per push. The push that hits a full buffer is the slow one.
 
 A helper that scans does about 10 visits on 10 elements and about 10,000 visits on 10,000 elements. The call site stayed one line. The cost followed n.
 
@@ -165,13 +216,13 @@ A helper that scans does about 10 visits on 10 elements and about 10,000 visits 
 
 A true O(1) operation takes the same number of steps at n = 10 and at n = 10,000. Extra space for that operation is O(1) when you touch one slot or one map entry. The array you already hold may occupy O(n) memory. The read does not copy it.
 
-Average and worst case split for push and for hash map get. Reading \`nums[0]\` does not split: every read is O(1). A push is O(1) on average and O(n) when storage grows. A hash map get is O(1) on average, and one unlucky key can take longer. A helper that always scans is O(n) on average and in the worst case.
+Amortized and worst case split for push; expected and worst case split for a hash map lookup. Reading \`nums[0]\` does not split: every read is O(1). A push is O(1) amortized and O(n) when storage grows. A hash map lookup is O(1) expected and O(n) in a collision-heavy worst case. A helper that always scans is O(n) in every case.
 
-| Operation | Average time | Worst time | Extra space |
+| Operation | Typical guarantee | Worst time | Extra space |
 | --- | --- | --- | --- |
 | Read slot 0 | O(1) | O(1) | O(1) |
-| Push at the end | O(1) | O(n) on resize | O(1) per typical push |
-| Hash map get | O(1) | Longer for one unlucky key | O(1) for the lookup |
+| Dynamic-array push | O(1) amortized | O(n) on resize | O(n) during a resizing copy |
+| Hash map lookup | O(1) expected | O(n) | O(1) for the lookup |
 | Helper that scans | O(n) | O(n) | O(1) if it only counts |
 
 ## In the course
@@ -186,15 +237,15 @@ A single line is not automatically O(1). If it calls a scan, the cost is the sca
 
 Constant does not mean instant or tiny. A heavy step can be O(1) when the step count stays flat while n changes.
 
-Push at the end is O(1) on average. The push that copies into new storage costs more than that average.
+Push at the end is O(1) amortized in the dynamic-array model. The push that copies into new storage costs O(n).
 
-Hash map get is O(1) on average. One unlucky key can take longer.
+Hash map lookup is O(1) expected under standard assumptions. A collision-heavy worst case can take O(n).
 
 On a contiguous array, a known index is a jump. The loop that produced the index may be O(n). The read is not.
 
 ## When to use it
 
-Use O(1) for a read by an index you already have, a write at the end of an array, and a push or pop that touches only that end. Use it for a hash map get or set when you mean the average. A single pass that does a fixed bundle of O(1) work per element is O(n), because n times a constant is still linear.
+Use O(1) for a read by an index you already have and for a fixed number of arithmetic or comparison operations. Use O(1) amortized for dynamic-array append, and O(1) expected for a hash map lookup under the standard hashing assumptions. A single pass that does a fixed bundle of O(1) work per element is O(n), because n times a constant is still linear.
 
 ## When not to
 
@@ -208,11 +259,15 @@ No. It means the work stays flat while n changes. The step can be a heavy calcul
 
 ### Is a push at the end always one write?
 
-On average, yes. The write lands at the end, and elements already in the array stay put. When the backing storage is full, that one push copies into a larger block and costs O(n). Across a long series of pushes the average per push is still O(1).
+No. Usually the write lands at the end and existing elements stay put. When the backing storage is full, that push may copy into a larger block and cost O(n). Across a long series of pushes, the amortized cost per push is O(1).
 
 ### Is a hash map get always O(1)?
 
-On average, yes. A typical key is found after work that does not grow with the number of keys. One unlucky key can share a crowded slot and take longer. Quote the average, and keep the unlucky key in the same sentence.
+No. It is O(1) expected under the usual hashing assumptions, but a collision-heavy worst case can be O(n). State which guarantee you mean.
+
+### Can an O(1) operation use O(n) input space?
+
+Yes. Reading one element from an existing n-element array is O(1) time and O(1) extra space. The input array itself occupies O(n) space, but the read does not allocate another array.
 
 ## Related
 
@@ -238,6 +293,10 @@ flowchart LR
   miss --> all["Every element checked"]
 \`\`\`
 
+## Before you begin
+
+You should be comfortable with array indexes, loops, and \`break\`. Here, **n** is the array length. A **linear scan** visits elements in order, and a **linear search** is a scan that stops when it finds a target. Use \`-1\` as the result when no index contains the target.
+
 ## How it works
 
 Linear means the step count tracks the length. You do a fixed amount of work on an element, you do it once, and the total follows n. Twice the elements, about twice the steps. Ten times the elements, about ten times the steps. The work per element might be a comparison and an addition. Big O drops that constant and the label stays O(n).
@@ -249,19 +308,40 @@ If the value is missing, the early stop never comes. You look at every element. 
 You leave linear time when each element starts another scan of the rest of the array. The inner loop multiplies the outer pass into quadratic work. Two scans in sequence still add up to O(n). Sequence adds. Nesting multiplies.
 
 \`\`\`ts
-const nums = [4, 1, 7, 9];
-const target = 7;
-let found = -1;
-for (let i = 0; i < nums.length; i++) {
-  if (nums[i] === target) {
-    found = i;
-    break;
+const linearSearch = (values: readonly number[], target: number): number => {
+  for (let index = 0; index < values.length; index++) {
+    if (values[index] === target) {
+      return index;
+    }
   }
-}
-console.log(found);
+  return -1;
+};
+
+const nums = [4, 1, 7, 9];
+console.log(linearSearch(nums, 7));
+console.log(linearSearch(nums, 8));
+// Expected output:
+// 2
+// -1
 \`\`\`
 
-That loop is linear search. The break fires only on a hit. If target never appears, the loop runs to the last index, and found stays -1.
+The early \`return\` fires only on a hit. If the target never appears, the loop reaches the end and returns \`-1\`. The function is self-contained, so you can run it and change either target.
+
+## Best, average, and worst cases
+
+Input length alone does not determine how many elements a search reads. The target's position matters too.
+
+\`\`\`mermaid
+flowchart TD
+  search["Linear search in n values"] --> first["Target first"]
+  search --> middle["Target in a typical position"]
+  search --> absent["Target last or absent"]
+  first --> best["Best: 1 check, O(1)"]
+  middle --> average["Average: proportional to n, O(n)"]
+  absent --> worst["Worst: n checks, O(n)"]
+\`\`\`
+
+Even though the best case is O(1), the standard headline for linear search is its O(n) worst-case time. Worst-case analysis gives a bound that remains valid for every target and every array of length n.
 
 ## A numeric example
 
@@ -273,7 +353,7 @@ A count has no lucky stop. Count values strictly below 4 in 1, 4, 2, 8 and you s
 
 ## Cost
 
-One pass is O(n) time. Extra space is O(1) when you keep a counter, a running sum, or the index you found. Extra space is O(n) when that pass also fills a new array with one slot per input element. Linear search that remembers an index is O(n) time and O(1) extra space.
+One pass is O(n) time. Extra space is O(1) when you keep a counter, a running sum, or the index you found. Extra space is O(n) when that pass also fills a new array with one slot per input element. The iterative linear search above is O(n) time and O(1) extra space.
 
 Worst-case time for linear search is O(n), when the target is missing or last. Best-case time is O(1) when it sits at index 0. If the target is equally likely in any slot, you look at about half the array on average, and one half is a constant, so that average stays O(n). A sum or a count is O(n) every time, average and worst case, because every value can change the answer.
 
@@ -293,6 +373,8 @@ That is O(n) time and O(1) extra space when the counter is the only extra memory
 ## Common mistakes
 
 A search may break on the first hit. A count of every qualifying value has to keep walking, or you will miss later hits.
+
+Returning \`-1\` inside the first nonmatching iteration is a correctness bug. One mismatch proves only that the current index is not the answer. Return \`-1\` after the loop has exhausted every candidate.
 
 Two loops one after another add, so two scans stay O(n). A loop inside a loop multiplies. An inner scan of the rest leaves linear time.
 
@@ -320,6 +402,10 @@ Only when the current element is the target. You check index 0, then 1, then 2, 
 
 The count can be right, and the cost is no longer linear when one loop sits inside the other. An inner scan of the remaining elements multiplies the work. One loop that visits each index once, and does a fixed check there, stays O(n).
 
+### Does an early return make linear search O(1)?
+
+Only in the best case, when the first element matches. A target at the final index or a missing target still requires n checks, so the worst-case time is O(n).
+
 ## Related
 
 - [What Is Big O? How Algorithm Cost Grows as Input Grows](/articles/big-o)
@@ -343,6 +429,10 @@ flowchart TD
   rest --> half["Still O(n²) if the inner loop shrinks"]
 \`\`\`
 
+## Before you begin
+
+You should know how nested loops work and how Big O drops constant factors and lower-order terms. Here, **n** is the number of input elements. An **ordered pair** distinguishes \`(i, j)\` from \`(j, i)\`; an **unordered pair** treats them as the same pair.
+
 ## How it works
 
 Quadratic time appears when the work for one element grows with the number of elements. The usual code is an outer loop and an inner loop. If the outer loop runs n times and the inner loop runs n times, the body runs n times n. Nested loops multiply. That product is the label.
@@ -354,17 +444,38 @@ The triangle is that same count drawn as columns. The first element is compared 
 A quadratic pass plus a later linear pass is still quadratic, because Big O keeps the dominant term. Two separate scans add. They do not square.
 
 \`\`\`ts
-const n = 10;
-let pairs = 0;
-for (let i = 0; i < n; i++) {
-  for (let j = i + 1; j < n; j++) {
-    pairs = pairs + 1;
+const countUnorderedPairs = (size: number): number => {
+  let pairs = 0;
+  for (let first = 0; first < size; first++) {
+    for (let second = first + 1; second < size; second++) {
+      pairs = pairs + 1;
+    }
   }
-}
-console.log(pairs);
+  return pairs;
+};
+
+console.log(countUnorderedPairs(4));
+console.log(countUnorderedPairs(10));
+// Expected output:
+// 6
+// 45
 \`\`\`
 
 The inner loop walks only the rest of the array. The body still runs n(n-1)/2 times, which is quadratic.
+
+## Seeing the triangular work
+
+With four indexes, the first index pairs with three later indexes, the second with two, and the third with one. The final index has no later partner.
+
+\`\`\`mermaid
+flowchart LR
+  i0["Index 0: 3 pairs"] --> i1["Index 1: 2 pairs"]
+  i1 --> i2["Index 2: 1 pair"]
+  i2 --> i3["Index 3: 0 pairs"]
+  i3 --> total["3 + 2 + 1 = 6"]
+\`\`\`
+
+For n indexes, the sum is \`(n - 1) + (n - 2) + ... + 1 = n(n - 1) / 2\`. Expanding gives \`(n² - n) / 2\`; dropping the factor \`1/2\` and the lower-order \`n\` leaves O(n²).
 
 ## A numeric example
 
@@ -377,6 +488,8 @@ One scan of those 1,000 elements is about 1,000 steps. The pair version does hun
 ## Cost
 
 Looking at every pair is O(n²) time. The inner loop that starts partway through the array is also O(n²) time. Average and worst case match for these loops, because you walk the pairs either way. The values do not cancel iterations. Extra space is O(1) when you keep a counter. Extra space becomes O(n²) if you store every pair you visit.
+
+Nested loops are not automatically quadratic. Multiply their actual bounds. If an outer loop runs n times and an inner loop always runs 10 times, the total is O(10n) = O(n). If one loop covers n values and the other covers an independent input of length m, the total is O(nm).
 
 | Operation | Time | Extra space |
 | --- | --- | --- |
@@ -401,6 +514,8 @@ Keeping the nested count because the tests pass separates correctness from cost.
 
 Calling two sequential scans quadratic confuses addition with multiplication. Loops that follow each other add. You square the cost when one loop runs inside the other.
 
+Calling every nested loop quadratic ignores its bounds. A constant-size inner loop keeps the total linear, and loops over two independent inputs should preserve both variables as O(nm).
+
 ## When to use it
 
 Use a nested pair loop when the question really is about pairs, or when n is so small that n² is still a size you can list and the double loop is the clearest correct code. Naming O(n²) is what makes that choice a choice. Ten items and 45 comparisons can be a fine place to stop, as long as you know what happens at a thousand.
@@ -424,6 +539,10 @@ n² is 1,000,000 when both loops run across every index. Unordered pairs, the tr
 ### Can two loops return the right count and still be the wrong habit?
 
 Yes. A nested loop can count values strictly below a limit and match the tests. The inner loop is the habit to retire. One pass does the same count in O(n) time and O(1) extra space.
+
+### Are all nested loops O(n²)?
+
+No. Multiply the number of iterations of each loop. An n-iteration outer loop with a 10-iteration inner loop is O(n). Loops over inputs of lengths n and m are O(nm). The result is O(n²) only when both dimensions grow with the same n.
 
 ## Related
 

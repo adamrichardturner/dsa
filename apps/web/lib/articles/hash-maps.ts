@@ -5,38 +5,62 @@ export const hashMapArticles: readonly Article[] = [
     "hash-maps",
     "How a Hash Map Remembers What You Have Already Seen",
     "Hash maps",
-    "A hash map stores a value under a key so get and set are O(1) on average. The pattern is to remember what you have already seen, which turns Two Sum from a nested scan into one pass.",
+    "A hash map associates unique keys with values and supports lookup, insertion, and update in O(1) expected time. Remembering earlier values turns Two Sum from a quadratic pair search into one linear pass.",
     ["hash map", "hash maps"],
     `
-A hash map stores a value under a key so \`get\` and \`set\` are O(1) on average. You spend memory so the next question does not walk the whole input. The pattern is to remember what you have already seen. Two Sum is the classic use: a nested scan of every pair is quadratic, and one pass that stores earlier indices is linear on average.
+A hash map associates each **unique key** with a value. Given a key, it uses a hash function to choose where to look instead of scanning every entry. Lookup, insertion, and update therefore take O(1) **expected** time, while k distinct entries occupy O(k) space.
+
+This is a space-for-time tradeoff. Store useful facts from the input already visited, and later questions become lookups. Two Sum is the classic example: a nested search examines O(n²) pairs, while a hash table records earlier numbers and finishes in O(n) expected time.
 
 \`\`\`mermaid
-flowchart TD
-  A["Read 2"] --> B["Store index 0"]
-  B --> C["Read 7"]
-  C --> D["Complement 2 is stored"]
-  D --> E["Positions 0 and 1"]
+flowchart LR
+  key["Key: 18"] --> hash["hash(18)"]
+  hash --> slot["Bucket or slot"]
+  slot --> entry["Entry: 18 → value"]
 \`\`\`
 
 ## How it works
 
-A map entry is a key plus the fact you want back. For Two Sum the key is a number you have seen and the value is its index. Store the index, not only the value, because the answer is positions.
+A hash function deterministically converts a key into an integer hash. The table reduces that hash to an array position. A correct table also stores the key because distinct keys can select the same position. It compares keys after reaching that position to distinguish collisions.
+
+For Two Sum, the key is a number already visited and the value is an index where it occurred. Store the index, not only membership, because the answer requires positions.
 
 For each number, check whether \`target\` minus the number is already stored. When it is, the positions are the stored index and the current index. When it is not, store the index you just passed. Check before you store, so the current index is not a partner for itself. On 2, 2 with target 4, the second 2 finds the first 2 already stored.
 
 A nested loop scans the rest of the array at every index. One thousand elements is about half a million pair checks. The map does a \`get\` and, on a miss, a \`set\`. That is O(n) time on average and O(n) extra memory.
 
-\`Map\` keeps a numeric key as a number. A plain object turns that key into a string, so \`record[2]\` and \`record["2"]\` are the same property. That can still work, and it is easier to get wrong when you later compare the key to a number with \`===\`. Prefer \`Map\` when the key is not already a string. \`get\` returns \`undefined\` when the key is absent. Index 0 is a real hit, so do not treat 0 as missing.
+\`Map\` keeps a numeric key as a number. A plain object turns it into a string, so \`record[2]\` and \`record["2"]\` name the same property. This example uses that conversion intentionally. Index 0 is a real hit, so absence must be tested with \`undefined\`, not truthiness.
 
 \`\`\`ts
-const seen = new Map<number, number>();
-seen.set(2, 0);
+function twoSum(
+  values: readonly number[],
+  target: number,
+): readonly [number, number] | null {
+  const indexByValue: Record<string, number | undefined> = {};
 
-const asText: Record<string, number> = {};
-asText["2"] = 0;
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (value === undefined) {
+      continue;
+    }
 
-const earlier = seen.get(9 - 7);
+    const earlierIndex = indexByValue[target - value];
+    if (earlierIndex !== undefined) {
+      return [earlierIndex, index];
+    }
+
+    indexByValue[value] = index;
+  }
+
+  return null;
+}
+
+console.log(twoSum([2, 7, 11, 15], 9));
+console.log(twoSum([2, 2], 4));
+console.log(twoSum([1, 2, 3], 10));
 \`\`\`
+
+Output: \`[0, 1]\`, \`[0, 1]\`, then \`null\`.
 
 ## A numeric example
 
@@ -44,22 +68,29 @@ Take the array 2, 7, 11, 15 and target 9.
 
 At index 0 the number is 2. The complement 7 is absent, so you store index 0 under the key 2. At index 1 the number is 7. The complement 2 is at index 0. The positions are 0 and 1.
 
-The nested checks on this input are the six pairs starting at (2, 7). Six checks find one pair. On 10,000 elements that style does on the order of 50 million pair checks, and the map does about 10,000 lookups. The key is the number you saw. The stored value is the index.
+| Index | Value | Complement | Table before lookup | Action |
+| --- | --- | --- | --- | --- |
+| 0 | 2 | 7 | empty | Store 2 → 0 |
+| 1 | 7 | 2 | 2 → 0 | Return [0, 1] |
+
+The algorithm stops as soon as it finds one pair. A different specification—return every pair, every unique value pair, or the number of pairs—needs different duplicate handling. Always establish the required result before choosing what the table stores.
 
 ## Cost
 
-The one-pass map is O(n) time on average and O(n) extra space. \`get\` and \`set\` are O(1) on average. A collision can make one lookup inspect more than one entry. If every key lands in one slot, a chained lookup can degrade toward O(n), and the pass is no longer linear. You plan for the average. The nested scan is O(n²) time and O(1) extra space. A plain object has the same average time and O(n) extra memory, with string keys. Prefer \`Map\` for numbers, and still quote both costs.
+The one-pass algorithm is O(n) expected time and O(k) auxiliary space, where k is the number of distinct values stored before it stops; k is at most n. Each iteration performs at most one lookup and one insertion. Those operations are O(1) expected, so n iterations are O(n) expected.
+
+Resizing a backing array occasionally costs O(k), but geometric resizing spreads that work across many insertions. Insertion is O(1) amortized as well as expected under ordinary hashing assumptions. “Expected” describes collision behavior; “amortized” describes occasional resizing.
 
 | Approach | Time | Extra space | What you store |
 | --- | --- | --- | --- |
 | Nested loops over pairs | O(n²) worst case | O(1) | A few integers |
-| \`Map\` in one pass | O(n) average | O(n) | Index under the number you saw |
+| Hash table in one pass | O(n) expected | O(k), at most O(n) | Index under the number you saw |
 | Chained map, every key in one slot | Can degrade toward O(n) per lookup | O(n) | The same entries, one long chain |
 | Plain object with numeric keys | O(n) average | O(n) | The key becomes a string |
 
 ## In the course
 
-Two Sum reads left to right, asks for the complement, then stores the index you just passed. A miss is an absent key. Index 0 is a stored hit. Later lessons reuse the shape for a count or a previous index. Say O(n) time and O(n) extra memory on average. You choose the key, the value, and \`Map\` when the key is a number. You do not write the hash function.
+Two Sum reads left to right, asks for the complement, then stores the index just passed. The reusable design questions are: What fact is the key? What information must the value recover? What represents absence? Should a duplicate preserve the first value, overwrite with the latest value, or increment a count?
 
 ## Common mistakes
 
@@ -71,13 +102,15 @@ Treating a \`get\` result of 0 as a miss. Index 0 is a legal position. Absence i
 
 Using an object for numeric keys and then comparing a key to a number with \`===\`. The object stored the string \`"2"\`. \`Map\` keeps the number you passed to \`set\`.
 
+Claiming guaranteed O(1). Hash-table operations are expected O(1), not a worst-case promise. State whether a bound is expected, amortized, or worst-case.
+
 ## When to use it
 
 Use a hash map when the question is about a key you have already seen, and a scan to answer it would nest. Complements, counts, first indices, and duplicate checks are the usual forms. Use \`Map\` when the key is a number or another value that should not become a property name. Use it when O(n) extra memory is acceptable and O(n) average time is the bound you want.
 
 ## When not to
 
-Skip the map when the array is sorted and two pointers can answer with O(1) extra space. Skip it when you need the keys in sorted order. A map does not keep that order. A balanced tree keeps order with logarithmic updates. Skip it when the input is tiny and the nested scan is the version you can check by hand, or when you cannot afford O(n) extra memory.
+Skip the table when the array is sorted and two pointers can answer with O(1) auxiliary space. It is also a poor fit for range queries, sorted traversal, strict worst-case operation bounds, or a memory limit that forbids O(n) auxiliary space. A balanced search tree supports ordered operations in O(log n).
 
 ## FAQ
 
@@ -87,11 +120,15 @@ The answer is positions. The key is the number you saw. The value is the index. 
 
 ### Why prefer Map over a plain object for numeric keys?
 
-\`Map\` keeps the key as a number. A plain object turns it into a string, so 2 and \`"2"\` share one property. That can still work, and it is easier to get wrong. Prefer \`Map\` when the key is not already a string.
+\`Map\` keeps the key as a number. A plain object turns it into a string, so 2 and \`"2"\` share one property. \`Map\` also accepts object keys, exposes \`size\`, and does not mix entries with inherited object properties.
+
+### What happens when a key is inserted twice?
+
+Its value is updated; keys are unique. Whether an algorithm should preserve the first index, overwrite with the latest index, or increment a count depends on the problem.
 
 ### What time and space should you quote?
 
-O(n) time and O(n) extra memory, on average. The map holds an entry per key. A collision can make one lookup longer, which is why the average belongs in the sentence.
+O(n) expected time and O(n) auxiliary space in the worst case. Individual lookups and insertions are O(1) expected.
 
 ## Related
 

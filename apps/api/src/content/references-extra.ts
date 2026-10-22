@@ -424,7 +424,13 @@ export function canReach(edges: number[][], start: number, end: number): boolean
 }
 `,
   "count-subsets": `export function countSubsets(nums: number[]): number {
-  return 2 ** nums.length;
+  const countFrom = (index: number): number => {
+    if (index === nums.length) {
+      return 1;
+    }
+    return countFrom(index + 1) + countFrom(index + 1);
+  };
+  return countFrom(0);
 }
 `,
   "min-cost-climb": `export function minCostClimb(cost: number[]): number {
@@ -530,7 +536,10 @@ export function hasPrefix(words: string[], queries: string[]): boolean[] {
 `,
   "insert-at": `export function insertAt(nums: number[], index: number, value: number): number[] {
   const next: number[] = [];
-  let placed = false;
+  let placed = index < 0;
+  if (placed) {
+    next.push(value);
+  }
   for (let cursor = 0; cursor < nums.length; cursor += 1) {
     if (!placed && cursor === index) {
       next.push(value);
@@ -986,6 +995,9 @@ export function reachesAll(edges: number[][], count: number, start: number): boo
 }
 `,
   "can-jump": `export function canJump(nums: number[]): boolean {
+  if (nums.length === 0) {
+    return false;
+  }
   let reach = 0;
   for (let index = 0; index < nums.length; index += 1) {
     if (index > reach) {

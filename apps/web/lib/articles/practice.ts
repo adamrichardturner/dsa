@@ -26,11 +26,38 @@ The most frequent value is the key with the largest count. Walk the array once a
 A counter for one target does not need a map. The map is the tool when you do not know which value will win, or when several targets share the same pass.
 
 \`\`\`ts
-const counts: Record<string, number> = {};
-const value = 4;
-const key = String(value);
-counts[key] = (counts[key] ?? 0) + 1;
+function mostFrequent(nums: readonly number[]): number | null {
+  const counts: Record<string, number> = {};
+
+  for (const value of nums) {
+    const key = String(value);
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+
+  let winner: number | null = null;
+  let winnerCount = 0;
+
+  for (const value of nums) {
+    const count = counts[String(value)] ?? 0;
+    if (count <= winnerCount) {
+      continue;
+    }
+    winner = value;
+    winnerCount = count;
+  }
+
+  return winner;
+}
+
+console.log(mostFrequent([4, 2, 4, 2, 2]));
+console.log(mostFrequent([]));
 \`\`\`
+
+Expected output: \`2\`, then \`null\`. The second pass visits 4 before 2, but 2 has the larger final count. If their final counts were equal, the strict \`>\` update would preserve the value encountered first.
+
+## Worked example
+
+For \`[4, 2, 4, 2, 2]\`, the first pass builds \`{ "2": 3, "4": 2 }\`. The second pass first makes 4 the winner with count 2, then replaces it with 2 because 3 is larger. Later copies do not change the result.
 
 ## In the course
 
@@ -51,6 +78,10 @@ Use a frequency count when the question is "how many" or "which value appears mo
 ## When not to
 
 Do not build the map when you only need a sum or a single comparison. A counter is enough, and the map adds a structure you then have to read back.
+
+## Problem-solving checklist
+
+State what each key and value mean. Decide the empty-input result and tie rule before coding. Test one unique winner, one tie, one repeated value, and the empty array. Finally, check that no loop restarts a count from scratch.
   `,
   ),
   defineArticle(
@@ -78,10 +109,25 @@ Rotation uses a remainder. \`steps % length\` is 0 when the move is a full turn.
 Binary search keeps an inclusive range. When the middle matches and you still need the first or last copy, set \`hi\` to \`mid - 1\` or \`lo\` to \`mid + 1\`. Leaving the bound on \`mid\` can repeat the same middle forever.
 
 \`\`\`ts
-const length: number = 4;
-const steps: number = 4;
-const remainder = length === 0 ? 0 : steps % length;
+function rotateLeft(nums: readonly number[], steps: number): number[] {
+  if (nums.length === 0) {
+    return [];
+  }
+
+  const remainder = steps % nums.length;
+  return nums.slice(remainder).concat(nums.slice(0, remainder));
+}
+
+console.log(rotateLeft([1, 2, 3, 4], 4));
+console.log(rotateLeft([1, 2, 3, 4], 5));
+console.log(rotateLeft([], 3));
 \`\`\`
+
+Expected output: \`[1, 2, 3, 4]\`, then \`[2, 3, 4, 1]\`, then \`[]\`. The examples exercise the full-turn, one-past-a-full-turn, and empty-input boundaries.
+
+## Worked example
+
+With length 4 and 5 steps, \`5 % 4\` is 1. The half-open slices are \`nums.slice(1) = [2, 3, 4]\` and \`nums.slice(0, 1) = [1]\`; joining them gives \`[2, 3, 4, 1]\`.
 
 ## In the course
 
@@ -102,6 +148,10 @@ Check the empty input, the single element, the first index, and the last index b
 ## When not to
 
 Do not "fix" a wrong answer by adding or subtracting one until a single example passes. Name the range, then move the bound so the range still means what you said.
+
+## Problem-solving checklist
+
+Write whether each boundary is inclusive or exclusive. Trace the empty and one-element cases on paper. For a shrinking search range, prove that every update removes at least one index. Test the first valid index, the last valid index, and the first invalid index.
   `,
   ),
   defineArticle(
@@ -129,10 +179,39 @@ A sorted pair sum compares the total of the ends. Too small means the left value
 Each step retires one index, so the walk is O(n). You return indexes in ascending order, or \`[-1, -1]\` when the pointers cross.
 
 \`\`\`ts
-let left = 0;
-let right = nums.length - 1;
-const sum = (nums[left] ?? 0) + (nums[right] ?? 0);
+function pairSum(
+  nums: readonly number[],
+  target: number,
+): readonly [number, number] {
+  let left = 0;
+  let right = nums.length - 1;
+
+  while (left < right) {
+    const leftValue = nums[left];
+    const rightValue = nums[right];
+    if (leftValue === undefined || rightValue === undefined) {
+      return [-1, -1];
+    }
+
+    const sum = leftValue + rightValue;
+    if (sum === target) {
+      return [left, right];
+    }
+    if (sum < target) {
+      left += 1;
+      continue;
+    }
+    right -= 1;
+  }
+
+  return [-1, -1];
+}
+
+console.log(pairSum([1, 3, 4, 6, 8], 10));
+console.log(pairSum([1, 3, 4, 6, 8], 20));
 \`\`\`
+
+Expected output: \`[1, 3]\`, then \`[-1, -1]\`. For target 10, the first total is 9, so the left pointer moves; 3 + 8 is 11, so the right pointer moves; 3 + 6 then matches.
 
 ## In the course
 
@@ -153,6 +232,10 @@ Use inward pointers when the ends of a sorted array, or the ends of a sequence y
 ## When not to
 
 Do not use them to find a pair in an unsorted array of arbitrary numbers. The discard step is only valid when order tells you which side is useless.
+
+## Problem-solving checklist
+
+Name the fact that makes a discard safe; here it is ascending order. Decide whether pointers may meet. Trace which candidate pairs disappear after each move. Test a match at the ends, a match inside, no match, and fewer than two values.
   `,
   ),
   defineArticle(
@@ -181,14 +264,39 @@ The shortest slice whose sum is at least a target records a length whenever the 
 A negative number can make a longer slice smaller, and the "shrink until it fits" story stops being safe. These exercises leave negatives out on purpose.
 
 \`\`\`ts
-let sum = 0;
-let left = 0;
-sum += entering;
-while (sum > limit && left <= right) {
-  sum -= leaving;
-  left += 1;
+function shortestAtLeast(
+  nums: readonly number[],
+  target: number,
+): number {
+  let left = 0;
+  let sum = 0;
+  let best = nums.length + 1;
+
+  for (let right = 0; right < nums.length; right += 1) {
+    sum += nums[right] ?? 0;
+
+    while (sum >= target && left <= right) {
+      best = Math.min(best, right - left + 1);
+      sum -= nums[left] ?? 0;
+      left += 1;
+    }
+  }
+
+  if (best === nums.length + 1) {
+    return 0;
+  }
+  return best;
 }
+
+console.log(shortestAtLeast([2, 3, 1, 2, 4, 3], 7));
+console.log(shortestAtLeast([1, 1, 1], 5));
 \`\`\`
+
+Expected output: \`2\`, then \`0\`. In the first call, the window \`[4, 3]\` is the shortest qualifying slice.
+
+## Worked example
+
+At right index 4, the window \`[3, 1, 2, 4]\` totals 10. Repeated shrinking records lengths 4 and 3 before the sum falls below 7. Adding the final 3 creates \`[2, 4, 3]\`; shrinking once more discovers \`[4, 3]\` with length 2.
 
 ## In the course
 
@@ -209,6 +317,10 @@ Use a variable window for a contiguous slice whose length is part of the answer,
 ## When not to
 
 Do not use it when the slice does not have to be contiguous. A subset of any indexes is a different search.
+
+## Problem-solving checklist
+
+Write the window invariant, including whether it is valid before or after shrinking. Confirm that every value is non-negative before relying on monotonic sums. Record the answer at the exact moment the invariant says it is valid. Test no solution, one-element success, and success at each end.
   `,
   ),
   defineArticle(
@@ -233,11 +345,32 @@ Let \`prefix[0]\` be the first value, and \`prefix[i]\` be \`prefix[i - 1] + num
 That difference is O(1) per question. If you answer many ranges, the build cost is paid once. A sliding window that only cares about the current slice does not need the whole table. It already adds the value that enters and subtracts the value that leaves, which is a prefix difference of length one.
 
 \`\`\`ts
-const nums = [2, 1, 5];
-const prefix = [nums[0] ?? 0];
-prefix.push(prefix[0] + (nums[1] ?? 0));
-const fromOneToTwo = prefix[2] - prefix[0];
+function buildPrefix(nums: readonly number[]): number[] {
+  const prefix = [0];
+  for (const value of nums) {
+    prefix.push((prefix[prefix.length - 1] ?? 0) + value);
+  }
+  return prefix;
+}
+
+function rangeSum(
+  prefix: readonly number[],
+  left: number,
+  right: number,
+): number {
+  return (prefix[right + 1] ?? 0) - (prefix[left] ?? 0);
+}
+
+const prefix = buildPrefix([2, 1, 5, 3]);
+console.log(prefix);
+console.log(rangeSum(prefix, 1, 2));
 \`\`\`
+
+Expected output: \`[0, 2, 3, 8, 11]\`, then \`6\`. The leading zero makes every inclusive range use the same formula: subtract the prefix before \`left\` from the prefix after \`right\`.
+
+## Worked example
+
+For indexes 1 through 2, \`prefix[3]\` totals the first three values and \`prefix[1]\` totals the values before index 1. Their difference is \`8 - 2 = 6\`, which equals \`1 + 5\`.
 
 ## In the course
 
@@ -258,6 +391,10 @@ Use a prefix sum when range totals are the question and you can afford an O(n) t
 ## When not to
 
 Do not build it for a single left-to-right window. The running sum already is the difference you need.
+
+## Problem-solving checklist
+
+Define whether \`prefix[i]\` includes index \`i\`; a leading-zero table avoids a special case. Translate one range by hand before coding. Test a range at index 0, a one-value range, the whole array, and an empty input.
   `,
   ),
   defineArticle(
@@ -284,11 +421,47 @@ When \`current\` is null, \`previous\` is the new head. The old head's \`next\` 
 Losing the saved next is the bug. Once you overwrite \`current.next\`, the rest of the list is unreachable unless you kept that reference.
 
 \`\`\`ts
-const saved = current.next;
-current.next = previous;
-previous = current;
-current = saved;
+interface ListNode {
+  value: number;
+  next: ListNode | null;
+}
+
+function reverse(head: ListNode | null): ListNode | null {
+  let previous: ListNode | null = null;
+  let current = head;
+
+  while (current !== null) {
+    const saved = current.next;
+    current.next = previous;
+    previous = current;
+    current = saved;
+  }
+
+  return previous;
+}
+
+function values(head: ListNode | null): number[] {
+  const result: number[] = [];
+  let current = head;
+  while (current !== null) {
+    result.push(current.value);
+    current = current.next;
+  }
+  return result;
+}
+
+const head: ListNode = {
+  value: 1,
+  next: { value: 2, next: { value: 3, next: null } },
+};
+console.log(values(reverse(head)));
 \`\`\`
+
+Expected output: \`[3, 2, 1]\`. On each iteration, \`saved\` still points to the unreversed suffix while \`previous\` points to the reversed prefix.
+
+## Worked example
+
+Initially the split is \`null | 1 -> 2 -> 3\`. After one rewire it is \`1 -> null | 2 -> 3\`; after two it is \`2 -> 1 -> null | 3\`. The final rewire leaves \`3 -> 2 -> 1 -> null\`, and \`previous\` points to 3.
 
 ## In the course
 
@@ -309,6 +482,10 @@ Use the three names whenever you rewire a singly linked list in one pass and sti
 ## When not to
 
 Do not reach for three pointers when a second pointer with a head start answers the question. The middle and the nth-from-the-end walks are that simpler pair.
+
+## Problem-solving checklist
+
+Draw the reversed prefix and unreversed suffix separated by a bar. Save the suffix before changing a link. Test null, one node, and two nodes. Confirm that the old head ends with \`next: null\` and that you return \`previous\`, not \`current\`.
   `,
   ),
   defineArticle(
@@ -334,11 +511,40 @@ Put a pointer on each run. Compare the two heads. Write the smaller one to the r
 Merge sort does this after each pair of recursive calls. The split is about log n levels deep, and each level merges n elements in total, so the sort is O(n log n). The extra arrays are O(n) memory. Bubble sort never builds a run on purpose. It swaps neighbours until order appears, and that is O(n²).
 
 \`\`\`ts
-if ((left[i] ?? 0) <= (right[j] ?? 0)) {
-  merged.push(left[i] ?? 0);
-  i += 1;
+function merge(
+  left: readonly number[],
+  right: readonly number[],
+): number[] {
+  const merged: number[] = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < left.length && j < right.length) {
+    const leftValue = left[i];
+    const rightValue = right[j];
+    if (leftValue === undefined || rightValue === undefined) {
+      break;
+    }
+    if (leftValue <= rightValue) {
+      merged.push(leftValue);
+      i += 1;
+      continue;
+    }
+    merged.push(rightValue);
+    j += 1;
+  }
+
+  return merged.concat(left.slice(i), right.slice(j));
 }
+
+console.log(merge([1, 4, 8], [2, 3, 9]));
 \`\`\`
+
+Expected output: \`[1, 2, 3, 4, 8, 9]\`. Once the left run is exhausted, the remaining 9 can be copied without another comparison.
+
+## Worked example
+
+The head comparisons are 1 versus 2, 4 versus 2, 4 versus 3, 4 versus 9, and 8 versus 9. They contribute \`[1, 2, 3, 4, 8]\`; the untouched right tail contributes \`[9]\`.
 
 ## In the course
 
@@ -359,6 +565,10 @@ Use a merge of two runs when both sides are already sorted and you need one sort
 ## When not to
 
 Do not merge unsorted slices and expect a sorted result. The smaller-head rule is only true when each side is a run.
+
+## Problem-solving checklist
+
+Verify both inputs are already sorted. State what each pointer means and why everything before it is finished. Test one empty run, unequal lengths, duplicates, and values that all come from one side first. Check that the leftovers are copied.
   `,
   ),
   defineArticle(
@@ -391,10 +601,30 @@ Those child indexes can sit past the end of a short array. The formula does not 
 A min-heap keeps each parent less than or equal to its children, so the smallest value sits at index 0. Inserting at the end and swapping upward, or moving the last value to the root and swapping downward, both follow these indexes. Each swap walks one level, and the height is about log n.
 
 \`\`\`ts
-const parent = Math.floor((index - 1) / 2);
-const left = 2 * index + 1;
-const right = 2 * index + 2;
+interface HeapIndexes {
+  readonly parent: number | null;
+  readonly left: number;
+  readonly right: number;
+}
+
+function heapIndexes(index: number): HeapIndexes {
+  const parent = index === 0 ? null : Math.floor((index - 1) / 2);
+  return {
+    parent,
+    left: 2 * index + 1,
+    right: 2 * index + 2,
+  };
+}
+
+console.log(heapIndexes(0));
+console.log(heapIndexes(4));
 \`\`\`
+
+Expected output: \`{ parent: null, left: 1, right: 2 }\`, then \`{ parent: 1, left: 9, right: 10 }\`. Child indexes describe positions; callers must still compare them with the heap length.
+
+## Worked example
+
+Index 4 is the right child of index 1 because \`Math.floor((4 - 1) / 2) = 1\`. Its own children would occupy indexes 9 and 10. In a heap of length 7 those children do not exist, even though the formulas still produce their positions.
 
 ## In the course
 
@@ -415,6 +645,10 @@ Use the formulas whenever you store a heap, or any complete binary tree, in an a
 ## When not to
 
 Do not use heap indexes for a binary search tree that can be sparse. A missing left child in a BST is not "the next array slot". That tree wants real links.
+
+## Problem-solving checklist
+
+Separate an index from the value stored there. Handle the root's missing parent explicitly. Before reading a child, compare its index with \`heap.length\`. Test the root, a left child, a right child, and a leaf on an incomplete last level.
   `,
   ),
   defineArticle(
@@ -442,10 +676,46 @@ The size of the component is the number of marks, including the start. A start v
 Breadth-first search uses the set beside a queue and answers fewest edges when every edge costs the same. Depth-first search uses the same set beside a stack or recursion and answers reachability. Neither is safe on a cyclic graph if the set is missing.
 
 \`\`\`ts
-const seen: Record<string, true> = {};
-const key = String(start);
-seen[key] = true;
+function reachable(
+  graph: Readonly<Record<string, readonly number[]>>,
+  start: number,
+): number[] {
+  const seen: Record<string, true> = { [String(start)]: true };
+  const queue = [start];
+  const order: number[] = [];
+  let front = 0;
+
+  while (front < queue.length) {
+    const vertex = queue[front];
+    front += 1;
+    if (vertex === undefined) {
+      continue;
+    }
+    order.push(vertex);
+
+    const neighbours = graph[String(vertex)] ?? [];
+    for (const neighbour of neighbours) {
+      const key = String(neighbour);
+      if (seen[key] === true) {
+        continue;
+      }
+      seen[key] = true;
+      queue.push(neighbour);
+    }
+  }
+
+  return order;
+}
+
+const graph = { "0": [1, 2], "1": [0, 2], "2": [0, 1] };
+console.log(reachable(graph, 0));
 \`\`\`
+
+Expected output: \`[0, 1, 2]\`. Vertex 2 is marked when vertex 0 enqueues it, so the later edge from vertex 1 cannot enqueue a duplicate.
+
+## Worked example
+
+Start with queue \`[0]\` and mark 0. Processing 0 marks and queues 1 and 2. Processing 1 sees 0 and 2 already marked. Processing 2 sees only marked neighbours. The queue empties after exactly three vertex visits despite the cycle.
 
 ## In the course
 
@@ -466,6 +736,10 @@ Use a visited set on any graph search, and on any walk that might return to a ve
 ## When not to
 
 Do not use a visited set to block a tree recursion that is supposed to see both children. A child is not a repeat of the parent. The null child is the stop.
+
+## Problem-solving checklist
+
+Decide what a vertex identifier is and use one representation consistently. Mark when scheduling work, not when finishing it. Include the start in the visited structure. Test a cycle, an isolated vertex, disconnected components, and two paths to the same neighbour.
   `,
   ),
   defineArticle(
@@ -491,8 +765,34 @@ Two intervals overlap when one starts before the other has finished. In numbers,
 Interval scheduling sorts by finishing time and repeatedly takes the interval that frees you soonest. The half-open rule is why \`[1, 3]\` and \`[3, 5]\` can both be kept. Sorting by start time instead lets a long early interval block several short ones. That is a rule you can break with one example, so it is not the rule.
 
 \`\`\`ts
-const overlaps = nextStart < previousEnd;
+type Interval = readonly [start: number, end: number];
+
+function maximumNonOverlapping(intervals: readonly Interval[]): Interval[] {
+  const ordered = intervals
+    .slice()
+    .sort((left, right) => left[1] - right[1] || left[0] - right[0]);
+  const chosen: Interval[] = [];
+  let availableFrom = Number.NEGATIVE_INFINITY;
+
+  for (const interval of ordered) {
+    if (interval[0] < availableFrom) {
+      continue;
+    }
+    chosen.push(interval);
+    availableFrom = interval[1];
+  }
+
+  return chosen;
+}
+
+console.log(maximumNonOverlapping([[1, 3], [3, 5], [2, 6]]));
 \`\`\`
+
+Expected output: \`[[1, 3], [3, 5]]\`. The first two intervals touch at 3 but do not overlap; choosing \`[2, 6)\` would finish later and leave less room.
+
+## Worked example
+
+Sorting by finish gives \`[1, 3)\`, \`[3, 5)\`, then \`[2, 6)\`. Choose the first and set \`availableFrom\` to 3. The second starts at 3, so it is compatible and moves the boundary to 5. The last starts at 2, before 5, so skip it.
 
 ## In the course
 
@@ -513,6 +813,10 @@ Use half-open intervals for time ranges and for array slices, where the end inde
 ## When not to
 
 Do not use a half-open overlap test on closed intervals that include both ends. A shared endpoint then really is a conflict, and the comparison changes.
+
+## Problem-solving checklist
+
+Write the interval convention before choosing a comparison. Build a counterexample for each proposed greedy sorting rule. Test touching intervals, nested intervals, equal finishes, and an empty list. Preserve the input if mutation is not part of the contract.
   `,
   ),
   defineArticle(
@@ -540,10 +844,46 @@ Then undo: pop the value and clear the used flag, so the next choice can use it 
 Ordered picks of length k stop when the path reaches k instead of the full length. The undo is the same. n distinct values have n! full permutations, which is why you only list them when n is small.
 
 \`\`\`ts
-const saved = path.slice();
-results.push(saved);
-path.pop();
+function permutations(nums: readonly number[]): number[][] {
+  const results: number[][] = [];
+  const path: number[] = [];
+  const used = nums.map(() => false);
+
+  const search = () => {
+    if (path.length === nums.length) {
+      results.push(path.slice());
+      return;
+    }
+
+    for (let i = 0; i < nums.length; i += 1) {
+      if (used[i] === true) {
+        continue;
+      }
+      const value = nums[i];
+      if (value === undefined) {
+        continue;
+      }
+      used[i] = true;
+      path.push(value);
+      search();
+      path.pop();
+      used[i] = false;
+    }
+  };
+
+  search();
+  return results;
+}
+
+console.log(permutations([1, 2]));
+console.log(permutations([]));
 \`\`\`
+
+Expected output: \`[[1, 2], [2, 1]]\`, then \`[[]]\`. The empty permutation is one completed ordering with zero choices, not zero orderings.
+
+## Worked example
+
+Choose 1, then 2, and save \`[1, 2]\`. Undo 2 and then 1. Choose 2, then 1, and save \`[2, 1]\`. Every recursive return restores both \`path\` and \`used\` to the state the caller had.
 
 ## In the course
 
@@ -564,6 +904,10 @@ Use this search when you must list orderings, or ordered selections, and the inp
 ## When not to
 
 Do not list permutations when you only need a count, or when order does not matter. A subset count is 2ⁿ, and listing n! rows is the slower question.
+
+## Problem-solving checklist
+
+Define one search state in words: the path plus which indexes are used. Identify the completion condition. Pair every mutation with its undo. Test empty and one-value inputs, then verify that \`n\` distinct values produce \`n!\` rows without changing the input.
   `,
   ),
   defineArticle(
@@ -590,12 +934,30 @@ House robber is the same shape with a choice. At each house you skip it and keep
 Climbing stairs used a close recurrence, with different base cases. Mixing those base cases is how a correct loop returns the wrong number.
 
 \`\`\`ts
-let previous = 0;
-let current = 1;
-const next = previous + current;
-previous = current;
-current = next;
+function maximumLoot(houses: readonly number[]): number {
+  let twoBack = 0;
+  let oneBack = 0;
+
+  for (const money of houses) {
+    const take = twoBack + money;
+    const skip = oneBack;
+    const current = Math.max(take, skip);
+    twoBack = oneBack;
+    oneBack = current;
+  }
+
+  return oneBack;
+}
+
+console.log(maximumLoot([2, 7, 9, 3, 1]));
+console.log(maximumLoot([]));
 \`\`\`
+
+Expected output: \`12\`, then \`0\`. The best choice takes houses worth 2, 9, and 1; no two are adjacent.
+
+## Worked example
+
+The best totals after each house are 2, 7, 11, 11, and 12. At the house worth 9, taking gives \`2 + 9 = 11\` and skipping gives 7. At the house worth 3, taking gives \`7 + 3 = 10\`, so skipping preserves 11.
 
 ## In the course
 
@@ -616,6 +978,10 @@ Use tabulation when the recurrence is clear and the states have a natural order,
 ## When not to
 
 Do not build a table for a problem whose subproblems do not overlap. A plain recursion, or a single pass, is then the shorter program.
+
+## Problem-solving checklist
+
+Write exactly what one state means before writing its recurrence. List base cases from that meaning, not from a similar problem. For each transition, name every legal choice and the smaller state it uses. Test empty, one-state, and two-state inputs before a longer example.
   `,
   ),
 ];

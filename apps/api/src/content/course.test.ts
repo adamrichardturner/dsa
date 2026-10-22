@@ -5,10 +5,12 @@ import { course } from "./course.js";
 test("every lesson has a complete bitesize explanation", () => {
   const slugs: Record<string, true> = {};
   let lessonCount = 0;
+  let exerciseCount = 0;
 
   for (const module of course) {
     for (const lesson of module.lessons) {
       lessonCount += 1;
+      exerciseCount += lesson.problems.length;
       assert.equal(
         slugs[lesson.slug],
         undefined,
@@ -38,6 +40,7 @@ test("every lesson has a complete bitesize explanation", () => {
   }
 
   assert.equal(lessonCount, 38);
+  assert.equal(exerciseCount, 76);
 
   const preserved = [
     "complexity",

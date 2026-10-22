@@ -8,6 +8,9 @@ export interface SeedTest {
   readonly expected: unknown;
   readonly public: boolean;
   readonly compare?: CompareMode;
+  readonly timeoutMs?: number;
+  readonly immutableArgs?: readonly number[];
+  readonly distinctArrayReturnFromArg?: number;
 }
 
 export interface SeedProblem {
@@ -20,6 +23,8 @@ export interface SeedProblem {
   readonly topic: string;
   readonly disallow: readonly string[];
   readonly tests: readonly SeedTest[];
+  readonly immutableArgs?: readonly number[];
+  readonly distinctArrayReturnFromArg?: number;
 }
 
 export interface SeedLesson {

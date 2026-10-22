@@ -25,11 +25,15 @@ import {
   AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
-import { getEditorTheme, readEditorThemeId, type EditorThemeId } from "@/lib/editor-themes";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  getEditorTheme,
+  readEditorThemeId,
+  type EditorThemeId,
+} from "@/lib/editor-themes";
 import { RUN_SNIPPET } from "@/lib/operations";
 
 const editorHeight = (source: string): number => {
@@ -86,7 +90,10 @@ const setRunnerTheme = (themeId: EditorThemeId) => {
   window.dispatchEvent(new Event(editorThemeEvent));
 };
 
-function useRunnerTheme(): readonly [EditorThemeId, (themeId: EditorThemeId) => void] {
+function useRunnerTheme(): readonly [
+  EditorThemeId,
+  (themeId: EditorThemeId) => void,
+] {
   const themeId = useSyncExternalStore(
     subscribeToRunnerTheme,
     readRunnerTheme,
@@ -101,11 +108,15 @@ export function CodeRunner({ code }: { readonly code: string }) {
   const [terminal, setTerminal] = useState<CodeTerminalState>({ kind: "idle" });
   const [resetOpen, setResetOpen] = useState(false);
   const [themeId, setThemeId] = useRunnerTheme();
+  const mobile = useIsMobile();
   const editorRef = useRef<CodeEditorInstance | null>(null);
   const request = useRef(0);
   const [runState, runSnippet] = useMutation<{
     runSnippet: {
-      readonly lines: readonly { readonly kind: string; readonly text: string }[];
+      readonly lines: readonly {
+        readonly kind: string;
+        readonly text: string;
+      }[];
     };
   }>(RUN_SNIPPET);
   const theme = getEditorTheme(themeId);
@@ -128,7 +139,10 @@ export function CodeRunner({ code }: { readonly code: string }) {
     if (next === undefined) {
       setTerminal({
         kind: "failed",
-        message: graphqlErrorMessage(response.error, "Could not run that code."),
+        message: graphqlErrorMessage(
+          response.error,
+          "Could not run that code.",
+        ),
       });
       return;
     }
@@ -156,13 +170,6 @@ export function CodeRunner({ code }: { readonly code: string }) {
         <FormatCodeButton editorRef={editorRef} />
         <span className="opacity-70">Theme</span>
         <EditorThemeSelect themeId={themeId} onChange={setThemeId} />
-        <Badge
-          variant="outline"
-          className="border-current/25 bg-transparent"
-          style={{ color: theme.foreground }}
-        >
-          TypeScript
-        </Badge>
       </div>
       <Separator style={{ backgroundColor: border }} />
       <div style={{ height: editorHeight(source) }}>
@@ -172,6 +179,8 @@ export function CodeRunner({ code }: { readonly code: string }) {
           themeId={themeId}
           autoFocus={false}
           editorRef={editorRef}
+          lineNumbers={mobile ? "off" : "on"}
+          wordWrap={mobile ? "off" : "on"}
         />
       </div>
       <CodeTerminal
@@ -198,10 +207,13 @@ export function CodeRunner({ code }: { readonly code: string }) {
           <AlertDialogContent>
             <AlertDialogTitle>Reset this example?</AlertDialogTitle>
             <AlertDialogDescription>
-              This restores the example from the article and replaces the code in the editor.
+              This restores the example from the article and replaces the code
+              in the editor.
             </AlertDialogDescription>
             <AlertDialogFooter>
-              <AlertDialogClose className={cn(buttonVariants({ variant: "outline" }))}>
+              <AlertDialogClose
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
                 Cancel
               </AlertDialogClose>
               <Button type="button" variant="destructive" onClick={onReset}>

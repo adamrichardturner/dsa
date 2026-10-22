@@ -18,7 +18,7 @@ export const graphArticles: readonly Article[] = [
       "cycles",
     ],
     `
-A graph is a set of vertices plus a set of edges that join them. A vertex is a place you can stand, and an edge is one step between two of those places. A tree is a graph with no cycles, so connected nodes have a single path. A general graph can loop back on itself, and a search has to remember where it has been or it will walk that loop forever.
+A graph is a set of vertices plus a set of edges that join them. A vertex is a place you can stand, and an edge is one step between two of those places. A tree is a connected graph with no cycles, so every pair of vertices has exactly one path between it. A graph can be disconnected or loop back on itself, and a search has to remember where it has been or it can walk a cycle forever.
 
 \`\`\`mermaid
 graph TD
@@ -32,11 +32,75 @@ graph TD
 
 You read an undirected edge in both directions. 0 joined to 1 means a step from 0 to 1 and a step from 1 to 0. A directed edge would not promise the return. This course uses undirected edges, so store both directions. Leave one out and the walk is one-way.
 
-A tree has no cycles and one path between connected nodes. A general graph may have cycles. The drawing is the cycle 0–1–2–0 plus the edge 1–3. A search that does not remember where it has been loops on 0, 1, 2 forever. Nothing in the edge list tells it to stop.
+A tree is connected, has no cycles, and has one path between every pair of vertices. A graph with no cycles but several components is a forest, not one tree. A general graph may have cycles. The drawing is the cycle 0–1–2–0 plus the edge 1–3. A search that does not remember where it has been can loop on 0, 1, 2 forever. Nothing in the edge list tells it to stop.
+
+Three representations are worth distinguishing. An **edge list** stores pairs such as \`[0, 1]\`; it is compact input, but finding one vertex's neighbours requires scanning every edge. An **adjacency list** stores a neighbour array per vertex and is usually best for sparse graphs and traversal. An **adjacency matrix** stores one cell for every possible pair. It uses O(V²) space but answers “is this exact edge present?” in O(1). The representation changes storage and lookup costs, not the mathematical graph.
 
 Mark a vertex when you first decide to visit it. That is the moment it goes on the queue or the stack, not the moment it comes off. If you wait, every incoming edge can enqueue another copy. You repeat work, and the queue can blow up. A set of ids is enough memory. You do not need a class.
 
 Breadth-first search answers fewest edges when every edge costs the same. Neighbours come first, then neighbours of neighbours, and the first arrival is the hop count. Depth-first search answers whether you can get there and what else is in this piece. Its first arrival is only the branch it tried first, which can be long. Level order on a tree is breadth-first. Finishing one child before the other is depth-first.
+
+This complete example stores the drawing as an edge list, converts it to an adjacency list, and prints every vertex reachable from 0. The \`vertexCount\` parameter preserves isolated vertices, which do not appear in any edge.
+
+\`\`\`ts
+type Edge = readonly [number, number];
+
+const buildUndirectedGraph = (
+  vertexCount: number,
+  edges: readonly Edge[],
+): number[][] => {
+  const neighbours = Array.from({ length: vertexCount }, () => [] as number[]);
+
+  for (const [from, to] of edges) {
+    neighbours[from].push(to);
+    neighbours[to].push(from);
+  }
+
+  return neighbours;
+};
+
+const reachableFrom = (
+  neighbours: readonly (readonly number[])[],
+  start: number,
+): number[] => {
+  const visited = Array.from({ length: neighbours.length }, () => false);
+  const stack = [start];
+  const reached: number[] = [];
+  visited[start] = true;
+
+  while (stack.length > 0) {
+    const vertex = stack.pop();
+    if (vertex === undefined) {
+      continue;
+    }
+
+    reached.push(vertex);
+    for (const neighbour of neighbours[vertex]) {
+      if (visited[neighbour]) {
+        continue;
+      }
+
+      visited[neighbour] = true;
+      stack.push(neighbour);
+    }
+  }
+
+  return reached;
+};
+
+const edges: readonly Edge[] = [
+  [0, 1],
+  [1, 2],
+  [2, 0],
+  [1, 3],
+];
+const graph = buildUndirectedGraph(5, edges);
+
+console.log(graph);
+console.log(reachableFrom(graph, 0));
+\`\`\`
+
+Expected output: the adjacency lists \`[[1, 2], [0, 2, 3], [1, 0], [1], []]\`, followed by a traversal containing \`0, 1, 2, 3\`. Vertex 4 remains isolated. The exact DFS order depends on the order in which neighbours are pushed.
 
 ## A numeric example
 
@@ -79,7 +143,7 @@ Stay with a tree when you already have a root and no cycle. The depth lessons do
 
 ### Is a tree a graph?
 
-Yes. No cycles, and one path between connected nodes. Add one edge and that path is no longer the only one. You then mark where you have been, or the new cycle runs forever.
+Yes. A tree is a connected, acyclic graph, so exactly one path joins every pair of vertices. A disconnected acyclic graph is a forest. Add one edge between two existing tree vertices and you create a cycle.
 
 ### Why mark a vertex before you take it off the queue?
 
@@ -116,7 +180,7 @@ flowchart TD
 
 ## How it works
 
-An object whose keys are vertex ids and whose values are arrays of neighbour ids is enough. You do not need a graph class. Lookup gives you the array. Walking the array gives you who is one step away.
+When vertices are the integers 0 through V − 1, an array of neighbour arrays is the simplest representation: the outer index is the vertex and the inner array lists its neighbours. For arbitrary labels, an object whose keys are labels serves the same purpose. You do not need a graph class. A lookup gives you one neighbour list, and walking that list gives you everyone one step away.
 
 Build it in one pass over the edges. For an undirected edge, append each end to the other's list. Append only one way and you can walk 0 to 1 but not 1 to 0. The input promised both directions.
 
@@ -136,13 +200,41 @@ Listing neighbours of 0 reads two ids. The time is proportional to how many neig
 
 Vertex 3 with no edges is missing until you give it \`[]\`. A path from 3 to 3 is 0. A path from 3 to 0 enqueues nothing and does not exist.
 
+The builder below is complete and keeps isolated vertex 3 by allocating all four rows before reading an edge.
+
 \`\`\`ts
-const neighbours: Record<number, number[]> = {
-  0: [1, 2],
-  1: [0, 2],
-  2: [1, 0],
+type Edge = readonly [number, number];
+
+const buildAdjacencyList = (
+  vertexCount: number,
+  edges: readonly Edge[],
+): number[][] => {
+  const neighbours = Array.from<number[]>(
+    { length: vertexCount },
+    () => [],
+  );
+
+  for (const [from, to] of edges) {
+    neighbours[from].push(to);
+    neighbours[to].push(from);
+  }
+
+  return neighbours;
 };
+
+const edges: readonly Edge[] = [
+  [0, 1],
+  [1, 2],
+  [0, 2],
+];
+const neighbours = buildAdjacencyList(4, edges);
+
+console.log(neighbours);
+console.log(neighbours[0]);
+console.log(neighbours[3]);
 \`\`\`
+
+Expected output is \`[[1, 2], [0, 2], [1, 0], []]\`, then \`[1, 2]\`, then \`[]\`.
 
 ## Cost
 
@@ -157,7 +249,7 @@ V is vertices and E is edges. Each undirected edge adds two entries, and that fa
 
 ## In the course
 
-The shortest-path exercise gives you \`edges\` as \`[from, to]\` pairs. One loop builds this object: each end is appended to the other's array. After that, the queue or the stack only asks for neighbours.
+The shortest-path exercise gives you \`edges\` as \`[from, to]\` pairs. One loop builds the adjacency list: each end is appended to the other's array. After that, the queue or the stack only asks for neighbours.
 
 If \`start\` never appears in \`edges\`, still handle it. Distance to itself is 0. Distance to anyone else means no path. Keys you saw only in the pairs will miss that start unless you add the empty array.
 
@@ -167,7 +259,7 @@ Appending only one direction, so the graph falls apart when you start at the end
 
 ## When to use it
 
-Use an adjacency list when a search keeps asking who is one step from here: breadth-first, depth-first, or the weighted walk this course only names. Use it on the sparse graphs in these exercises, where E is far below V times V. A plain object keyed by the integer ids is enough.
+Use an adjacency list when a search keeps asking who is one step from here: breadth-first, depth-first, or the weighted walk this course only names. Use it on sparse graphs, where E is far below V². An array is ideal for consecutive integer ids; an object works for arbitrary labels.
 
 ## When not to
 
@@ -205,10 +297,12 @@ The list is how you store the graph, and the layer walk is the first search that
 Breadth-first search walks a graph in layers. You handle the neighbours of the start, then the neighbours of those neighbours, and a queue keeps that order. When every edge costs the same, the first time you reach a vertex you got there by the fewest edges. If the edges have different costs, that claim is false, and a hop count picks the wrong route.
 
 \`\`\`mermaid
-graph TD
-  b0["0"] --- b1["1"]
-  b1 --- b2["2"]
-  b0 --- b2
+flowchart LR
+  b0["0<br/>distance 0"] --- b1["1<br/>distance 1"]
+  b0 --- b2["2<br/>distance 1"]
+  b1 --- b3["3<br/>distance 2"]
+  b2 --- b3
+  b3 --- b4["4<br/>distance 3"]
 \`\`\`
 
 ## How it works
@@ -220,6 +314,56 @@ The fewest-edges claim is only true when every edge has the same cost. Each laye
 Level order on a tree is the same walk: root, then children, then grandchildren. Marks are optional on a tree. On a graph they are required, or a cycle puts vertices back on the queue forever.
 
 Mark when you first enqueue, not when you dequeue. While a vertex sits unmarked in the queue, every neighbour that can see it enqueues another copy. Those copies waste work and can blow up the queue. Carry the distance with the vertex, or store it when you enqueue. If the queue empties and the target was never marked, there is no path. The distance from a vertex to itself is 0, before you have walked anywhere.
+
+The queue below uses a moving front index instead of \`Array.shift()\`, so dequeue is O(1). A distance of −1 also serves as the visited mark: any non-negative value means the vertex has already been discovered.
+
+\`\`\`ts
+const shortestDistance = (
+  neighbours: readonly (readonly number[])[],
+  start: number,
+  target: number,
+): number => {
+  const distance = Array.from({ length: neighbours.length }, () => -1);
+  const queue = [start];
+  let front = 0;
+  distance[start] = 0;
+
+  while (front < queue.length) {
+    const vertex = queue[front];
+    front += 1;
+
+    if (vertex === target) {
+      return distance[vertex];
+    }
+
+    for (const neighbour of neighbours[vertex]) {
+      if (distance[neighbour] !== -1) {
+        continue;
+      }
+
+      distance[neighbour] = distance[vertex] + 1;
+      queue.push(neighbour);
+    }
+  }
+
+  return -1;
+};
+
+const neighbours: readonly (readonly number[])[] = [
+  [1, 2],
+  [0, 3],
+  [0, 3],
+  [1, 2, 4],
+  [3],
+  [],
+];
+
+console.log(shortestDistance(neighbours, 0, 4));
+console.log(shortestDistance(neighbours, 0, 0));
+console.log(shortestDistance(neighbours, 0, 5));
+\`\`\`
+
+Expected output is \`3\`, \`0\`, and \`-1\`. To recover the actual path rather than only its length, store a predecessor when each neighbour is first discovered, then walk backward from the target and reverse that sequence.
 
 ## A numeric example
 
@@ -238,11 +382,11 @@ From 0 to 0 the distance is 0, before 1 or 2 are touched. From 0 to a missing 3 
 | Piece | Cost |
 | --- | --- |
 | Walk, marking each vertex on enqueue | O(V + E) |
-| One \`Array.shift\` dequeue on an array of length k | O(k) |
+| One dequeue with a moving front index | O(1) |
 | Memory for marks, distances, and the queue | O(V) |
 | Same walk with unequal edge weights | Wrong tool |
 
-Enqueue each vertex once and the neighbour scans sum to a constant times E, so the walk is O(V + E). \`Array.shift\` as dequeue is O(n) per call: every later entry slides down. The queue article owns that cost. Keep first-in, first-out order here. Do not drop the queue to dodge the slide.
+Enqueue each vertex once and the neighbour scans sum to a constant times E, so the walk is O(V + E). Avoid \`Array.shift()\`: it is O(n) per call because every later entry slides down. A moving front index preserves first-in, first-out order without those repeated shifts.
 
 ## In the course
 
@@ -250,7 +394,7 @@ Return the edge count from \`start\` to \`end\`. Return 0 when they are the same
 
 ## Common mistakes
 
-Marking on dequeue, so one vertex is queued once per incoming edge. Using this walk because the title says shortest, when the edges have different costs. Equal weights: queue. Unequal non-negative weights: a heap and relaxation, which you are not asked to code. Returning -1 when start and target match, or 0 when the target is missing. 0 is "already there". An empty queue with the target unmarked is no path. Calling \`Array.shift\` and also scanning every edge for neighbours. Read the adjacency array. The queue article owns the shift cost.
+Marking on dequeue, so one vertex is queued once per incoming edge. Using this walk because the title says shortest, when the edges have different costs. Equal weights: queue. Unequal non-negative weights: a heap and relaxation. Returning -1 when start and target match, or 0 when the target is missing. 0 is "already there". An empty queue with the target unmarked is no path. Calling \`Array.shift()\` or scanning every edge for neighbours. Use a front index and read the adjacency array.
 
 ## When to use it
 
@@ -292,12 +436,12 @@ The queue is the order this walk depends on, and the weighted case is the algori
 Depth-first search finishes one branch before it starts the next. You step to a neighbour, then deeper, and a call stack or an explicit stack brings you back to try the neighbour you skipped. The walk answers whether you can reach a vertex and which other vertices sit in the same connected piece. It does not answer fewest edges, because the first branch that finds the target can be a long one.
 
 \`\`\`mermaid
-graph TD
-  d0["0"] --- d1["1"]
-  d1 --- d2["2"]
-  d2 --- d3["3"]
-  d3 --- d4["4"]
-  d0 --- d4
+flowchart LR
+  d0["0: visit 1st"] --- d1["1: visit 2nd"]
+  d1 --- d2["2: visit 3rd"]
+  d2 --- d3["3: visit 4th"]
+  d3 --- d4["4: visit 5th"]
+  d0 ---|"short edge waits"| d4
 \`\`\`
 
 ## How it works
@@ -307,6 +451,56 @@ Mark the start and dive down the first unmarked neighbour, then the next, until 
 An explicit stack stores those waiting vertices as data. Push the start. While the stack is not empty, pop a vertex and push its unmarked neighbours. Push them last-to-first and the first neighbour sits on top, matching recursion. You do not need both mechanisms at once.
 
 You can report reachability and membership. A marked target means you can get there. An unmarked target at the end means you cannot. The vertices you marked are this connected piece. You cannot report fewest edges. The first arrival is just the first branch that found the target. A one-edge neighbour of the start can still be waiting while you are many steps down another chain. Use breadth-first search when the question is distance and every edge costs the same.
+
+This iterative version pushes neighbours in reverse order so that the first neighbour in each list is popped next, matching a conventional recursive traversal. Marking on push prevents two vertices from scheduling the same neighbour.
+
+\`\`\`ts
+const depthFirstOrder = (
+  neighbours: readonly (readonly number[])[],
+  start: number,
+): number[] => {
+  const visited = Array.from({ length: neighbours.length }, () => false);
+  const stack = [start];
+  const order: number[] = [];
+  visited[start] = true;
+
+  while (stack.length > 0) {
+    const vertex = stack.pop();
+    if (vertex === undefined) {
+      continue;
+    }
+
+    order.push(vertex);
+    const adjacent = neighbours[vertex];
+
+    for (let i = adjacent.length - 1; i >= 0; i -= 1) {
+      const neighbour = adjacent[i];
+      if (visited[neighbour]) {
+        continue;
+      }
+
+      visited[neighbour] = true;
+      stack.push(neighbour);
+    }
+  }
+
+  return order;
+};
+
+const neighbours: readonly (readonly number[])[] = [
+  [1, 4],
+  [0, 2],
+  [1, 3],
+  [2, 4],
+  [3, 0],
+  [],
+];
+
+console.log(depthFirstOrder(neighbours, 0));
+console.log(depthFirstOrder(neighbours, 5));
+\`\`\`
+
+Expected output is \`[0, 1, 2, 3, 4]\`, then \`[5]\`. The second traversal shows that an isolated start vertex still belongs to its own connected component.
 
 On a tree, finishing one child before the other is depth-first too. There is no cycle, so marks are optional. The shape is still dive, finish, then the sibling. Backtracking is the same shape on choices you generate: choose, dive, undo, try the next. A graph search leaves the vertex marked. Backtracking clears the choice so a later branch can reuse it.
 
@@ -376,36 +570,92 @@ The same dive shows up when the neighbours are choices you can undo, and the lay
     "Dijkstra finds shortest paths when edges have different costs. It is the breadth-first walk with a heap that always extends the cheapest path so far. This course names it without asking you to build it.",
     ["Dijkstra"],
     `
-Dijkstra finds shortest paths when edges have different costs. It is the breadth-first walk with a heap in place of a plain queue, so you always extend the cheapest path so far. Several cheap edges can beat one expensive edge, which means a hop count would pick the wrong route. This course names the algorithm and does not ask you to build it.
+Dijkstra finds shortest paths when edges have different non-negative costs. It is a greedy algorithm: repeatedly settle the unsettled vertex with the smallest known total, then try to improve its neighbours. A min-heap makes that choice efficient on sparse graphs. Several cheap edges can beat one expensive edge, so a hop count can choose the wrong route. This course names the algorithm without requiring you to implement it.
 
 \`\`\`mermaid
-graph TD
-  w0["0"] -->|1| w1["1"]
-  w1 -->|2| w2["2"]
-  w0 -->|10| w2
+flowchart LR
+  w0["0: cost 0"] ---|"weight 1"| w1["1: cost 1"]
+  w1 ---|"weight 2"| w2["2: cost 3"]
+  w0 ---|"weight 10"| w2
 \`\`\`
 
 ## How it works
 
 Breadth-first search finds fewest edges only when every edge costs the same. One direct edge of weight 10 can lose to two edges of weight 1 and 2. Counting hops picks the expensive route. You order vertices by total cost instead.
 
-A min-heap replaces the queue. The queue hands you whoever waited longest. The heap hands you the vertex you can reach for the smallest total cost so far. The source starts at 0. Every other vertex starts at a "not reached" cost larger than any real path. Taking a vertex off the heap settles it. With non-negative weights, that recorded cost is the cheapest way to stand there.
+A min-heap can replace the queue. A queue hands you whoever waited longest; the heap hands you the unsettled candidate with the smallest total cost so far. The source starts at 0. Every other vertex starts at infinity. Taking the cheapest current entry settles its vertex. With non-negative weights, no later route through an unsettled vertex can make that settled cost smaller.
 
-Relax each outgoing edge. Add its weight to the cost of the vertex you just settled. If that sum is cheaper than the best cost stored for the neighbour, update the neighbour and push it. If not, leave it. The comparison is the whole idea, and it is not a program you can submit. There is no heap loop and no function a test could call.
+Relax each outgoing edge. Add its weight to the cost of the vertex you just settled. If that sum is cheaper than the best cost stored for the neighbour, update the neighbour and push it. If not, leave it. A heap implementation can contain stale entries when a vertex improves; skip an entry whose cost no longer equals the stored best cost.
 
 \`\`\`ts
-const best = [0, 1, 10];
-const current = 1;
-const neighbour = 2;
-const weight = 2;
-const via = best[current] + weight;
-if (via < best[neighbour]) {
-  best[neighbour] = via;
-}
-console.log(via, best);
+type WeightedEdge = {
+  readonly to: number;
+  readonly weight: number;
+};
+
+const dijkstra = (
+  graph: readonly (readonly WeightedEdge[])[],
+  start: number,
+): number[] => {
+  const distance = Array.from(
+    { length: graph.length },
+    () => Number.POSITIVE_INFINITY,
+  );
+  const settled = Array.from({ length: graph.length }, () => false);
+  distance[start] = 0;
+
+  for (let count = 0; count < graph.length; count += 1) {
+    let vertex = -1;
+
+    for (let candidate = 0; candidate < graph.length; candidate += 1) {
+      if (settled[candidate]) {
+        continue;
+      }
+      if (vertex !== -1 && distance[candidate] >= distance[vertex]) {
+        continue;
+      }
+
+      vertex = candidate;
+    }
+
+    if (vertex === -1 || distance[vertex] === Number.POSITIVE_INFINITY) {
+      break;
+    }
+
+    settled[vertex] = true;
+
+    for (const edge of graph[vertex]) {
+      const via = distance[vertex] + edge.weight;
+      if (via >= distance[edge.to]) {
+        continue;
+      }
+
+      distance[edge.to] = via;
+    }
+  }
+
+  return distance;
+};
+
+const graph: readonly (readonly WeightedEdge[])[] = [
+  [
+    { to: 1, weight: 1 },
+    { to: 2, weight: 10 },
+  ],
+  [
+    { to: 0, weight: 1 },
+    { to: 2, weight: 2 },
+  ],
+  [
+    { to: 0, weight: 10 },
+    { to: 1, weight: 2 },
+  ],
+];
+
+console.log(dijkstra(graph, 0));
 \`\`\`
 
-The first time you settle the target, that cost is the cheapest. Later heap entries are at least that large. Equal weights collapse back to breadth-first search. Unequal non-negative weights are the heap plus this relaxation. Negative weights break the simple version: a later negative edge can undercut a vertex you already settled and refused to reopen. This course does not ask you to handle them, and it does not ask you to build the algorithm.
+Expected output is \`[0, 1, 3]\`. For clarity, this runnable version scans all vertices to choose the next one, so it is O(V²). A production implementation usually makes the same choices with a min-heap. The first time you settle the target, that cost is the cheapest. Equal weights collapse back to breadth-first search. Negative weights break Dijkstra's settled-vertex argument; use an algorithm designed for them, such as Bellman–Ford.
 
 ## A numeric example
 
@@ -422,11 +672,12 @@ The first time you settle 2, the cost is 3, along 0–1–2. The direct edge is 
 | Situation | What you use |
 | --- | --- |
 | Every edge costs the same | Breadth-first search, O(V + E) |
-| Non-negative weights differ | A heap, plus relaxation |
-| Negative weights | The simple version is wrong |
+| Non-negative weights, array scan | Dijkstra, O(V²) |
+| Non-negative weights, adjacency list and binary heap | Dijkstra, O((V + E) log V) |
+| Negative weights | Dijkstra is not valid |
 | Building it in this course | Not required |
 
-A heap push or pop follows the height of the heap, so the next vertex costs more to choose than the front of a queue. You do not need the formula. The next vertex is the smallest total, not the oldest arrival. Building that loop is not the exercise.
+A heap push or pop follows the height of the heap. With lazy duplicate entries, each successful relaxation may add an entry, giving O((V + E) log V) time and O(V + E) auxiliary space in the worst case. The scanning version is easier to study but costs O(V²). In either version, the next vertex is the smallest total, not the oldest arrival.
 
 ## In the course
 
@@ -436,7 +687,7 @@ Same cost on every edge: queue, mark on enqueue, first arrival wins. Different n
 
 ## Common mistakes
 
-Writing a full solver because the name appeared. A settle loop someone could submit is an implementation, and the unweighted exercise does not need a heap. Trusting breadth-first search on the drawing: it answers 1 edge and cost 10, while cost 3 uses 2 edges. Both vertices were discovered from 0, so the queue cannot prefer the cheap one. Overwriting cost 3 with the stale 10. Relaxation writes only when the new total is strictly cheaper. Treating a negative weight as safe after you have settled a vertex. The first settlement is final only for non-negative weights. This course does not ask you to repair that.
+Using a weighted solver for the course's unweighted exercise adds machinery without changing the answer. Trusting breadth-first search on the drawing is also wrong: it sees 1 edge of cost 10, while the 2-edge route costs 3. Overwriting cost 3 with a stale heap entry is another common bug. Relaxation writes only when the new total is strictly cheaper, and stale entries must be skipped. Finally, Dijkstra cannot safely settle vertices when negative edges exist.
 
 ## When to use it
 
@@ -458,7 +709,7 @@ A queue pops the oldest vertex. A min-heap pops the smallest total so far, so co
 
 ### Do I need to handle a negative weight?
 
-No. A negative weight can undercut a vertex you already settled. This course does not ask you to handle that. You count edges, and you know the name of the weighted algorithm you are not building.
+No. A negative weight can undercut a vertex you already settled, so Dijkstra's proof no longer applies. This course does not ask you to handle that case. Bellman–Ford is the standard next algorithm to study; it can also detect a reachable negative cycle.
 
 ## Related
 

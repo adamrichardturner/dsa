@@ -230,20 +230,20 @@ console.log(windowSums([4, 5], 1));
 
   recursion: `type Nested = number | Nested[];
 
-export function flatten(value: Nested): number[] {
+function appendNumbers(value: Nested, numbers: number[]): void {
   if (typeof value === "number") {
-    return [value];
+    numbers.push(value);
+    return;
   }
-
-  const numbers: number[] = [];
 
   for (const item of value) {
-    const nested = flatten(item);
-    for (const number of nested) {
-      numbers.push(number);
-    }
+    appendNumbers(item, numbers);
   }
+}
 
+export function flatten(value: Nested): number[] {
+  const numbers: number[] = [];
+  appendNumbers(value, numbers);
   return numbers;
 }
 

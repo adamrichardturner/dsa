@@ -26,22 +26,55 @@ Rewiring is O(1) only when you already hold the node. To insert after current, p
 
 Reversing turns every next around. Keep previous, current, and the next you are about to lose. previous starts as nothing. current starts as the head. Copy current.next into a local before you change it, or the rest of the list is gone. Point current back at previous. Then step all 3 forward: previous becomes current, and current becomes the saved next. When current runs out, previous is the new head, and the old head points at nothing.
 
-This is one step on a node you already hold, not a finished reverse of every case:
+Here is the complete iterative reversal. The helper that converts the list to an
+array makes both the starting state and the result visible.
 
 \`\`\`ts
-type Node = { value: number; next: Node | null };
-const head: Node = { value: 1, next: { value: 2, next: null } };
-let previous: Node | null = null;
-let current: Node | null = head;
-if (current !== null) {
-  const saved = current.next;
-  current.next = previous;
-  previous = current;
-  current = saved;
+interface ListNode {
+  value: number;
+  next: ListNode | null;
 }
+
+function toArray(head: ListNode | null): number[] {
+  const values: number[] = [];
+  let current = head;
+
+  while (current !== null) {
+    values.push(current.value);
+    current = current.next;
+  }
+
+  return values;
+}
+
+function reverse(head: ListNode | null): ListNode | null {
+  let previous: ListNode | null = null;
+  let current = head;
+
+  while (current !== null) {
+    const savedNext = current.next;
+    current.next = previous;
+    previous = current;
+    current = savedNext;
+  }
+
+  return previous;
+}
+
+const head: ListNode = {
+  value: 1,
+  next: { value: 2, next: { value: 3, next: null } },
+};
+
+console.log("before:", toArray(head).join(" -> "));
+const reversed = reverse(head);
+console.log("after:", toArray(reversed).join(" -> "));
 \`\`\`
 
-After this step, previous holds 1 and current holds 2. Repeat until current runs out, then previous is the new head. Skip the saved next and the rest of the list is gone on the first write.
+The output is \`before: 1 -> 2 -> 3\` followed by
+\`after: 3 -> 2 -> 1\`. When the loop ends, \`current\` is null and
+\`previous\` is the new head. Skip \`savedNext\` and the rest of the list is
+lost on the first write.
 
 ## A numeric example
 
@@ -65,6 +98,22 @@ Time and space split once you separate the walk from the pointer writes.
 | Reverse the whole list with 3 pointers | O(n) | O(1) |
 
 The nodes themselves are O(n) space. Extra space for the reverse is O(1): previous, current, and the saved next. Time is O(n) because every next changes. The splice is O(1) only after you hold the node. From the head, inserting after the 10th node is the O(n) walk plus those writes.
+
+## Singly, doubly, and circular lists
+
+A **singly linked list** stores only \`next\`. It uses less pointer storage, but
+cannot walk backward. Deleting a known node still usually requires its
+predecessor so that the predecessor's \`next\` can bypass it.
+
+A **doubly linked list** stores both \`next\` and \`previous\`. Given the node,
+you can remove it in O(1) time by reconnecting both neighbours. The trade-off is
+an extra pointer per node and twice as many links to keep consistent. This is a
+natural representation for a deque or an LRU ordering.
+
+In a **circular linked list**, the tail points back to the head instead of null.
+It is useful for round-robin processing. A traversal must stop when it returns
+to its starting node; waiting for null would loop forever. Empty and one-node
+lists deserve explicit tests in every variant.
 
 ## In the course
 
@@ -136,24 +185,63 @@ flowchart TD
 
 On a TypeScript array the top is the last index. push writes there. pop removes it. Leave the middle alone, and never shift the front, and both stay O(1). An occasional resize is spread across many pushes, so one push is still treated as O(1).
 
-Bracket matching scans once. An opener, ( or [, is pushed. A closer, ) or ], pops, and it must match the opener that just came off. A mismatch means unbalanced. Popping an empty stack means a closer arrived with no opener waiting. Anything left at the end was never closed.
+Bracket matching scans once. An opener is pushed. A closer pops, and it must
+match the opener that just came off. A mismatch means unbalanced. Popping an
+empty stack means a closer arrived with no opener waiting. Anything left at the
+end was never closed.
 
-A counter stores quantities, so it can match counts and still accept a crossed string. The stack stores which opener is still waiting. The loop below pushes and pops, and it does not yet compare the pair or test the empty stack:
+A counter stores quantities, so it can match counts and still accept a crossed
+string. The stack stores which opener is still waiting. This complete checker
+also ignores non-bracket characters, which makes it useful on expressions:
 
 \`\`\`ts
-const stack: string[] = [];
-const chars = ["(", "[", "]", ")"];
-for (let index = 0; index < chars.length; index += 1) {
-  const char = chars[index];
-  if (char === "(" || char === "[") {
-    stack.push(char);
-    continue;
-  }
-  const opener = stack.pop();
+type Opener = "(" | "[" | "{";
+type Closer = ")" | "]" | "}";
+
+const expectedOpener: Record<Closer, Opener> = {
+  ")": "(",
+  "]": "[",
+  "}": "{",
+};
+
+function isOpener(char: string): char is Opener {
+  return char === "(" || char === "[" || char === "{";
 }
+
+function isCloser(char: string): char is Closer {
+  return char === ")" || char === "]" || char === "}";
+}
+
+function bracketsAreBalanced(text: string): boolean {
+  const stack: Opener[] = [];
+
+  for (const char of text) {
+    if (isOpener(char)) {
+      stack.push(char);
+      continue;
+    }
+    if (!isCloser(char)) {
+      continue;
+    }
+
+    const opener = stack.pop();
+    if (opener !== expectedOpener[char]) {
+      return false;
+    }
+  }
+
+  return stack.length === 0;
+}
+
+console.log(bracketsAreBalanced("total * ([2 + 3])")); // true
+console.log(bracketsAreBalanced("([)]")); // false
+console.log(bracketsAreBalanced("(((")); // false
+console.log(bracketsAreBalanced("]")); // false
 \`\`\`
 
-opener is the value that just came off. You still test the empty stack, test that opener matches the closer, and look at what remains. The states below are that check.
+\`pop\` returns \`undefined\` for an empty array. That value cannot equal any
+expected opener, so an unmatched closer fails immediately. The final length
+check catches unmatched openers.
 
 ## A numeric example
 
@@ -266,21 +354,36 @@ Recursion pushes your own function. factorial of 3 and factorial of 2 are two fr
 
 The base case is the call that stops. It returns without pushing another frame. In the diagram, that call is factorial of 1. What must be true when a frame pops is that the smaller call has already returned. The current frame combines that answer with its own argument, then pops.
 
-A missing base case never starts the pops. Each call pushes another frame until the runtime refuses another one. That is overflow. It is not one frame spinning the way a broken while loop spins. An explicit stack can do the same walk, and you can see the frames because you stored them. The loop below only pushes the smaller calls. It does not multiply on the way back:
+A missing base case never starts the pops. Each call pushes another frame until
+the runtime refuses another one. That is overflow. It is not one frame spinning
+the way a broken while loop spins. This complete recursive function logs both
+phases: calls appear while frames are pushed, and returns appear while frames
+are popped.
 
 \`\`\`ts
-type Frame = { n: number };
-const frames: Frame[] = [{ n: 3 }];
-for (let guard = 0; guard < 4; guard += 1) {
-  const top = frames[frames.length - 1];
-  if (top === undefined || top.n <= 1) {
-    break;
+function factorial(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error("n must be a non-negative integer");
   }
-  frames.push({ n: top.n - 1 });
+  console.log(\`call factorial(\${n})\`);
+
+  if (n <= 1) {
+    console.log(\`return 1 from factorial(\${n})\`);
+    return 1;
+  }
+
+  const smallerResult = factorial(n - 1);
+  const result = n * smallerResult;
+  console.log(\`return \${result} from factorial(\${n})\`);
+  return result;
 }
+
+console.log("answer:", factorial(3));
 \`\`\`
 
-When the loop stops, the frames hold 3, then 2, then 1. The top frame is the call that stops. Printing the array shows what the runtime keeps hidden.
+The calls print in the order 3, 2, 1. The returns print in the reverse order:
+1, 2, 6. The final line is \`answer: 6\`. That reversal is the stack's
+last-in, first-out rule.
 
 ## A numeric example
 
@@ -356,7 +459,7 @@ Yes. Push an object for the arguments and the other frame data, then loop and po
     "What Is a Queue? FIFO Order, Enqueue, and Dequeue",
     "Linear structures",
     "A queue is first in, first out: enqueue joins the back and dequeue leaves from the front. Breadth-first search is that rule with vertices as the payload, and Array.shift on the front is O(n).",
-    ["queue", "queues", "enqueue", "dequeue", "deque"],
+    ["queue", "queues", "enqueue", "dequeue"],
     `
 A queue is first in, first out. Enqueue joins the back, and dequeue leaves from the front. Breadth-first search is that rule with a vertex and a distance as the payload, and Array.shift on the front is O(n).
 
@@ -374,7 +477,11 @@ Enqueue joins the back. Dequeue leaves from the front. You do not take the newes
 
 A TypeScript array can push at the back and shift from the front. shift does not only drop index 0. It moves every later element one slot left, so an array of n elements moves n minus 1 of them. One dequeue is O(n).
 
-For the sizes in this course, that shift is fine. A real deque, or two stacks used as a queue, makes both ends O(1). Pour an input stack onto an output stack so the oldest item sits on top, and each value moves a constant number of times. Do not reach for that until shift shows up in a hot loop.
+For tiny teaching examples, that shift can be acceptable. In production, a
+head index, a circular buffer, a linked deque, or two stacks avoids repeated
+slides. With a head index, dequeue advances a number instead of moving the
+remaining values. Reset the storage when the queue becomes empty so consumed
+references can be reclaimed.
 
 You use this queue unchanged when a graph asks for the shortest unweighted path. The payload changes from a number to a vertex and a distance. Enqueue still joins the back. Dequeue still leaves from the front. The first time you dequeue the target, you have used the fewest edges, because every edge costs the same.
 
@@ -384,21 +491,56 @@ Enqueue 1, then 2, then 3. The line is [1], then [1, 2], then [1, 2, 3], with th
 
 Dequeue yields 1, and the line is [2, 3]. Dequeue yields 2, and the line is [3]. Dequeue yields 3, and the line is empty. The leave order is 1, then 2, then 3. pop on the same pushes would yield 3 first.
 
-shift on a 4-element array shows the linear slide. Start with [10, 20, 30, 40]. 20 moves from index 1 to index 0. 30 moves from index 2 to index 1. 40 moves from index 3 to index 2. Drop the duplicate last slot and the array is [20, 30, 40]. 3 items moved so 1 item could leave. On n items, one shift moves n minus 1 items, so dequeue is O(n). The loop is that slide, not a queue class:
+shift on a 4-element array shows the linear slide. Start with [10, 20, 30, 40]. 20 moves from index 1 to index 0. 30 moves from index 2 to index 1. 40 moves from index 3 to index 2. Drop the duplicate last slot and the array is [20, 30, 40]. 3 items moved so 1 item could leave. On n items, one shift moves n minus 1 items.
+
+This reusable queue keeps the items in place and advances \`head\`:
 
 \`\`\`ts
-const line = [10, 20, 30, 40];
-const removed = line[0];
-for (let index = 0; index < line.length - 1; index += 1) {
-  const next = line[index + 1];
-  if (next !== undefined) {
-    line[index] = next;
+class Queue<T> {
+  private items: T[] = [];
+  private head = 0;
+
+  enqueue(value: T): void {
+    this.items.push(value);
+  }
+
+  dequeue(): T | undefined {
+    if (this.head >= this.items.length) {
+      return undefined;
+    }
+
+    const value = this.items[this.head];
+    this.head += 1;
+
+    if (this.head === this.items.length) {
+      this.items = [];
+      this.head = 0;
+    }
+
+    return value;
+  }
+
+  get length(): number {
+    return this.items.length - this.head;
   }
 }
-line.pop();
+
+const line = new Queue<number>();
+line.enqueue(10);
+line.enqueue(20);
+line.enqueue(30);
+
+console.log(line.dequeue()); // 10
+console.log(line.dequeue()); // 20
+console.log(line.length); // 1
+console.log(line.dequeue()); // 30
+console.log(line.dequeue()); // undefined
 \`\`\`
 
-removed is 10. After the assignments and the pop, line is [20, 30, 40]. Each assignment is one step of the slide inside shift.
+The values leave in insertion order. No dequeue shifts another value. This
+simple representation can retain consumed slots until the queue empties; a
+circular buffer can reuse those slots when a long-lived queue needs bounded
+storage.
 
 ## Cost
 
@@ -408,14 +550,23 @@ Time and space for a queue depend on which end you remove from.
 | --- | --- | --- |
 | Enqueue with push at the back | O(1) | O(1) per stored item |
 | Dequeue with shift at the front | O(n) | O(1) beyond the items |
-| Either end on a deque, or two stacks | O(1) | O(1) per stored item |
+| Dequeue with a head index | O(1) | O(1) beyond the backing array |
+| Either end on a deque | O(1) | O(1) per stored item |
+| Two-stack queue | O(1) amortized | O(1) per stored item |
 | n enqueues and n dequeues using shift | O(n²) | O(n) for the line |
 
-Space for the waiting items is O(n). One dequeue adds O(1) extra space, and its time is O(n) because of the slide. n dequeues by shift are O(n²). push at the back does not slide, so enqueues alone are O(n). A deque, or two stacks used as a queue, makes both ends O(1) across the series. Pay for that when shift is in a hot loop.
+Space for the waiting items is O(n). One \`shift\` dequeue adds O(1) extra
+space, but its time is O(n) because of the slide. Repeating it n times is
+O(n²). A head-index or deque implementation gives O(1) dequeue. A two-stack
+queue gives O(1) amortized dequeue: one transfer may cost O(n), but each item
+crosses from the input stack to the output stack at most once.
 
 ## In the course
 
-Enqueue 1, 2, and 3, and check that dequeue yields 1, then 2, then 3. push plus shift is enough. For the sizes in this course, the slide is acceptable. Do not build a two-stack queue for a dozen numbers.
+Enqueue 1, 2, and 3, and check that dequeue yields 1, then 2, then 3. A small
+example may use push plus shift to expose FIFO order. For repeated dequeues,
+prefer a head index or a deque so an innocent-looking loop does not become
+quadratic.
 
 A graph asks for the shortest unweighted path and you use the queue unchanged. The payload changes from a number to a vertex and a distance. Neighbours join the back with distance plus 1. The first time the target leaves the front, that distance is the fewest edges. Reach for a deque when shift shows up in that hot loop.
 
@@ -425,7 +576,9 @@ Using pop for dequeue. The order becomes 3, then 2, then 1. You have a stack, an
 
 Treating shift as O(1) because it is one call. On a 4-element array, 3 values slide left. n such dequeues are O(n²).
 
-Building a deque, or two stacks, before shift shows up in a hot loop. The clever queue hides the line you are trying to see.
+Assuming every queue implementation has the same cost. FIFO describes
+behaviour, not representation: an array with shift, a head-indexed array, a
+circular buffer, and a linked deque have different constants and worst cases.
 
 shift on an empty array returns nothing. Test for an empty queue before you use the front.
 
@@ -433,7 +586,9 @@ Sorting the line, or popping the newest vertex, leaves the queue. A vertex and a
 
 ## When to use it
 
-Use a queue when the oldest item should leave next. Breadth-first search is that rule. Keep push and shift while the input is lesson-sized, and store a vertex and a distance when you want the fewest edges.
+Use a queue when the oldest item should leave next. Breadth-first search is that
+rule. Store a vertex and a distance when you want the fewest edges, and use a
+head index or deque when the search can process many vertices.
 
 ## When not to
 
@@ -447,7 +602,10 @@ Index 0 is the front of a contiguous array. Removing it makes every later elemen
 
 ### When should you build a deque or a two-stack queue?
 
-Build one when shift shows up in a hot loop. A real deque makes both ends O(1). Two stacks used as a queue do the same across a series of operations. For the sizes in this course, push and shift are enough.
+Build one when repeated front removals can be large enough to matter. A deque
+makes both ends O(1). Two stacks provide O(1) amortized queue operations. A
+head-indexed array is often the smallest TypeScript implementation when only
+FIFO operations are needed.
 
 ### What changes when the queue drives a graph search?
 
@@ -457,6 +615,225 @@ Enqueue still joins the back, and dequeue still leaves from the front. The paylo
 
 - [How Does Breadth-First Search Find the Fewest Edges?](/articles/breadth-first-search)
 - [What Is a Stack? Last-In First-Out and Bracket Matching](/articles/stacks)
+    `,
+  ),
+  defineArticle(
+    "deques",
+    "What Is a Deque? Constant-Time Access at Both Ends",
+    "Linear structures",
+    "A deque is a double-ended queue: values can enter or leave at either end. A doubly linked implementation makes all four end operations O(1), supporting sliding windows and both queue and stack behaviour.",
+    ["deque", "double-ended queue", "double ended queue"],
+    `
+A **deque** (pronounced "deck") is a double-ended queue. It supports four core
+operations: add to the front, add to the back, remove from the front, and remove
+from the back. A queue uses one end for insertion and the other for removal. A
+stack uses one end for both. A deque can do either.
+
+\`\`\`mermaid
+flowchart LR
+  addFront["Add at front"] --> front["Front node"]
+  front <--> middle["Middle nodes"]
+  middle <--> back["Back node"]
+  addBack["Add at back"] --> back
+  front --> removeFront["Remove front"]
+  back --> removeBack["Remove back"]
+\`\`\`
+
+## How it works
+
+A doubly linked deque stores a front pointer, a back pointer, and a size. Every
+node has \`previous\` and \`next\` links. An end operation reconnects at most
+two nodes; it never walks through the deque, so all four end operations are
+O(1).
+
+The empty and one-node cases are the important boundaries. In an empty deque,
+both pointers are null. In a one-node deque, both pointers name the same node.
+Removing that node must clear both pointers.
+
+\`\`\`ts
+class DequeNode<T> {
+  previous: DequeNode<T> | null = null;
+  next: DequeNode<T> | null = null;
+
+  constructor(readonly value: T) {}
+}
+
+class Deque<T> {
+  private front: DequeNode<T> | null = null;
+  private back: DequeNode<T> | null = null;
+  private count = 0;
+
+  get length(): number {
+    return this.count;
+  }
+
+  pushFront(value: T): void {
+    const node = new DequeNode(value);
+    const oldFront = this.front;
+
+    if (oldFront === null) {
+      this.front = node;
+      this.back = node;
+      this.count += 1;
+      return;
+    }
+
+    node.next = oldFront;
+    oldFront.previous = node;
+    this.front = node;
+    this.count += 1;
+  }
+
+  pushBack(value: T): void {
+    const node = new DequeNode(value);
+    const oldBack = this.back;
+
+    if (oldBack === null) {
+      this.front = node;
+      this.back = node;
+      this.count += 1;
+      return;
+    }
+
+    node.previous = oldBack;
+    oldBack.next = node;
+    this.back = node;
+    this.count += 1;
+  }
+
+  popFront(): T | undefined {
+    const node = this.front;
+    if (node === null) {
+      return undefined;
+    }
+
+    const next = node.next;
+    this.count -= 1;
+    if (next === null) {
+      this.front = null;
+      this.back = null;
+      return node.value;
+    }
+
+    next.previous = null;
+    this.front = next;
+    return node.value;
+  }
+
+  popBack(): T | undefined {
+    const node = this.back;
+    if (node === null) {
+      return undefined;
+    }
+
+    const previous = node.previous;
+    this.count -= 1;
+    if (previous === null) {
+      this.front = null;
+      this.back = null;
+      return node.value;
+    }
+
+    previous.next = null;
+    this.back = previous;
+    return node.value;
+  }
+}
+
+const deque = new Deque<number>();
+deque.pushBack(2);
+deque.pushFront(1);
+deque.pushBack(3);
+
+console.log(deque.popFront()); // 1
+console.log(deque.popBack()); // 3
+console.log(deque.popFront()); // 2
+console.log(deque.length); // 0
+\`\`\`
+
+The output is 1, 3, 2, then 0. Both ends are available, and removing one end
+does not move the middle values.
+
+## A numeric example
+
+Start empty. \`pushBack(2)\` makes 2 both the front and back.
+\`pushFront(1)\` creates 1 <-> 2. \`pushBack(3)\` creates 1 <-> 2 <-> 3.
+Removing the front returns 1 and clears 2's previous link. Removing the back
+returns 3 and clears 2's next link. Node 2 is again both ends.
+
+## Cost
+
+| Operation | Doubly linked deque | Plain TypeScript array |
+| --- | --- | --- |
+| Push front | O(1) | O(n) with \`unshift\` |
+| Push back | O(1) | O(1) amortized with \`push\` |
+| Pop front | O(1) | O(n) with \`shift\` |
+| Pop back | O(1) | O(1) with \`pop\` |
+| Read by index | O(n) | O(1) |
+
+The linked deque uses O(n) nodes and two links per node. A circular-buffer deque
+also gives O(1) amortized end operations in an array by using modular indices
+and occasionally resizing. The linked representation offers simple pointer
+updates; the circular buffer generally has better memory locality.
+
+## In the course
+
+A deque is useful for a monotonic sliding window: remove expired indices from
+the front and dominated values from the back. It also supports 0-1
+breadth-first search, where zero-cost edges go to the front and one-cost edges
+go to the back. Ordinary unweighted breadth-first search needs only the queue
+subset.
+
+## Common mistakes
+
+Calling \`shift\` and \`unshift\` constant-time because each is one method call.
+They still move array elements.
+
+Updating only one link in a doubly linked node. If \`next.previous\` and
+\`previous.next\` disagree, traversals in opposite directions see different
+structures.
+
+Forgetting to clear both pointers when the last node leaves. The empty invariant
+is \`front === null\` and \`back === null\`.
+
+Using a deque when random indexing is the repeated operation. A linked deque
+must walk to an index.
+
+## When to use it
+
+Use a deque when work enters or leaves at both ends: sliding-window algorithms,
+task scheduling, palindrome checks, or algorithms that sometimes prioritise
+new work at the front. It can also implement an ordinary queue or stack.
+
+## When not to
+
+Use an array when random index access is central. Use a plain stack when only
+the newest value leaves, or a plain queue when only FIFO operations are needed
+and a head-indexed array is simpler.
+
+## FAQ
+
+### Is a deque the same as a queue?
+
+A queue is FIFO: add at the back and remove from the front. A deque exposes both
+ends, so a queue is one restricted way to use a deque.
+
+### Why use two links per node?
+
+The previous link lets the back move to its predecessor in O(1). With only
+\`next\`, removing the back requires an O(n) walk to find that predecessor.
+
+### Is every deque operation O(1)?
+
+The four end operations are O(1) in a doubly linked deque. Searching and reading
+an arbitrary index remain O(n). In a circular buffer, an occasional resize is
+O(n), so end operations are O(1) amortized.
+
+## Related
+
+- [What Is a Queue? FIFO Order, Enqueue, and Dequeue](/articles/queues)
+- [What Is a Stack? Last-In First-Out and Bracket Matching](/articles/stacks)
+- [What Is a Linked List? Pointers Instead of Indexes](/articles/linked-lists)
     `,
   ),
 ];

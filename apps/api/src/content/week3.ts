@@ -118,9 +118,28 @@ You do not need to rewrite the builder. Use the tree it returns.
           functionName: "maxDepth",
           disallow: [],
           promptMd: `
-\`values\` is a binary tree written in level order. \`null\` means a missing child. Return the number of nodes on the longest path from the root down.
+Implement \`maxDepth(values)\` for the binary tree encoded by \`values\`.
 
-An empty list has depth 0. A single node has depth 1. Use the \`buildTree\` helper already in the file.
+**Input**
+
+- \`values\` is a valid level-order representation of a binary tree.
+- Each number is a node value. \`null\` marks a missing child.
+- Node values may be zero or negative; they do not affect the depth.
+
+**Output and requirements**
+
+1. Call the provided \`buildTree(values)\` helper to obtain the root.
+2. Use a recursive depth-first traversal.
+3. Return the number of **nodes** on the longest root-to-leaf path.
+4. Return \`0\` for an empty tree and \`1\` for a tree containing only its root.
+
+For example, \`[3, 9, 20, null, null, 15, 7]\` has depth \`3\`.
+
+**Complexity**
+
+Visit each node once: \`O(n)\` time and \`O(h)\` call-stack space, where \`h\` is the tree depth.
+
+**Do not** derive an answer from \`values.length\`, count the non-null entries, or use array-index logarithms. Missing children make those shortcuts incorrect. Do not rewrite \`buildTree\`.
           `.trim(),
           starterCode: treeStarter,
           tests: [
@@ -140,12 +159,30 @@ An empty list has depth 0. A single node has depth 1. Use the \`buildTree\` help
               name: "empty",
               args: [[]],
               expected: 0,
-              public: false,
+              public: true,
             },
             {
               name: "left spine",
               args: [[1, 2, null, 3]],
               expected: 3,
+              public: false,
+            },
+            {
+              name: "right spine with missing left children",
+              args: [[1, null, 2, null, 3, null, 4]],
+              expected: 4,
+              public: false,
+            },
+            {
+              name: "deeper branch is not the fuller branch",
+              args: [[1, 2, 3, 4, null, null, 5, 6]],
+              expected: 4,
+              public: false,
+            },
+            {
+              name: "zero and negative values are nodes",
+              args: [[0, -1, 2, null, null, -3, null, -4]],
+              expected: 4,
               public: false,
             },
           ],
@@ -177,11 +214,38 @@ The exercise inserts every value, in order, then searches. Building the tree is 
           topic: "Binary search trees",
           difficulty: "easy",
           functionName: "bstContains",
-          disallow: [".includes(", ".indexOf(", "new Set"],
+          disallow: [
+            ".includes(",
+            ".indexOf(",
+            ".find(",
+            ".findIndex(",
+            ".some(",
+            ".filter(",
+            "new Set",
+          ],
           promptMd: `
-Insert \`values\` from left to right into an empty binary search tree. Smaller values go left, larger values go right. Then return whether \`target\` is in the tree.
+Implement \`bstContains(values, target)\` by building and searching a binary search tree.
 
-Do not scan the array directly.
+**Inputs**
+
+- \`values\` contains finite numbers in insertion order and may be empty.
+- \`target\` is the number to search for.
+- Values may be negative, zero, sorted, or repeated. A repeated value does not change whether that value is present.
+
+**Output and requirements**
+
+1. Start with an empty tree and insert every value from left to right.
+2. Put smaller values in the left subtree and larger values in the right subtree. You may ignore a value equal to a node already in the tree.
+3. Search from the root, choosing only the left or right child after each comparison.
+4. Return \`true\` exactly when \`target\` is stored in the tree; return \`false\` for an empty tree.
+
+**Complexity**
+
+Each insertion and the final search take \`O(h)\` time, where \`h\` is the current tree height. Building is \`O(nh)\` in general: \`O(n log n)\` for a balanced shape and \`O(n²)\` for a sorted input. The tree uses \`O(n)\` space.
+
+**Forbidden shortcuts**
+
+Do not answer by scanning \`values\` directly or by using \`.includes\`, \`.indexOf\`, \`.find\`, \`.findIndex\`, \`.some\`, \`.filter\`, or \`Set\`. The purpose is to practise BST insertion and its comparison-guided search.
           `.trim(),
           starterCode: bstStarter,
           tests: [
@@ -209,6 +273,30 @@ Do not scan the array directly.
               expected: false,
               public: false,
             },
+            {
+              name: "negative target in a mixed tree",
+              args: [[0, -5, 8, -9, -2, 4, 12], -2],
+              expected: true,
+              public: false,
+            },
+            {
+              name: "missing value between two nodes",
+              args: [[0, -5, 8, -9, -2, 4, 12], 6],
+              expected: false,
+              public: false,
+            },
+            {
+              name: "sorted input creates a right spine",
+              args: [[-3, -1, 0, 2, 4, 7], 7],
+              expected: true,
+              public: false,
+            },
+            {
+              name: "duplicates do not hide membership",
+              args: [[5, 3, 7, 3, 5, 7], 3],
+              expected: true,
+              public: false,
+            },
           ],
         },
       ],
@@ -234,7 +322,7 @@ Insert writes the new value at the end, then swaps it upward while it is smaller
 
 You reach for a heap when you repeatedly need the current minimum or maximum, not the fully sorted list. "The kth largest element" is the textbook case. Keep a min-heap of size k. For each number, push it, and if the heap now holds more than k values, pop the smallest. The root is the kth largest, because k values are at least that large and you threw away the smaller ones.
 
-Sorting the whole array and indexing from the end is also correct, and it is O(n log n). The heap does less ordering. Either solution passes the tests. If you want the practice, write the heap. A binary heap of numbers in an array is about thirty lines.
+Sorting the whole array and indexing from the end is correct in general, but it is O(n log n) and bypasses this heap exercise. A binary heap of numbers in an array is about thirty lines.
       `.trim(),
       problems: [
         {
@@ -243,11 +331,30 @@ Sorting the whole array and indexing from the end is also correct, and it is O(n
           topic: "Heaps",
           difficulty: "medium",
           functionName: "kthLargest",
-          disallow: [],
+          disallow: [".sort(", ".toSorted("],
           promptMd: `
-Return the kth largest value in \`nums\`. \`k\` is at least 1 and at most \`nums.length\`.
+Implement \`kthLargest(nums, k)\`.
 
-\`kthLargest([3, 2, 1, 5, 6, 4], 2)\` is \`5\`. Duplicates count separately: the second largest of \`[2, 2]\` is \`2\`.
+**Inputs**
+
+- \`nums\` is a non-empty array of finite numbers.
+- \`k\` is an integer from \`1\` through \`nums.length\`, inclusive.
+
+**Output and requirements**
+
+1. Return the value that would appear at position \`k\` if the values were ordered from largest to smallest.
+2. Count duplicate occurrences separately. For example, the second largest value in \`[4, 4, 1]\` is \`4\`.
+3. Handle negative values and multi-digit values correctly.
+
+\`kthLargest([3, 2, 1, 5, 6, 4], 2)\` returns \`5\`.
+
+**Algorithm and complexity**
+
+Use a size-\`k\` min-heap: push each value and remove the minimum whenever the heap grows beyond \`k\`. This takes \`O(n log k)\` time and \`O(k)\` space.
+
+**Avoid incorrect shortcuts**
+
+Do not remove duplicates with a \`Set\`, and do not sort the input or a copy. The runner rejects \`.sort()\` and \`.toSorted()\` because this lesson specifically assesses the heap.
           `.trim(),
           starterCode: `export function kthLargest(nums: number[], k: number): number {
   return 0;
@@ -276,6 +383,30 @@ Return the kth largest value in \`nums\`. \`k\` is at least 1 and at most \`nums
               name: "smallest of the set",
               args: [[7, 1, 4], 3],
               expected: 1,
+              public: false,
+            },
+            {
+              name: "duplicates straddle kth position",
+              args: [[9, 7, 7, 7, 3], 3],
+              expected: 7,
+              public: false,
+            },
+            {
+              name: "negative values",
+              args: [[-10, -3, -7, -1], 2],
+              expected: -3,
+              public: false,
+            },
+            {
+              name: "numeric rather than lexicographic order",
+              args: [[2, 10, 100, 21], 2],
+              expected: 21,
+              public: false,
+            },
+            {
+              name: "mixed signs and repeated maximum",
+              args: [[0, -1, 5, 5, 2, -10], 2],
+              expected: 5,
               public: false,
             },
           ],
@@ -312,9 +443,30 @@ If the target is never reached, return \`-1\`. The distance from a vertex to its
           functionName: "shortestPath",
           disallow: [],
           promptMd: `
-\`edges\` is a list of undirected edges \`[from, to]\` between integer vertices. Return the number of edges on the shortest path from \`start\` to \`end\`.
+Implement \`shortestPath(edges, start, end)\` for an unweighted, undirected graph.
 
-Return 0 when \`start === end\`. Return \`-1\` when no path exists.
+**Inputs**
+
+- Each item in \`edges\` is a pair \`[from, to]\` of integer vertex ids.
+- Every edge works in both directions.
+- Vertex ids need not be consecutive and may be negative.
+- The graph may contain cycles, duplicate edges, self-loops, and disconnected components.
+
+**Output and requirements**
+
+1. Return the minimum number of edges needed to travel from \`start\` to \`end\`.
+2. Return \`0\` when \`start === end\`, even when that vertex is not in \`edges\`.
+3. Return \`-1\` when \`end\` is unreachable.
+4. Build an adjacency list, then use breadth-first search (BFS).
+5. Track visited vertices and mark each vertex when it is enqueued so cycles and duplicate edges do not cause repeated work.
+
+**Complexity**
+
+Run in \`O(V + E)\` time and use \`O(V + E)\` space for the adjacency list, queue, and visited state.
+
+**Forbidden shortcuts**
+
+Do not use depth-first search and return the first path it finds; that path is not necessarily shortest. Do not generate every possible path. This is an unweighted shortest-path exercise, so BFS is the required technique.
           `.trim(),
           starterCode: `export function shortestPath(
   edges: number[][],
@@ -363,6 +515,81 @@ Return 0 when \`start === end\`. Return \`-1\` when no path exists.
                 3,
               ],
               expected: 3,
+              public: false,
+            },
+            {
+              name: "chooses a shorter path discovered later in the edge list",
+              args: [
+                [
+                  [0, 1],
+                  [1, 2],
+                  [2, 5],
+                  [0, 3],
+                  [3, 5],
+                ],
+                0,
+                5,
+              ],
+              expected: 2,
+              public: false,
+            },
+            {
+              name: "edges can be traversed in reverse",
+              args: [
+                [
+                  [1, 2],
+                  [2, 3],
+                ],
+                3,
+                1,
+              ],
+              expected: 2,
+              public: false,
+            },
+            {
+              name: "cycle does not trap the search",
+              args: [
+                [
+                  [0, 1],
+                  [1, 2],
+                  [2, 0],
+                  [2, 3],
+                  [3, 4],
+                ],
+                0,
+                4,
+              ],
+              expected: 3,
+              public: false,
+            },
+            {
+              name: "nonconsecutive and negative vertex ids",
+              args: [
+                [
+                  [-10, 4],
+                  [4, 99],
+                  [99, 500],
+                ],
+                -10,
+                500,
+              ],
+              expected: 3,
+              public: false,
+            },
+            {
+              name: "duplicate edges and self-loops",
+              args: [
+                [
+                  [0, 0],
+                  [0, 1],
+                  [0, 1],
+                  [1, 2],
+                  [2, 2],
+                ],
+                0,
+                2,
+              ],
+              expected: 2,
               public: false,
             },
           ],

@@ -28,19 +28,22 @@ You could write the same walk with an explicit stack. Push the current piece, po
 
 \`\`\`ts
 const factorial = (n: number): number => {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new RangeError("n must be a non-negative integer");
+  }
   if (n <= 1) {
     return 1;
   }
-  const smaller: number = factorial(n - 1);
-  return n * smaller;
+  return n * factorial(n - 1);
 };
 
-console.log(factorial(4));
+console.log(factorial(0)); // 1
+console.log(factorial(4)); // 24
 \`\`\`
 
 ## A numeric example
 
-Factorial of 4 is 4 * factorial(3). That call is 3 * factorial(2), which is 2 * factorial(1). Factorial of 1 is 1, and that call stops. factorial(0) is also 1, so either stop is valid. This walk uses factorial(1) = 1.
+Factorial of 4 is 4 * factorial(3). That call is 3 * factorial(2), which is 2 * factorial(1). Factorial of 1 is 1, and that call stops. factorial(0) is also 1, so the code stops for either value. Reject negative and non-integer inputs: without that precondition, subtracting 1 does not model the mathematical factorial problem and may never reach a base case.
 
 The multiplications happen on the way back. factorial(1) returns 1. factorial(2) computes 2 * 1 = 2. factorial(3) computes 3 * 2 = 6. factorial(4) computes 4 * 6 = 24. The products are 1, then 2, then 6, then 24. At the deepest point, 4 frames are live, holding 4, 3, 2, and 1. Each return pops 1 frame.
 
@@ -48,7 +51,7 @@ A nested sum uses the same shape. [1, [2, [3], 4], 5] is a list, so you sum the 
 
 ## Cost
 
-The cost is the calls you make. Factorial of n is 1 chain of n calls and a constant amount of work on each return, so the time is O(n). The extra space is the frames alive at the deepest point, also O(n).
+The cost is the calls you make. Factorial of n is 1 chain of n calls and a constant amount of work on each return, so the recurrence is T(n) = T(n - 1) + O(1), which solves to O(n). The extra space is the frames alive at the deepest point, also O(n). JavaScript engines do not generally guarantee tail-call optimisation, and this factorial is not tail recursive anyway because each frame still has a multiplication to perform.
 
 Visiting each node of a tree once is O(n) time, and the stack follows the depth, not the node count. Average and worst agree for factorial, because the chain length is always n. They split when the same smaller problem is solved many times: time can grow much faster than n while the depth stays modest. A missing base case does not finish. It overflows the call stack.
 
@@ -66,7 +69,7 @@ A number and an empty array are both base cases. An array flattens each element 
 
 ## Common mistakes
 
-A call that does not shrink never reaches the base case. Passing the same list again, or calling factorial with the same n, pushes frames until the runtime refuses another one. The overflow is the symptom. The bug is a stop you cannot reach.
+A call that does not shrink never reaches the base case. Name a non-negative measure that strictly decreases on every recursive edge: n for factorial, remaining elements for a list, or subtree height for a tree. Passing the same list again, or calling factorial with the same n, pushes frames until the runtime refuses another one. The overflow is the symptom. The bug is a stop you cannot reach.
 
 A base case that is too narrow fails in the same family. If you only stop on a number, an empty list still needs a rule. For factorial, both 0 and 1 should mean 1. Flattening [1, [2]] has to produce [1, 2]. Placing the current number on the wrong side reverses the list.
 
@@ -126,18 +129,32 @@ If the middle value equals the target, return that index, not the value. When th
 When lo moves past hi, the range is empty. The target is absent. Return -1. An empty array starts with lo at 0 and hi at -1, so you return -1 before the first read. The array must be sorted. Binary search on unsorted data is wrong, not "usually fine", because the half you throw away might have held the value.
 
 \`\`\`ts
-const nums = [1, 3, 5, 7, 9];
-const target = 7;
-let lo: number = 0;
-let hi: number = nums.length - 1;
-const mid: number = lo + Math.floor((hi - lo) / 2);
-if (nums[mid] < target) {
-  lo = mid + 1;
-}
-if (nums[mid] > target) {
-  hi = mid - 1;
-}
-console.log(lo, hi, mid);
+const binarySearch = (
+  values: readonly number[],
+  target: number,
+): number => {
+  let lo = 0;
+  let hi = values.length - 1;
+
+  while (lo <= hi) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    const value = values[mid];
+    if (value === target) {
+      return mid;
+    }
+    if (value < target) {
+      lo = mid + 1;
+      continue;
+    }
+    hi = mid - 1;
+  }
+  return -1;
+};
+
+const numbers: readonly number[] = [1, 3, 5, 7, 9];
+console.log(binarySearch(numbers, 7)); // 3
+console.log(binarySearch(numbers, 4)); // -1
+console.log(binarySearch([], 4)); // -1
 \`\`\`
 
 ## A numeric example
@@ -152,7 +169,7 @@ Search for 4 in the same array. lo is 0 and hi is 4. The middle value is 5, whic
 
 ## Cost
 
-Each step throws away about half of the indexes that remain, so the number of comparisons is O(log n). The best case is 1 comparison, when the first middle is the target. The worst case, including a missing target, is about log2(n) comparisons. The average is also O(log n). Extra space is O(1): you store lo, hi, and the middle, and you do not copy the array.
+Each step throws away about half of the indexes that remain, so the number of iterations is O(log n). The best case is 1 iteration, when the first middle is the target. For a non-empty array, the worst case is at most floor(log2(n)) + 1 iterations; an empty array takes 0. The average is O(log n). Extra space is O(1): you store lo, hi, and the middle, and you do not copy the array.
 
 | Case | Time | Extra space |
 | --- | --- | --- |
@@ -166,13 +183,15 @@ The binary search lesson asks for the index of a target in an array sorted ascen
 
 ## Common mistakes
 
-Off-by-one bugs break the invariant. When the middle value is too small and you set lo to mid, the range can stop shrinking. With lo at 3 and hi at 4, the middle is 3. Leaving lo at 3 repeats the same range, and a loop never ends. The answer is at least one past the middle, so lo becomes mid + 1. When the middle value is too large, hi becomes mid - 1, not mid.
+Off-by-one bugs break the invariant. At the top of every iteration, every possible matching index is in the inclusive range [lo, hi]. When the middle value is too small and you set lo to mid, the range can stop shrinking. With lo at 3 and hi at 4, the middle is 3. Leaving lo at 3 repeats the same range, and a loop never ends. The answer is at least one past the middle, so lo becomes mid + 1. When the middle value is too large, hi becomes mid - 1, not mid.
 
 A loop written as lo < hi skips the moment when lo and hi name the same index. On [7], both ends are 0, and you must read that slot. Continue while lo <= hi, and return -1 when the range is empty. In [9, 1, 7, 3, 5] the middle might be 7, and throwing away the left half can discard 1. That search is wrong because the array is not sorted.
 
 ## When to use it
 
 Use binary search when the array is sorted, you can read every index in O(1) time, and you want the index of a target or a clear answer that it is absent. It fits when the array stays put and you search it many times. A million sorted entries is about 20 comparisons.
+
+If duplicates are allowed, this version returns whichever matching middle it encounters first, not necessarily the first or last duplicate. To find the first occurrence, record a match and continue searching to its left; to find the last, continue to its right. The course exercise avoids that extra contract by using distinct values.
 
 ## When not to
 
@@ -219,19 +238,37 @@ flowchart TD
 
 ## How it works
 
-A pass looks at each pair of neighbours, from the left. When the left value is greater than the right value, swap them. When they are already in order, leave them. Then step 1 index to the right. After the last pair, the pass is over. You need 1 temporary number for the exchange, and you do not allocate a second array.
+A pass looks at each pair of neighbours, from the left. When the left value is greater than the right value, swap them. When they are already in order, leave them. Then step 1 index to the right. After the last pair, the pass is over. The implementation below copies its input so callers do not see a mutation; the sorting work itself needs only 1 temporary number. A conventional in-place version skips that copy and has O(1) auxiliary space.
 
-One pass is not the whole sort. The largest value in the region you scanned has drifted to the end of that region. The values in front of it can still be out of order, so you pass again. You stop only when a full pass makes no swaps. That clean pass means every neighbour pair is in order, so the array is sorted.
+One pass is not the whole sort. The largest value in the region you scanned has drifted to the end of that region. That settled suffix is the loop invariant: after each pass, everything beyond unsortedEnd is in its final position. The values in front can still be out of order, so you pass again. You stop only when a full pass makes no swaps. That clean pass means every neighbour pair is in order, so the array is sorted.
 
 \`\`\`ts
-const values = [4, 2, 7, 1];
-const i = 0;
-if (values[i] > values[i + 1]) {
-  const held: number = values[i];
-  values[i] = values[i + 1];
-  values[i + 1] = held;
-}
-console.log(values);
+const bubbleSort = (input: readonly number[]): number[] => {
+  const values = [...input];
+  let unsortedEnd = values.length - 1;
+
+  while (unsortedEnd > 0) {
+    let swapped = false;
+    for (let i = 0; i < unsortedEnd; i += 1) {
+      if (values[i] <= values[i + 1]) {
+        continue;
+      }
+      const held = values[i];
+      values[i] = values[i + 1];
+      values[i + 1] = held;
+      swapped = true;
+    }
+    if (!swapped) {
+      return values;
+    }
+    unsortedEnd -= 1;
+  }
+  return values;
+};
+
+const input = [4, 2, 7, 1];
+console.log(bubbleSort(input)); // [1, 2, 4, 7]
+console.log(input); // [4, 2, 7, 1]
 \`\`\`
 
 ## A numeric example
@@ -248,13 +285,13 @@ JavaScript's default sort compares values as strings unless you pass a compare f
 
 A direct version does about n passes, and a pass does about n comparisons, so the product is O(n²). The usual exact count is n * (n - 1) / 2 comparisons when every pair is checked. For 4 values that is 6. For 1,000 values it is 499,500. For 10,000 values it is 49,995,000, about 50 million. Merge sort on those 10,000 values is on the order of 140,000 element writes. That gap is why bubble sort is the contrast.
 
-If you stop when a pass makes no swaps, an array that is already sorted costs 1 pass of n - 1 comparisons, which is O(n). Average inputs do not look like that. Average and worst stay O(n²). Extra space is O(1), the temporary used to swap 2 neighbours.
+If you stop when a pass makes no swaps, an array that is already sorted costs 1 pass of n - 1 comparisons, which is O(n). Average inputs do not look like that. Average and worst stay O(n²). An in-place implementation uses O(1) auxiliary space. The non-mutating implementation above uses O(n) extra space for its copy, an intentional API tradeoff.
 
 | Case | Time | Extra space |
 | --- | --- | --- |
-| Already sorted, stop after a clean pass | O(n) | O(1) |
-| Average | O(n²) | O(1) |
-| Worst, reverse order | O(n²) | O(1) |
+| Already sorted, stop after a clean pass | O(n) | O(n) for the returned copy |
+| Average | O(n²) | O(n) for the returned copy |
+| Worst, reverse order | O(n²) | O(n) for the returned copy |
 
 ## In the course
 
@@ -265,6 +302,8 @@ The sorting lesson shows bubble sort so you can finish a sort by hand, then tell
 Stopping after 1 pass leaves the array unfinished. [4, 2, 7, 1] becomes [2, 4, 1, 7]. The 7 has drifted to the end, and 4 is still before 1. The stop condition is a pass with no swaps, not a pass that moved 1 large value.
 
 A swap without a temporary loses a number. Hold 1 neighbour, write the other into its place, then write the held value back. On [4, 2], copying in the wrong order can produce [2, 2]. Trusting the name sort is the mistake that remains after you drop neighbour swaps. Without (a, b) => a - b, [10, 2, 1].sort() can yield [1, 10, 2], and you sorted strings.
+
+Swapping equal keys with a greater-than-or-equal test also throws away bubble sort's stability. Use a strict greater-than test. Then equal records never cross, so their original relative order is preserved.
 
 ## When to use it
 
@@ -316,24 +355,46 @@ If the array has fewer than 2 elements, it is already sorted. An empty array and
 
 The merge is 2 pointers, one on each half. Repeatedly take the smaller head. When the heads are equal, take the left one, so equal values keep their earlier order. When one half runs out, append the rest. Those leftover values are already sorted. Each element is written once, so merging n elements is O(n).
 
-About log n levels of splits take every piece down to the base case. Each level writes about n elements. The product is O(n log n). The extra arrays are O(n) memory. Quicksort uses less extra memory, and many libraries reach for it. Its worst case is worse, and the explanation is longer. One sort you can draw is enough. While learning this one, do not call the built-in sort and skip the merge.
+About log n levels of splits take every piece down to the base case. Each level writes about n elements. The product is O(n log n). At any one time, the live temporary arrays contain O(n) elements, although this slice-based teaching version allocates O(n log n) elements over the whole run. The recursion adds O(log n) live frames. Quicksort can use less auxiliary memory, but naive pivot choices have an O(n²) worst case. While learning merge sort, do not call the built-in sort and skip the merge.
 
 \`\`\`ts
-const left = [1, 4, 8];
-const right = [2, 3, 9];
-const merged: number[] = [];
-let i = 0;
-let j = 0;
-const leftSmaller: boolean = left[i] <= right[j];
-if (leftSmaller) {
-  merged.push(left[i]);
-  i += 1;
-}
-if (!leftSmaller) {
-  merged.push(right[j]);
-  j += 1;
-}
-console.log(merged);
+const merge = (
+  left: readonly number[],
+  right: readonly number[],
+): number[] => {
+  const result: number[] = [];
+  let leftIndex = 0;
+  let rightIndex = 0;
+
+  while (leftIndex < left.length && rightIndex < right.length) {
+    if (left[leftIndex] <= right[rightIndex]) {
+      result.push(left[leftIndex]);
+      leftIndex += 1;
+      continue;
+    }
+    result.push(right[rightIndex]);
+    rightIndex += 1;
+  }
+  return [
+    ...result,
+    ...left.slice(leftIndex),
+    ...right.slice(rightIndex),
+  ];
+};
+
+const mergeSort = (values: readonly number[]): number[] => {
+  if (values.length < 2) {
+    return [...values];
+  }
+  const middle = Math.floor(values.length / 2);
+  const left = mergeSort(values.slice(0, middle));
+  const right = mergeSort(values.slice(middle));
+  return merge(left, right);
+};
+
+const numbers = [5, 1, 4, 2, 2, -3];
+console.log(mergeSort(numbers)); // [-3, 1, 2, 2, 4, 5]
+console.log(numbers); // [5, 1, 4, 2, 2, -3]
 \`\`\`
 
 ## A numeric example
@@ -350,7 +411,7 @@ Those runs come from the same rule on smaller arrays. [8] has fewer than 2 eleme
 
 An array of 8 elements is halved 3 times before every piece has fewer than 2 elements: 8, then 4, then 2, then 1. Each level writes 8 elements, so the total is 24 writes. That is n * log2(n) = 8 * 3 = 24. An array of 10,000 elements needs 14 levels, because 2^13 is 8,192 and 2^14 is 16,384. About 14 * 10,000 = 140,000 writes. Bubble sort on the same 10,000 values does about 50 million neighbour comparisons in the worst case.
 
-Best, average, and worst time match, because you always split to the base case and always merge, even when the input was sorted. Extra arrays cost O(n) memory. The call stack adds about log n frames, which does not change that O(n) bill.
+Best, average, and worst asymptotic time match, because you always split to the base case and merge, even when the input was sorted. This implementation's live extra arrays cost O(n) memory. The call stack adds O(log n) frames, which does not change the O(n) bound. An implementation can avoid some copying by reusing one auxiliary buffer, but it is more complicated.
 
 | Case | Time | Extra space |
 | --- | --- | --- |
@@ -365,6 +426,8 @@ The sorting lesson asks you to return a new array of the numbers in ascending or
 ## Common mistakes
 
 Merging before both halves are sorted breaks the pointer rule, because each head has to be the smallest remaining value on that side. Sort each half by the same rule, down to fewer than 2 elements, and only then merge.
+
+The merge invariant is: result is sorted and contains exactly the consumed prefixes of left and right. The two pointer positions therefore identify the smallest values not yet copied. Advance exactly the pointer whose head you take.
 
 Dropping the leftover tail loses values. When the result is [1, 2, 3, 4, 8] and the right run still holds 9, you must append 9. When one half runs out, append the rest. Those values are already in order.
 

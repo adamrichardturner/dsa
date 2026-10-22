@@ -17,7 +17,7 @@
     "graphql-yoga": "latest",
     "sucrase": "^3.35.1",
     "tsx": "latest",
-    "typescript": "latest"
+    "typescript": "5.9.3"
   },
   "devDependencies": {
     "@types/cors": "latest",

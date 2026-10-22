@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import Editor, { type BeforeMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 import { cn } from "cn";
@@ -79,18 +86,77 @@ const prepareEditor: BeforeMount = (monaco) => {
   defineEditorThemes(monaco);
 };
 
+type EditorLineNumbers = "on" | "off";
+type EditorWordWrap = "on" | "off";
+
+const editorOptions = (
+  overflowHost: HTMLDivElement,
+  lineNumbers: EditorLineNumbers,
+  wordWrap: EditorWordWrap,
+): editor.IStandaloneEditorConstructionOptions => {
+  const options: editor.IStandaloneEditorConstructionOptions = {
+    fontSize: 14,
+    fontFamily: "JetBrains Mono, ui-monospace, monospace",
+    fontLigatures: false,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    tabSize: 2,
+    padding: { top: 16, bottom: 16 },
+    automaticLayout: true,
+    wordWrap,
+    lineNumbers,
+    smoothScrolling: true,
+    renderLineHighlight: "line",
+    fixedOverflowWidgets: true,
+    overflowWidgetsDomNode: overflowHost,
+  };
+  if (lineNumbers === "on" && wordWrap === "on") {
+    return options;
+  }
+  const withoutLineNumbers =
+    lineNumbers === "off"
+      ? {
+          lineNumbersMinChars: 0,
+          folding: false,
+          glyphMargin: false,
+          lineDecorationsWidth: 0,
+        }
+      : {};
+  const horizontalScroll =
+    wordWrap === "off"
+      ? {
+          scrollBeyondLastColumn: 2,
+          scrollbar: {
+            horizontal: "auto" as const,
+            vertical: "auto" as const,
+            horizontalScrollbarSize: 10,
+            alwaysConsumeMouseWheel: false,
+          },
+        }
+      : {};
+  return {
+    ...options,
+    ...withoutLineNumbers,
+    ...horizontalScroll,
+  };
+};
+
 export function CodeEditor({
   value,
   onChange,
   themeId,
   autoFocus = true,
   editorRef,
+  lineNumbers = "on",
+  wordWrap = "on",
 }: {
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly themeId: EditorThemeId;
   readonly autoFocus?: boolean;
   readonly editorRef?: RefObject<CodeEditorInstance | null>;
+  readonly lineNumbers?: EditorLineNumbers;
+  readonly wordWrap?: EditorWordWrap;
 }) {
   const theme = getEditorTheme(themeId);
   const overflowHost = useMonacoOverflowHost();
@@ -103,22 +169,8 @@ export function CodeEditor({
     if (overflowHost === null) {
       return null;
     }
-    return {
-      fontSize: 14,
-      fontFamily: "JetBrains Mono, ui-monospace, monospace",
-      fontLigatures: false,
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      tabSize: 2,
-      padding: { top: 16, bottom: 16 },
-      automaticLayout: true,
-      wordWrap: "on" as const,
-      smoothScrolling: true,
-      renderLineHighlight: "line" as const,
-      fixedOverflowWidgets: true,
-      overflowWidgetsDomNode: overflowHost,
-    };
-  }, [overflowHost]);
+    return editorOptions(overflowHost, lineNumbers, wordWrap);
+  }, [lineNumbers, overflowHost, wordWrap]);
 
   useEffect(() => {
     const instance = instanceRef.current;

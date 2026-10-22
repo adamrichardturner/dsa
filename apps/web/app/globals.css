@@ -485,6 +485,14 @@
   scroll-behavior: auto;
 }
 
+@media (max-width: 767px) {
+  .code-runner .monaco-editor,
+  .code-runner .monaco-editor .overflow-guard,
+  .code-runner .monaco-editor .monaco-scrollable-element {
+    touch-action: none;
+  }
+}
+
 .monaco-overflow-widgets {
   position: fixed;
   z-index: 40;

@@ -1,7 +1,24 @@
-import type { SeedLesson, SeedModule } from "./types.js";
+import type { SeedLesson, SeedModule, SeedProblem } from "./types.js";
 import { extras } from "./extra-problems.js";
 import { followUps } from "./follow-ups.js";
 import { reading } from "./reading.js";
+import { stressTests } from "./stress-tests.js";
+
+const withStressTest = (problem: SeedProblem): SeedProblem => {
+  const stressTest = stressTests[problem.id];
+  if (stressTest === undefined) {
+    return problem;
+  }
+  return { ...problem, tests: [...problem.tests, stressTest] };
+};
+
+const withStressTests = (lesson: SeedLesson): SeedLesson => {
+  const problems: SeedProblem[] = [];
+  for (const problem of lesson.problems) {
+    problems.push(withStressTest(problem));
+  }
+  return { ...lesson, problems };
+};
 
 /**
  * Keeps every original lesson id, replaces the reading with shorter steps,
@@ -22,17 +39,19 @@ export const expandCourse = (
       const after = extra?.after ?? [];
       const contentMd = reading[lesson.id] ?? lesson.contentMd;
 
-      lessons.push({
-        ...lesson,
-        contentMd,
-        problems: [...before, ...lesson.problems, ...after],
-      });
+      lessons.push(
+        withStressTests({
+          ...lesson,
+          contentMd,
+          problems: [...before, ...lesson.problems, ...after],
+        }),
+      );
 
       const follow = followUps[lesson.id];
       if (follow === undefined) {
         continue;
       }
-      lessons.push(follow);
+      lessons.push(withStressTests(follow));
     }
 
     expanded.push({

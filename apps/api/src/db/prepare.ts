@@ -299,7 +299,15 @@ export const prepareDatabase = Effect.gen(function* () {
                 promptMd: problem.promptMd,
                 starterCode: problem.starterCode,
                 functionName: problem.functionName,
-                testsJson: JSON.stringify(problem.tests),
+                testsJson: JSON.stringify(
+                  problem.tests.map((test) => ({
+                    ...test,
+                    immutableArgs: test.immutableArgs ?? problem.immutableArgs,
+                    distinctArrayReturnFromArg:
+                      test.distinctArrayReturnFromArg ??
+                      problem.distinctArrayReturnFromArg,
+                  })),
+                ),
                 disallowJson: JSON.stringify(problem.disallow),
                 difficulty: problem.difficulty,
                 topic: problem.topic,

@@ -3,103 +3,118 @@ import { defineArticle, type Article } from "./types";
 export const arrayArticles: readonly Article[] = [
   defineArticle(
     "contiguous-arrays",
-    "What Is a Contiguous Array? Index Jumps and Shifts",
+    "How Arrays Support Fast Indexing",
     "Arrays",
-    "A contiguous array stores values in neighbouring memory, so an index is a jump and a middle insert has to slide the tail. That layout is why index reads are O(1) and middle edits are O(n).",
+    "An array gives each element an integer index, so reading a known position is O(1). Dense arrays scan efficiently, while insertions near the front are O(n) because later elements must move.",
     ["contiguous list"],
     `
-A contiguous array stores its values in neighbouring slots, so element i sits a fixed distance from element 0. That distance is a jump, which means reading element 10 costs the same as reading element 0, and both reads are O(1). Insert or delete anywhere but the end and every later element has to slide, which is why a middle edit is O(n).
+An array stores an ordered sequence and gives each element an integer index from 0 through \`length - 1\`. Given a valid index, \`values[index]\` takes O(1) time. Inserting or deleting near the front takes O(n) time because the later elements change positions.
 
 \`\`\`mermaid
-flowchart TD
-  choice{"Which operation do you repeat?"}
-  choice --> read["Read nums at index i"]
-  read --> jump["Jump a fixed distance from the start, O(1)"]
-  choice --> mid["Insert or delete before the end"]
-  mid --> slide["Slide every later element, O(n)"]
-  choice --> push["Push at the end"]
-  push --> tail["Nothing in front of the new value slides"]
+flowchart LR
+  A["index 0<br/>4"] --- B["index 1<br/>8"] --- C["index 2<br/>15"] --- D["index 3<br/>16"]
+  Q{"Operation"} --> R["Read index 2<br/>O(1)"]
+  Q --> I["Insert at index 1<br/>shift the suffix: O(n)"]
 \`\`\`
 
-## How it works
+## The model and TypeScript reality
 
-A TypeScript array is one contiguous block. The runtime keeps the address of element 0, and element i lives at that address plus i times the width of one element. If a number occupies 8 bytes, element 10 is 80 bytes past the start. \`nums[i]\` is that fixed distance. The read adds the distance and loads the value.
+In the standard array model, equal-width elements occupy adjacent slots. If the first slot has address b and each element uses w bytes, index i is found at \`b + i * w\`. The number of arithmetic operations does not grow with the array, so indexed access is O(1).
 
-Element 10 costs the same to read as element 0. A longer distance is still one addition, so the read stays O(1) as the length grows.
+TypeScript's \`Array<T>\` provides the same indexed abstraction, but JavaScript does **not** guarantee that every array is one literal contiguous block of fixed-width values. Engines may change their internal representation, especially for sparse arrays or mixed value types. The useful algorithmic model is therefore:
 
-Insert or delete anywhere but the end shifts every later element. Values sit shoulder to shoulder, so a new value at index 2 pushes the old occupant and the whole tail one slot right. A delete pulls that tail one slot left. Near the front the tail is about n elements long, so the edit is O(n).
+- indexed reads and writes are O(1) in ordinary use;
+- \`push\` and \`pop\` are amortized O(1);
+- \`shift\`, \`unshift\`, and middle \`splice\` operations are O(n);
+- a full traversal is O(n).
 
-Push at the end is cheap on average because nothing in front slides. The new value takes the next free slot. When the block is full, that push copies every element into a larger block. Across many pushes those copies are rare, and the average cost per push stays constant.
+“Amortized O(1)” means that an occasional resize may copy many elements, but the total cost of many end insertions averages to constant time per insertion.
 
-This loop slides every old element one slot right so a new value can sit at index 0.
+## A complete example
+
+This function inserts into a copy so the input is not mutated. The first loop copies the prefix, the new value fills the gap, and the second loop copies the suffix.
 
 \`\`\`ts
-const nums = [4, 8, 15, 16, 23, 42];
-const index = 0;
-const incoming = 7;
-const value = nums[index];
-const shifted: number[] = [];
+function insertAt(
+  values: readonly number[],
+  index: number,
+  value: number,
+): number[] {
+  if (!Number.isInteger(index) || index < 0 || index > values.length) {
+    throw new RangeError("index must be between 0 and values.length");
+  }
 
-for (let i = 0; i < nums.length; i = i + 1) {
-  shifted[i + 1] = nums[i];
+  const result: number[] = [];
+
+  for (let i = 0; i < index; i += 1) {
+    const current = values[i];
+    if (current !== undefined) {
+      result.push(current);
+    }
+  }
+
+  result.push(value);
+
+  for (let i = index; i < values.length; i += 1) {
+    const current = values[i];
+    if (current !== undefined) {
+      result.push(current);
+    }
+  }
+
+  return result;
 }
 
-shifted[0] = incoming;
-console.log(value, shifted);
+const original = [4, 8, 15, 16];
+console.log(insertAt(original, 1, 7));
+console.log(original);
 \`\`\`
 
-Fast index access argues for the array. You already know the slot, at index 0 or index 10,000. Fast rewiring once you already hold a spot argues for a linked list. You already hold a node, and you change a pointer while the other nodes stay put. A contiguous list is this packed block.
+Expected output is \`[4, 7, 8, 15, 16]\`, followed by the unchanged input \`[4, 8, 15, 16]\`.
 
-## A numeric example
+## Dense and sparse arrays
 
-Take \`[4, 8, 15, 16, 23, 42]\`, length 6. Index 0 loads 4, index 4 loads 23, and index 5 loads 42. Each read is one jump. Leave 23 at index 4 inside an array of 6,000 numbers and that read is still one jump.
-
-Insert 7 at index 2 and the array you want is \`[4, 8, 7, 15, 16, 23, 42]\`. The values 15, 16, 23, and 42 move, which is 4 writes, then 7 fills the opened slot. Insert 7 at index 0 and all 6 existing values move. Push 7 at index 6, the current end, and nothing already stored moves. The tail length is the whole difference.
+\`[10, 20, 30]\` is dense: every index below its length has a value. Setting \`values[1_000_000] = 5\` creates a sparse array with a large gap. Its \`length\` becomes 1,000,001 even though almost all positions are empty. Sparse arrays can have surprising iteration behavior and different engine representations. For DSA work, prefer dense arrays and represent a genuinely sparse relationship with a more suitable structure.
 
 ## Cost
 
-An index read is O(1) time and O(1) extra space. Insert or delete before the end is O(n) time. An in-place shift uses O(1) extra space, and a fresh copy uses O(n) extra space. Push at the end is O(1) time on average. One growth copy is O(n) time for that call. A scan that keeps a running total is O(n) time and O(1) extra space.
-
 | Operation | Time | Extra space |
 | --- | --- | --- |
-| Read \`nums[i]\` | O(1) | O(1) |
-| Push at the end | O(1) on average | O(1) aside from a rare growth copy |
-| Insert or delete before the end | O(n) | O(1) if you shift in place |
-| Copy into a new array | O(n) | O(n) |
+| Read or write a known index | O(1) | O(1) |
+| Traverse every element | O(n) | O(1) |
+| \`push\` or \`pop\` at the end | O(1) amortized | O(1) amortized |
+| Insert or delete near the front | O(n) | O(1) in place |
+| Make a full copy | O(n) | O(n) |
 
-## In the course
-
-The Arrays lesson in Foundations starts from this layout. A TypeScript array is a contiguous list, \`nums[i]\` is a jump, and a middle edit slides the tail. The exercise is a left rotation into a new array: the same values change indexes, so the block is rewritten. Linked lists come later. Walking to the 10th node is O(n). Rewiring a node you already hold is O(1). Indexes stay on the array. A splice at a node you hold matches the list.
+The example is O(n) time and O(n) extra space because it deliberately returns a copy. An in-place insertion still takes O(n) time but does not allocate another n-element array.
 
 ## Common mistakes
 
-You treat every array edit as O(1). The fast operation is the index read, and push at the end on average. \`unshift\` and a middle \`splice\` move the tail. A loop of front inserts on a long array is a loop of linear slides, which is quadratic overall.
+Do not say that every array operation is O(1). The index lookup is constant time; shifting a suffix is not.
 
-You call every push a guaranteed single write. Most pushes write one spare slot. The push that finds a full block copies. Cheap on average is the phrase that matches the runtime.
+Do not call \`push\` worst-case O(1). A resize can be O(n), so the precise bound is amortized O(1).
 
-You switch to a linked list because some insert exists, then you walk from the head for every lookup. Match the layout to the operation you repeat. You also expect element 10 to cost more than element 0 because it sits further along. The distance is larger. The work is still one address calculation.
+Do not use \`delete values[i]\` to remove an element. It leaves a hole and does not reduce \`length\`. Use \`splice\` when mutation is intended, or construct a new dense array.
 
-## When to use it
+Do not read outside 0 through \`length - 1\`. JavaScript returns \`undefined\`; it does not report an index error.
 
-Use a contiguous array when you read and write by index, when you scan left to right, and when you add or remove at the end. A rotation, a pair of ends, or a window of neighbours all buy the jump.
+## When arrays fit
 
-## When not to
-
-Use a linked list when you repeat an insert or delete at a spot you already hold and the sequence is long. Pointer rewiring is a constant amount of writing. Removing index 0 on every step slides everybody else, which is why a queue gets its own structure later and why \`shift\` on an array is a tail move.
+Use an array for indexed access, left-to-right traversal, compact ordered data, and end insertion. Consider a linked structure when repeated insertions or deletions occur at nodes you already hold. Consider a queue implementation with a moving head index instead of repeatedly calling \`shift\`.
 
 ## FAQ
 
-### Why does element 10 cost the same to read as element 0?
+### Why is index 10 not ten times slower than index 1?
 
-Both reads add a fixed distance to the address of element 0 and load one value. The distance for element 10 is larger, and the addition is still one calculation. A longer array makes larger indexes legal. It leaves the read at O(1).
+Both accesses use a constant amount of index calculation. Big O counts how work grows with input size, not the numeric distance of an index.
 
-### Why is a middle insert O(n) when you only wrote one new value?
+### Does TypeScript check an index at runtime?
 
-The new value is one write. Every later value also moves, or two values would claim one slot. On an array of length 1,000, an insert at index 0 moves 1,000 existing values. Those moves are the O(n) cost.
+No. TypeScript types are erased before execution, and JavaScript returns \`undefined\` for an absent array property. Validate indexes when absence would be an error.
 
-### Is push at the end always a single write?
+### Is a TypeScript array really contiguous?
 
-On average, yes. Most pushes write one new slot, and nothing in front slides. A push into a full block copies the current values first, and that copy is linear. Over a long run of pushes the copies average out to a constant amount of work per push.
+The language specification does not promise that physical layout. Contiguous storage is the teaching model behind classic fixed-width arrays; JavaScript engines preserve fast indexed behavior while choosing their own representations.
 
 ## Related
 
@@ -108,205 +123,209 @@ On average, yes. Most pushes write one new slot, and nothing in front slides. A 
   ),
   defineArticle(
     "rotating-an-array",
-    "How Do You Rotate an Array Left? Remainder and Cost",
+    "How Do You Rotate an Array Left?",
     "Arrays",
-    "Rotating an array left moves the front to the back. A full turn does nothing, so only the remainder after dividing the steps by the length matters, and the clear solution is one O(n) pass into a new array.",
+    "A left rotation moves a prefix to the back without changing relative order. Reducing the step count modulo the length avoids repeated shifts and gives an O(n) solution.",
     ["Rotating left", "rotated left"],
     `
-Rotating an array left moves the front to the back, so \`[1, 2, 3, 4]\` rotated left by 1 is \`[2, 3, 4, 1]\`. A full turn whose size equals the length puts every value back, so only the remainder after you divide the steps by the length changes an index. The clear solution writes each value into a new array at its new index, in one O(n) pass, and leaves the input unchanged.
+A left rotation by k moves the first k values to the back while preserving order. For example, rotating \`[1, 2, 3, 4]\` left by 1 produces \`[2, 3, 4, 1]\`.
 
 \`\`\`mermaid
-flowchart TD
-  steps["steps can exceed the length"]
-  steps --> remain["Keep steps modulo length"]
-  remain --> check{"Is the remainder 0?"}
-  check -->|"Yes"| same["Each value stays at its own index"]
-  check -->|"No"| place["Write each value at its new index"]
-  place --> built["One O(n) pass into a new array"]
+flowchart LR
+  A["[1, 2, 3, 4]"] --> B["split after k = 1"]
+  B --> C["prefix [1]"]
+  B --> D["suffix [2, 3, 4]"]
+  C --> E["join suffix + prefix"]
+  D --> E
+  E --> F["[2, 3, 4, 1]"]
 \`\`\`
 
 ## How it works
 
-One left step takes the value at index 0 and gives it the last slot. Every other value moves one slot toward the front. In \`[1, 2, 3, 4]\` the 1 falls off the front and returns on the right.
+A full turn of n steps restores an n-element array. Therefore only \`steps % n\` matters. Rotating four elements by 5 steps is the same as rotating by 1.
 
-Steps can exceed the length. Rotating by the length itself restores the array, because every value completes a lap and lands on its old index. Only the remainder matters: steps modulo length, called \`stepsMod\`. Five steps on a length of 4 match one step, because 5 modulo 4 is 1. Four or zero steps leave every value in place, because those amounts modulo 4 are 0.
+Handle the empty array before taking a remainder: remainder by zero produces \`NaN\`. The implementation below also accepts negative steps. A negative left rotation is a right rotation, and the normalization \`((steps % n) + n) % n\` always produces an offset from 0 through \`n - 1\`.
 
-An empty array stays empty. The length is 0, so you return an empty array before any division. There is no value to move.
-
-For a non-empty array the new index of i is \`(i - stepsMod + length) % length\`. Equivalently, take the tail starting at \`stepsMod\` and then the head. The tail becomes the new front. The head belongs at the back.
-
-The clear solution allocates a new array and writes each value at its new index. One walk from 0 through length - 1 is one O(n) pass, and it does not mutate the input. In-place reversal tricks exist. You do not need them to understand the movement. The movement is the destination the formula names.
-
-The loop is that placement for \`[1, 2, 3, 4]\` with \`stepsMod\` already 1.
+The suffix from the offset becomes the front, and the prefix before the offset becomes the back.
 
 \`\`\`ts
-const nums = [1, 2, 3, 4];
-const stepsMod = 1;
-const rotated: number[] = [];
+function rotateLeft(values: readonly number[], steps: number): number[] {
+  if (values.length === 0) {
+    return [];
+  }
 
-for (let i = 0; i < nums.length; i = i + 1) {
-  const destination = (i - stepsMod + nums.length) % nums.length;
-  rotated[destination] = nums[i];
+  const offset = ((steps % values.length) + values.length) % values.length;
+  return values.slice(offset).concat(values.slice(0, offset));
 }
+
+const values = [1, 2, 3, 4];
+console.log(rotateLeft(values, 1));
+console.log(rotateLeft(values, 5));
+console.log(rotateLeft(values, -1));
+console.log(values);
 \`\`\`
 
-Reducing steps, and returning early when the length is 0, sit beside this loop in the exercise.
+Expected output is \`[2, 3, 4, 1]\`, \`[2, 3, 4, 1]\`, \`[4, 1, 2, 3]\`, and finally the unchanged input \`[1, 2, 3, 4]\`.
 
-## A numeric example
+## Trace the indexes
 
-\`[1, 2, 3, 4]\` has length 4 and one left step, so \`stepsMod\` is 1. Index 0 holds 1 and moves to \`(0 - 1 + 4) % 4\`, which is 3. Index 1 holds 2 and moves to \`(1 - 1 + 4) % 4\`, which is 0. Index 2 holds 3 and moves to 1. Index 3 holds 4 and moves to 2. The new array is \`[2, 3, 4, 1]\`. The tail starting at index 1 is \`[2, 3, 4]\`, then the head \`[1]\`.
+For a positive left offset k, an old index i moves to:
 
-Five steps use 5 modulo 4, which is 1, so the destinations stay the same. Four steps use remainder 0, each value stays at i, and the array is restored.
+\`(i - k + n) % n\`
 
-\`[1, 2, 3]\` rotated left by 4 uses 4 modulo 3, which is 1. Value 1 goes to index 2, value 2 goes to index 0, and value 3 goes to index 1. The new array is \`[2, 3, 1]\`. Zero steps on \`[8, 9]\` has remainder 0, so the new array is \`[8, 9]\` and the input was never written. An empty input with 3 steps stays empty.
+With n = 4 and k = 1, old index 0 moves to 3, index 1 moves to 0, index 2 moves to 1, and index 3 moves to 2. Adding n prevents a negative remainder. JavaScript's \`-1 % 4\` is \`-1\`, not \`3\`.
 
-JavaScript evaluates \`(0 - 1) % 4\` as -1. \`(0 - 1 + 4) % 4\` is 3, the last slot. The added length keeps every destination inside 0 through length - 1.
+The slice implementation expresses the same movement without manually assigning destinations. Both slices together copy n values.
 
 ## Cost
 
-The clear solution is O(n) time and O(n) extra space: one visit per index, and a new array of n values. The input stays untouched. Remainder 0 is the same O(n) copy. An empty array is O(1) time and O(1) extra space. In-place reversal tricks are O(n) time and O(1) extra space, and they change the input.
+The implementation takes O(n) time and O(n) extra space. It leaves the input unchanged. Even when the normalized offset is zero, it returns a copy and therefore still takes O(n) time and space.
 
-| Case | Time | Extra space |
-| --- | --- | --- |
-| New array, one pass | O(n) | O(n) |
-| Remainder 0, still copying | O(n) | O(n) |
-| Empty input | O(1) | O(1) |
-| In-place reversal | O(n) | O(1), and the input changes |
-
-## In the course
-
-The Arrays lesson uses rotation so a contiguous block feels like movement. \`rotateLeft([1, 2, 3, 4], 1)\` returns \`[2, 3, 4, 1]\`. Steps may be larger than the array. You return a new array and you do not mutate the input. You reduce steps, skip division when the length is 0, and write each value once.
+An in-place three-reversal algorithm can rotate in O(n) time and O(1) extra space, but it mutates the input and is less direct. Repeatedly calling \`shift\` and \`push\` k times can take O(nk) time because each \`shift\` moves the remaining elements.
 
 ## Common mistakes
 
-You loop a single step \`steps\` times and skip the remainder. Ten thousand steps on a length of 4 is ten thousand slides. After the modulo, one pass still touches each element once.
+Do not perform one shift per requested step. Reduce large step counts with remainder first.
 
-You mutate \`nums\` and return it. Write into a new array so the caller's row stays as it was passed.
+Do not calculate a remainder before handling an empty array.
 
-You use \`(i - stepsMod) % length\` and keep a negative index. In JavaScript that remainder can be -1. Add the length first. On the four-element example, index 0 must land at index 3 with the value 1. Placing the head before the tail keeps 1 in front. The left rotation wants the tail first: \`[2, 3, 4, 1]\`.
+Do not use \`(i - offset) % n\` as a destination without normalization; JavaScript can produce a negative result.
+
+Do not claim a function is non-mutating if it returns and modifies the original array. The implementation above returns a new array.
 
 ## When to use it
 
-Use a left rotation when the front moves to the back, relative order otherwise stays, and a new array is allowed. Take the remainder whenever steps can exceed the length. One pass with \`(i - stepsMod + length) % length\` is the clear solution.
-
-## When not to
-
-Use another rule when the new order is a sort, a filter, or a full reversal. Avoid a loop of single-step slides when steps is large. Leave in-place reversals until each destination is already clear. The extra array keeps the index arithmetic visible.
+Rotation fits cyclic schedules, ring-like orderings, and problems where a prefix wraps to the back. It is not sorting, reversal, or arbitrary permutation: all elements retain the same cyclic order.
 
 ## FAQ
 
-### What do you do when steps is larger than the length?
+### Why does modulo remove full turns?
 
-You replace steps with steps modulo length, once the length is positive. Rotating by the length restores the array, so extra full turns drop out. \`[1, 2, 3, 4]\` rotated left by 5 uses remainder 1 and becomes \`[2, 3, 4, 1]\`.
+Every group of n left moves returns all n elements to their starting indexes. The quotient counts irrelevant full turns; the remainder is the unfinished turn.
 
-### Why does the new-index formula add the length?
+### Why support negative steps?
 
-Subtracting \`stepsMod\` from i can go negative. JavaScript keeps that sign, so \`(0 - 1) % 4\` is -1. Adding the length first maps index 0 to index 3 on a length of 4, and the value 1 sits at the back.
+It gives the operation a useful symmetric meaning: rotating left by -1 is rotating right by 1. If an exercise promises non-negative steps, the extra normalization is harmless.
 
-### Do you need an in-place rotation to understand this?
+### Can rotation be O(1) time?
 
-A new array of length n, filled in one pass, shows each destination, and full turns cancel. In-place reversal tricks exist. You do not need them to understand the movement, and the exercise leaves the input unmutated.
+Not when an ordinary returned array must contain n values in their new positions. A logical view could store only an offset, but reading that view would then translate indexes.
 
 ## Related
 
-[What Is a Contiguous Array? Index Jumps and Shifts](/articles/contiguous-arrays) and [What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers)
+[How Arrays Support Fast Indexing](/articles/contiguous-arrays) and [What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers)
     `,
   ),
   defineArticle(
     "two-pointers",
     "What Is the Two-Pointer Technique on a Sorted Array?",
     "Arrays",
-    "Two pointers are two indices on one array, and a rule that moves exactly one of them. On sorted data the walk is linear, which is how sorted squares stay O(n) instead of sorting again.",
+    "Two pointers maintain two meaningful indexes and move them according to an invariant. For sorted squares, the largest remaining square must be at one of the two ends.",
     ["two pointers", "two-pointer"],
     `
-Two pointers are two indices on one array, and a rule that moves exactly one of them on each step. On sorted data the ends know something the middle has not told you, so each move discards a value you are finished with and the walk stays linear. Sorted squares use that walk: the next largest square is written from the back in O(n), where squaring and then sorting costs O(n log n).
+The two-pointer technique keeps two indexes whose positions summarize the unprocessed data. In the sorted-squares problem, one pointer starts at each end of a non-decreasing array. The largest remaining absolute value must be at one of those ends.
 
 \`\`\`mermaid
 flowchart TD
-  ends["Square the value at each end"]
-  ends --> compare{"Which square is larger?"}
-  compare -->|"Right"| writeRight["Write the right square and move right"]
-  compare -->|"Left"| writeLeft["Write the left square and move left"]
-  writeRight --> once["Move exactly one pointer"]
-  writeLeft --> once
+  A["Compare abs(values[left]) and abs(values[right])"] --> B{"Which square is larger?"}
+  B -->|"left"| C["write left square<br/>move left rightward"]
+  B -->|"right"| D["write right square<br/>move right leftward"]
+  C --> E["fill the result from back to front"]
+  D --> E
+  E --> A
 \`\`\`
 
-## How it works
+## The invariant
 
-A left index and a right index start at the two ends. The rule looks at those two values and moves exactly one pointer inward. The other stays. The pointers together cross the array once. Constant work per step makes the walk O(n).
+An invariant is a statement that remains true before and after every iteration. Here it is:
 
-The pattern shows up when the array is sorted, or when the two ends know something the middle does not. On unsorted data the ends are only two positions.
+> All result positions after \`write\` already contain the correct largest squares, and every unprocessed input value lies between \`left\` and \`right\`.
 
-Sorted squares start from a sorted array that may contain negatives. A sorted array of negatives and positives does not have sorted squares, because a large negative becomes a large positive. The square of -4 is 16 and the square of 3 is 9, so -4 belongs left of 3 in the input and 16 belongs right of 9 in the output. The biggest squares sit at the ends.
-
-Square the ends and write the larger square at the back of the result. Move the pointer that produced it. Leave the other pointer, because that end can win the next comparison. Move exactly one pointer.
-
-The snippet squares the two ends, 16 and 100, and stops.
+Squaring can disrupt input order because a large negative becomes a large positive. In \`[-4, -1, 0, 3, 10]\`, the direct squares are \`[16, 1, 0, 9, 100]\`. However, the largest remaining square is always produced by the leftmost or rightmost remaining value. Write that square at the back and move only the pointer that supplied it.
 
 \`\`\`ts
-const nums = [-4, -1, 0, 3, 10];
-const ends = [0, nums.length - 1];
-const squares: number[] = [];
+function sortedSquares(values: readonly number[]): number[] {
+  const result = new Array<number>(values.length);
+  let left = 0;
+  let right = values.length - 1;
+  let write = values.length - 1;
 
-for (let i = 0; i < ends.length; i = i + 1) {
-  const index = ends[i];
-  squares[i] = nums[index] * nums[index];
+  while (left <= right) {
+    const leftValue = values[left];
+    const rightValue = values[right];
+    if (leftValue === undefined || rightValue === undefined) {
+      break;
+    }
+
+    const leftSquare = leftValue * leftValue;
+    const rightSquare = rightValue * rightValue;
+
+    if (leftSquare > rightSquare) {
+      result[write] = leftSquare;
+      left += 1;
+      write -= 1;
+      continue;
+    }
+
+    result[write] = rightSquare;
+    right -= 1;
+    write -= 1;
+  }
+
+  return result;
 }
+
+console.log(sortedSquares([-4, -1, 0, 3, 10]));
+console.log(sortedSquares([-7, -3, -1]));
 \`\`\`
 
-The result array is O(n) extra space. If the input were unsorted you would not have this trick, because a large square could sit in the middle. The sorted input is what makes the linear walk possible.
+Expected output is \`[0, 1, 9, 16, 100]\` and \`[1, 9, 49]\`.
 
-## A numeric example
+## Trace one run
 
-Use \`[-4, -1, 0, 3, 10]\`. Left starts at index 0 and right at index 4. Square the ends: 16 and 100. Write 100 at the back and move the right pointer. Next compare 16 and 9, write 16, and move the left pointer. Then compare 1 and 9, write 9, and move the right pointer. Then compare 1 and 0, write 1, and move the left pointer. The last value is 0, and its square is 0. The result is \`[0, 1, 9, 16, 100]\`.
+For \`[-4, -1, 0, 3, 10]\`:
 
-Each step is O(1). The pointers cross once, so the walk is O(n) time, with O(n) extra space for the result. \`[-7, -3, -1]\` writes 49, then 9, then 1. \`[1, 2, 3]\` finishes as \`[1, 4, 9]\`. Each step still moves exactly one pointer.
+1. Compare 16 and 100; write 100 at index 4 and move \`right\`.
+2. Compare 16 and 9; write 16 at index 3 and move \`left\`.
+3. Compare 1 and 9; write 9 at index 2 and move \`right\`.
+4. Compare 1 and 0; write 1 at index 1 and move \`left\`.
+5. Write 0 at index 0.
+
+Every iteration finalizes one output position. No input position is revisited.
 
 ## Cost
 
-One comparison and one pointer move are O(1) time and O(1) extra space. n such steps are O(n) time. The result holds n squares, so extra space is O(n). You can write into a result array and leave the input unchanged apart from reading it.
+The pointers each move only inward, so there are exactly n iterations: O(n) time. The returned array requires O(n) extra space. The pointer variables use O(1) space.
 
-Sorting the squares is O(n log n) time. Unsorted input does not support the end comparison, so that cost includes the sort.
-
-| Approach | Time | Extra space |
-| --- | --- | --- |
-| Two pointers, write from the back | O(n) | O(n) for the result |
-| Square every value, then sort | O(n log n) | O(n) for the result, plus the sort |
-| One comparison and one pointer move | O(1) | O(1) |
-
-## In the course
-
-The Two pointers lesson puts both indexes on one array. \`sortedSquares\` takes a non-decreasing \`nums\`, possibly with negatives, and returns the squares in non-decreasing order. Public examples are \`[-4, -1, 0, 3, 10]\` and \`[-7, -3, -1]\`. A single value and an already positive array are hidden checks. Squaring and sorting returns the right numbers at O(n log n). The lesson wants the linear walk from the ends.
+Squaring and then comparison-sorting takes O(n log n) time. The linear method depends on the input already being sorted. On unsorted input, the largest square may be in the middle, so the end invariant is false.
 
 ## Common mistakes
 
-You move both pointers after one comparison. After 16 loses to 100, 16 still has to beat 9. Move the winner only.
+Do not move both pointers after one comparison. The losing end is still unprocessed and may win next.
 
-You fill the result from the front. The ends offer the largest remaining square, so you write at index n - 1 first. After the first step the last slot holds 100.
+Do not fill from the front. The comparison identifies the largest remaining square, so fill from the back.
 
-You compare -4 with 10 and treat the left side as the small side. Compare the squares, 16 and 100. On unsorted input such as \`[10, -4, 0]\` the ends no longer hold the large squares. Sort first, or square and sort. The linear walk needs the sorted array.
+Do not compare signed values. Compare their squares or absolute values.
+
+Do not apply the proof to unsorted input. Two indexes alone do not summarize an arbitrary middle.
 
 ## When to use it
 
-Use two pointers when the array is sorted, or when the two ends are enough to decide which end to discard. Sorted squares are the Foundations case. A pair with a target sum on a sorted array moves one side for the same reason: that index is finished.
-
-## When not to
-
-Leave the technique when the array is unsorted and the ends do not summarise the middle. Leave it for a sum over every contiguous block, which is a sliding window. Leave it when one step would move both indexes, because that drop skips a value you have not written.
+Use inward pointers when sorted order or end structure lets one comparison discard an end safely. Use same-direction pointers for tasks such as removing duplicates in place. In every case, state what each pointer means and why moving it cannot remove a needed candidate.
 
 ## FAQ
 
-### Why are the squares of a sorted array unsorted?
+### Why is the method linear if there is a while loop?
 
-Large negatives sit on the left and large positives sit on the right. Squaring turns a large negative into a large positive. \`[-4, -1, 0, 3, 10]\` squares in that order to \`[16, 1, 0, 9, 100]\`. The biggest squares sit at the ends, so the pointers start there.
+Loop syntax does not determine complexity. Each iteration moves one pointer inward, and no pointer reverses direction. At most n values are processed.
 
-### Why do you move exactly one pointer?
+### What happens when the squares tie?
 
-The comparison has one winner. You write it and advance that pointer. The other end can still be the next largest square. In the example, 16 loses to 100 and then beats 9. Moving both pointers would drop 16 before you wrote it.
+Either end can be written first. The implementation chooses the right end on a tie; the equal values are indistinguishable in the sorted result.
 
-### What does sorting the squares cost?
+### Is the result array counted as extra space?
 
-Squaring n values is O(n), and sorting them is O(n log n). The two-pointer walk is O(n) time and O(n) extra space for the result. If the input were unsorted you would not have this trick, and the sort would be the straightforward cost.
+Yes. If the required output has n values, it occupies O(n) space. Sometimes analyses distinguish required output space from auxiliary working space; state which convention you use.
 
 ## Related
 
@@ -315,104 +334,263 @@ Squaring n values is O(n), and sorting them is O(n log n). The two-pointer walk 
   ),
   defineArticle(
     "sliding-windows",
-    "What Is a Sliding Window? Fixed and Variable Subarrays",
+    "What Is a Sliding Window?",
     "Arrays",
-    "A sliding window is a subarray you keep as you walk forward, updating the previous slice instead of rebuilding it. A fixed window of k elements becomes an O(n) scan once the first sum exists.",
+    "A sliding window represents one contiguous range with two boundaries. Reusing the previous range turns fixed-width sums into O(n), while variable windows require a condition that moves boundaries monotonically.",
     ["sliding window", "subarray"],
     `
-A sliding window is a subarray you keep as you walk forward, so the next slice reuses the previous one. You subtract the element that left and add the element that entered. A fixed window of k elements needs one full sum at the start, and after that each move is O(1), so the scan for the best window is O(n).
+A sliding window tracks a contiguous subarray while its boundaries move forward. Instead of rebuilding each overlapping range, update the information that changed: remove the value that left and add the value that entered.
 
 \`\`\`mermaid
-flowchart TD
-  first["Sum the first k elements"]
-  first --> step["Step one index forward"]
-  step --> drop["Subtract the element that left"]
-  drop --> add["Add the element that entered"]
-  add --> best["Keep the largest sum"]
+flowchart LR
+  A["[2, 1, 5]<br/>sum 8"] -->|"remove 2<br/>add 1"| B["[1, 5, 1]<br/>sum 7"]
+  B -->|"remove 1<br/>add 3"| C["[5, 1, 3]<br/>sum 9"]
+  C -->|"remove 5<br/>add 2"| D["[1, 3, 2]<br/>sum 6"]
 \`\`\`
 
-## How it works
+## Fixed-width windows
 
-A subarray is a contiguous slice: neighbours, with no gaps. A fixed window always holds k elements. A variable window grows and shrinks, and the length is part of the answer.
-
-Start with the maximum sum of any k consecutive elements. Re-summing each block repeats additions, because neighbouring windows share k - 1 values. Once the first sum exists, the next window is the old sum, minus the element that left, plus the element that entered. That update is O(1), once per later element, so the scan is O(n). The width stays k.
-
-If k is larger than the array, there is no valid fixed window. Fewer than k elements cannot supply k consecutive ones.
-
-A variable window finds the shortest subarray whose sum is at least a target. One pointer grows by taking the next element on the right. The other shrinks by dropping the left element while the sum still meets the target. You keep the smallest width that qualified. Both pointers move forward only, so each index enters once and leaves once. The scan stays O(n).
+For the maximum sum of k consecutive values, sum the first k values once. Each later window differs by exactly two values. This makes each slide O(1).
 
 \`\`\`ts
-const nums = [2, 1, 5, 1, 3, 2];
-const k = 3;
-let window = 0;
+function maxWindowSum(values: readonly number[], width: number): number | null {
+  if (!Number.isInteger(width) || width < 1 || width > values.length) {
+    return null;
+  }
 
-for (let i = 0; i < k; i = i + 1) {
-  window = window + nums[i];
+  let sum = 0;
+  for (let index = 0; index < width; index += 1) {
+    sum += values[index] ?? 0;
+  }
+
+  let best = sum;
+
+  for (let right = width; right < values.length; right += 1) {
+    const entering = values[right] ?? 0;
+    const leaving = values[right - width] ?? 0;
+    sum += entering - leaving;
+
+    if (sum > best) {
+      best = sum;
+    }
+  }
+
+  return best;
 }
 
-const next = window - nums[0] + nums[k];
+console.log(maxWindowSum([2, 1, 5, 1, 3, 2], 3));
+console.log(maxWindowSum([4, 2], 3));
 \`\`\`
 
-\`window\` is 8 and \`next\` is 7.
+Expected output is \`9\` and \`null\`. Returning \`null\` distinguishes “no valid window” from a valid maximum sum of 0 or a negative number.
 
-## A numeric example
+## Variable-width windows
 
-Take \`[2, 1, 5, 1, 3, 2]\` with k = 3. Indexes 0 through 2 sum to \`2 + 1 + 5 = 8\`. Drop 2 and add 1: \`8 - 2 + 1 = 7\`. Drop 1 and add 3: \`7 - 1 + 3 = 9\`. Drop 5 and add 2: \`9 - 5 + 2 = 6\`. The maximum is 9.
+A variable window can solve “find the shortest subarray with sum at least a target” in O(n) **when all values are non-negative**. Adding a value cannot decrease the sum, and removing a value cannot increase it. That monotonic behavior tells us when to grow and when to shrink.
 
-Rebuilding every block adds 12 numbers on this input. For n = 1,000 and k = 100, rebuilding is on the order of 90,000 additions, which is O(n * k). The update is about 1,000 steps, which is O(n) time and O(1) extra space.
+\`\`\`ts
+function shortestAtLeast(
+  values: readonly number[],
+  target: number,
+): number | null {
+  if (target <= 0) {
+    return 0;
+  }
 
-If k is 7, only 6 elements exist. There is no valid fixed window, and you return 0.
+  let left = 0;
+  let sum = 0;
+  let best = Number.POSITIVE_INFINITY;
 
-On \`[1, 2, 3, 4]\` with target 6, the window grows to \`[1, 2, 3]\`, sum 6, width 3. Add 4 and the sum is 10. Drop 1 and \`[2, 3, 4]\` is 9. Drop 2 and \`[3, 4]\` is 7, width 2. Drop 3 and the sum is 4, which misses the target, so you stop. The shortest width is 2.
+  for (let right = 0; right < values.length; right += 1) {
+    const entering = values[right] ?? 0;
+    if (entering < 0) {
+      throw new RangeError("values must be non-negative");
+    }
 
-## Cost
+    sum += entering;
 
-The fixed window is O(n) time and O(1) extra space. Re-summing each block is O(n * k) time and O(1) extra space.
+    while (sum >= target) {
+      best = Math.min(best, right - left + 1);
+      sum -= values[left] ?? 0;
+      left += 1;
+    }
+  }
 
-A variable window whose pointers only move forward is O(n) time and O(1) extra space. When k is larger than the array, you stop in O(1) time and O(1) extra space, because there is no first window.
+  if (best === Number.POSITIVE_INFINITY) {
+    return null;
+  }
 
-| Approach | Time | Extra space |
-| --- | --- | --- |
-| First sum, then O(1) updates | O(n) | O(1) |
-| Re-sum each block of k | O(n * k) | O(1) |
-| Variable window, both ends move forward | O(n) | O(1) |
-| k larger than the array | O(1) | O(1) |
+  return best;
+}
 
-## In the course
+console.log(shortestAtLeast([1, 2, 3, 4], 6));
+console.log(shortestAtLeast([1, 1], 5));
+\`\`\`
 
-The Sliding window lesson starts with the fixed window. \`maxWindowSum\` returns the maximum sum of k consecutive elements. \`[2, 1, 5, 1, 3, 2]\` with k = 3 returns 9. If k is less than 1, or k is greater than the length, you return 0. An empty array returns 0. The lesson names the variable window and keeps the exercise on a fixed k. A queue, the first-in first-out line, drops its oldest element from the same end. On an array that drop is an index plus a subtraction, in O(1) extra space.
+Expected output is \`2\` and \`null\`.
+
+## Why both versions are O(n)
+
+The fixed window visits each input position a constant number of times. In the variable window, \`right\` moves forward n times and \`left\` also moves forward at most n times. The inner \`while\` does not make the algorithm O(n²), because its total iterations across the whole run are at most n.
+
+Both implementations use O(1) auxiliary space, excluding their inputs.
+
+## The negative-number limitation
+
+For \`[5, -10, 6]\`, growing a window can lower its sum and shrinking it can raise its sum. The simple grow-or-shrink rule no longer has a monotonic guarantee. Problems with negative values may require prefix sums plus a different data structure; do not quote the O(n) variable-window solution without its precondition.
 
 ## Common mistakes
 
-You re-sum every window and still find 9, at O(n * k). Once the first sum exists, the next sum is an edit. After \`[2, 1, 5]\` the element that leaves is 2. Subtract 5 and the running total misses 7, the real second window.
+Do not re-sum all k values at every starting index. That takes O(nk) time.
 
-The last valid start index is length - k. On length 6 and k = 3, that start is 3. A later start reads off the end. When k is larger than the array there is no valid fixed window, and the exercise wants 0. A variable window stays linear only while the left pointer moves forward. Moving it backward revisits elements.
+Do not initialize a maximum to 0 when valid window sums may all be negative. Initialize it from the first valid window.
+
+Do not confuse a subarray with a subsequence. A subarray is contiguous; a subsequence may contain gaps.
+
+Do not claim every variable-window problem is linear. The boundary rule must be correct, and the boundaries must move monotonically.
 
 ## When to use it
 
-Use a fixed window for the best contiguous block of a known width k. Build the first sum, then update it in O(1). Use a variable window when the width is the unknown and you want the shortest subarray whose sum is at least a target. Grow on the right, shrink on the left, and move both pointers only forward.
-
-## When not to
-
-Leave the window when gaps are allowed. A subsequence has no single element that left the slice. Leave it when k is larger than the array: there is no valid fixed window, and reading the first k indexes walks off the end. Leave the fixed-width update when the width changes during the search. That search wants the variable pair of pointers on one contiguous slice.
+Use a fixed window when the width is known and adjacent ranges overlap. Use a variable window when extending and shrinking changes the condition predictably. If values can be negative, prove monotonicity or choose another method.
 
 ## FAQ
 
-### Why is the update O(1) after the first window?
+### Why return null for an invalid width?
 
-The next window shares k - 1 elements with the current one, and that shared part is already in the sum. You subtract the element that left and add the element that entered. On the lesson numbers, 8 becomes 7 by subtracting 2 and adding 1. Those two operations stay two operations when k grows.
+There is no k-element subarray when k is below 1 or above the input length. \`null\` represents absence without colliding with a legitimate numeric answer.
 
-### What do you do when k is larger than the array?
+### Is the inner while loop quadratic?
 
-You stop. k consecutive elements cannot fit. For \`[4, 2]\` and k = 3 there is no valid fixed window. The exercise returns 0, including an empty array or a k below 1. Check that before the first sum.
+No. Although it is nested syntactically, \`left\` never moves backward. Across all outer iterations, it advances at most n positions.
 
-### How is a variable window different from a fixed one?
+### What state can a window maintain?
 
-A fixed window keeps width k and only slides. A variable window changes width: one pointer grows it until the sum reaches the target, and the other shrinks it while the sum still qualifies. You record the shortest legal slice. Both pointers move forward only, so the scan is O(n) and the extra space is O(1).
+Common choices include a sum, a count, or a frequency record. The update must be cheaper than recomputing that state for the whole range.
 
 ## Related
 
-[What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers) and [What Is a Queue? FIFO Order, Enqueue, and Dequeue](/articles/queues)
+[What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers), [How Prefix Sums Answer Range Queries](/articles/prefix-sums), and [What Is a Queue? FIFO Order, Enqueue, and Dequeue](/articles/queues)
+    `,
+  ),
+  defineArticle(
+    "prefix-sums",
+    "How Prefix Sums Answer Range Queries",
+    "Arrays",
+    "A prefix-sum array precomputes totals from the start. After O(n) preprocessing, any half-open range sum can be answered in O(1) by subtracting two prefixes.",
+    ["prefix sum", "prefix sums"],
+    `
+A prefix-sum array stores cumulative totals so repeated range-sum questions do not rescan the same values. Define \`prefix[i]\` as the sum of elements before index i. Then the sum of the half-open range \`[start, end)\` is:
+
+\`prefix[end] - prefix[start]\`
+
+\`\`\`mermaid
+flowchart LR
+  A["values<br/>3, 1, 4, 2"] --> B["prefix<br/>0, 3, 4, 8, 10"]
+  B --> C["sum [1, 4)<br/>prefix[4] - prefix[1]"]
+  C --> D["10 - 3 = 7"]
+\`\`\`
+
+## Why the subtraction works
+
+\`prefix[end]\` contains everything before \`end\): the values before \`start\` plus the requested range. \`prefix[start]\` contains exactly the unwanted values before \`start\`. Subtracting cancels that shared prefix.
+
+The initial zero is deliberate. It makes ranges beginning at index 0 use the same formula, and it gives an n-element input an n + 1-element prefix array.
+
+\`\`\`ts
+function buildPrefixSums(values: readonly number[]): number[] {
+  const prefix = [0];
+
+  for (const value of values) {
+    const previous = prefix[prefix.length - 1] ?? 0;
+    prefix.push(previous + value);
+  }
+
+  return prefix;
+}
+
+function rangeSum(
+  prefix: readonly number[],
+  start: number,
+  end: number,
+): number {
+  const valueCount = prefix.length - 1;
+  const validRange =
+    Number.isInteger(start) &&
+    Number.isInteger(end) &&
+    start >= 0 &&
+    start <= end &&
+    end <= valueCount;
+
+  if (!validRange) {
+    throw new RangeError("expected 0 <= start <= end <= values.length");
+  }
+
+  return (prefix[end] ?? 0) - (prefix[start] ?? 0);
+}
+
+const values = [3, 1, 4, 2];
+const prefix = buildPrefixSums(values);
+
+console.log(prefix);
+console.log(rangeSum(prefix, 1, 4));
+console.log(rangeSum(prefix, 0, 2));
+console.log(rangeSum(prefix, 2, 2));
+\`\`\`
+
+Expected output is \`[0, 3, 4, 8, 10]\`, then \`7\`, \`4\`, and \`0\`.
+
+## Trace the construction
+
+Start with \`prefix = [0]\`.
+
+1. Add 3 to 0, producing 3.
+2. Add 1 to 3, producing 4.
+3. Add 4 to 4, producing 8.
+4. Add 2 to 8, producing 10.
+
+For \`[1, 4)\`, subtract the total before index 1 from the total before index 4: \`10 - 3 = 7\`. The included values are 1, 4, and 2.
+
+Half-open ranges match \`slice(start, end)\`: start is included and end is excluded. The empty range \`[2, 2)\` correctly has sum 0.
+
+## Cost and trade-off
+
+Building the prefix array takes O(n) time and O(n) extra space. Each range query then takes O(1) time and O(1) extra space.
+
+For q queries, rescanning each range can cost O(qn) in the worst case. Prefix preprocessing makes the total O(n + q). The trade-off is worthwhile when the data is unchanged and there are many queries.
+
+Changing one original value invalidates every later prefix total, so a simple prefix array is poor for frequent updates. More advanced structures such as Fenwick trees or segment trees balance updates and queries in O(log n).
+
+## Common mistakes
+
+Do not omit the leading zero. Without it, ranges starting at index 0 need a special case.
+
+Do not mix inclusive and exclusive end conventions. Write \`[start, end)\` next to the formula.
+
+Do not rebuild the prefix array for every query. Build it once, then reuse it.
+
+Do not use prefix sums blindly when totals can exceed JavaScript's safe integer range. \`number\` represents integers exactly only through \`Number.MAX_SAFE_INTEGER\`; integer-only applications with larger totals may need \`bigint\`.
+
+## When to use it
+
+Use prefix sums for many aggregate queries over mostly immutable data. Besides sums, the same cancellation idea supports counts, such as “how many even values occur in this range?” by prefixing 1 for even and 0 for odd.
+
+## FAQ
+
+### Why is the prefix array one element longer?
+
+The leading zero represents the sum before any values. It removes a boundary special case and makes \`prefix[end] - prefix[start]\` valid for every legal half-open range.
+
+### Are negative values allowed?
+
+Yes. Prefix subtraction remains correct with negative values because it is an algebraic identity. Unlike the simple variable sliding window, it does not rely on sums changing monotonically.
+
+### When is preprocessing worth it?
+
+Usually when multiple range queries reuse the same data. For one query, a direct scan is simpler and already O(n).
+
+## Related
+
+[What Is a Sliding Window?](/articles/sliding-windows) and [How Arrays Support Fast Indexing](/articles/contiguous-arrays)
     `,
   ),
 ];

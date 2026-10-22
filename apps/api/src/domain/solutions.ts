@@ -24,15 +24,20 @@ const StoredTest = Schema.Struct({
   expected: Schema.Unknown,
   public: Schema.Boolean,
   compare: Schema.optional(Schema.Literals(["exact", "set"])),
+  timeoutMs: Schema.optional(Schema.Number),
+  immutableArgs: Schema.optional(Schema.Array(Schema.Number)),
+  distinctArrayReturnFromArg: Schema.optional(Schema.Number),
 });
 
 const parseJson = (text: string): unknown => JSON.parse(text);
 
-const failUnexpected = (message: string) => <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  effect.pipe(
-    Effect.tapError((error) => Effect.logError(message, error)),
-    Effect.mapError(() => new Unexpected({ message })),
-  );
+const failUnexpected =
+  (message: string) =>
+  <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    effect.pipe(
+      Effect.tapError((error) => Effect.logError(message, error)),
+      Effect.mapError(() => new Unexpected({ message })),
+    );
 
 const maxDraftLength = 100_000;
 
@@ -52,7 +57,10 @@ export class Solutions extends Context.Service<
     run(
       problemId: string,
       code: string,
-    ): Effect.Effect<{ readonly lines: readonly PreviewLine[] }, NotFound | Unexpected>;
+    ): Effect.Effect<
+      { readonly lines: readonly PreviewLine[] },
+      NotFound | Unexpected
+    >;
   }
 >()("app/Solutions") {
   static readonly layer = Layer.effect(
@@ -140,23 +148,35 @@ export class Solutions extends Context.Service<
           );
           const problem = problems[0];
           if (problem === undefined) {
-            return yield* new NotFound({ message: "That exercise does not exist." });
+            return yield* new NotFound({
+              message: "That exercise does not exist.",
+            });
           }
 
           const parsedTests = yield* Effect.try({
             try: () => parseJson(problem.testsJson),
-            catch: () => new Unexpected({ message: "Could not read the tests." }),
+            catch: () =>
+              new Unexpected({ message: "Could not read the tests." }),
           });
           const parsedDisallow = yield* Effect.try({
             try: () => parseJson(problem.disallowJson),
-            catch: () => new Unexpected({ message: "Could not read the tests." }),
+            catch: () =>
+              new Unexpected({ message: "Could not read the tests." }),
           });
-          const storedTests = yield* Schema.decodeUnknownEffect(Schema.Array(StoredTest))(
-            parsedTests,
-          ).pipe(Effect.mapError(() => new Unexpected({ message: "Could not read the tests." })));
-          const disallow = yield* Schema.decodeUnknownEffect(Schema.Array(Schema.String))(
-            parsedDisallow,
-          ).pipe(Effect.mapError(() => new Unexpected({ message: "Could not read the tests." })));
+          const storedTests = yield* Schema.decodeUnknownEffect(
+            Schema.Array(StoredTest),
+          )(parsedTests).pipe(
+            Effect.mapError(
+              () => new Unexpected({ message: "Could not read the tests." }),
+            ),
+          );
+          const disallow = yield* Schema.decodeUnknownEffect(
+            Schema.Array(Schema.String),
+          )(parsedDisallow).pipe(
+            Effect.mapError(
+              () => new Unexpected({ message: "Could not read the tests." }),
+            ),
+          );
 
           const tests: RunTest[] = [];
           const cases: PreviewCase[] = [];
@@ -166,6 +186,9 @@ export class Solutions extends Context.Service<
               args: test.args,
               expected: test.expected,
               compare: test.compare ?? "exact",
+              timeoutMs: test.timeoutMs,
+              immutableArgs: test.immutableArgs,
+              distinctArrayReturnFromArg: test.distinctArrayReturnFromArg,
             });
             if (!test.public) {
               continue;
@@ -187,11 +210,18 @@ export class Solutions extends Context.Service<
         code: string,
       ) {
         if (code.trim().length === 0) {
-          return yield* new Unexpected({ message: "Write a solution before submitting." });
+          return yield* new Unexpected({
+            message: "Write a solution before submitting.",
+          });
         }
 
         const exercise = yield* loadExercise(problemId);
-        const outcome = runSolution(code, exercise.functionName, exercise.tests, exercise.disallow);
+        const outcome = runSolution(
+          code,
+          exercise.functionName,
+          exercise.tests,
+          exercise.disallow,
+        );
         const createdAt = new Date().toISOString();
         const id = randomUUID();
 
@@ -225,7 +255,9 @@ export class Solutions extends Context.Service<
         code: string,
       ) {
         if (code.length > maxDraftLength) {
-          return yield* new Unexpected({ message: "That solution is too long to save." });
+          return yield* new Unexpected({
+            message: "That solution is too long to save.",
+          });
         }
 
         yield* upsertDraft({ userId, problemId, code }).pipe(
@@ -234,7 +266,10 @@ export class Solutions extends Context.Service<
         return true;
       });
 
-      const run = Effect.fn("Solutions.run")(function* (problemId: string, code: string) {
+      const run = Effect.fn("Solutions.run")(function* (
+        problemId: string,
+        code: string,
+      ) {
         if (code.trim().length === 0) {
           const lines: PreviewLine[] = [
             { kind: "error", text: "Write some code before running it." },

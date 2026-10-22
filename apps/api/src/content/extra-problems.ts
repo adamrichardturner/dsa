@@ -8,17 +8,30 @@ export interface LessonExtras {
 
 const none: readonly SeedProblem[] = [];
 
+const pairSumStressInput = {
+  fixture: "number-sequence",
+  length: 40_000,
+  start: 0,
+  step: 2,
+};
+
 const countEqual: SeedProblem = {
   id: "count-equal",
   title: "Count exact matches",
   topic: "Complexity",
   difficulty: "easy",
   functionName: "countEqual",
-  disallow: [],
+  disallow: [".filter(", ".reduce("],
+  immutableArgs: [0],
   promptMd: `
-Write \`countEqual\`. Return how many numbers in \`nums\` are equal to \`target\`.
+Implement \`countEqual(nums, target)\`.
 
-Use one pass. An empty array returns 0.
+- **Input:** \`nums\` is an array of finite numbers and \`target\` is a finite number.
+- **Output:** return the number of indexes whose value is exactly equal to \`target\`. Count every occurrence.
+- **Edge cases:** return \`0\` for an empty array or when no value matches. Negative values, zero, and repeated values are valid.
+- **Required technique:** scan \`nums\` once while maintaining a counter.
+- **Complexity:** O(n) time and O(1) extra space.
+- **Do not:** mutate \`nums\`, call \`.filter()\`, or call \`.reduce()\`. The loop and counter are the skill being practised.
   `.trim(),
   starterCode: `export function countEqual(nums: number[], target: number): number {
   return 0;
@@ -49,6 +62,18 @@ Use one pass. An empty array returns 0.
       expected: 3,
       public: false,
     },
+    {
+      name: "zero is distinct from negatives",
+      args: [[0, -1, 0, 1, 0], 0],
+      expected: 3,
+      public: true,
+    },
+    {
+      name: "counts non-consecutive matches",
+      args: [[7, 1, 7, 2, 3, 7], 7],
+      expected: 3,
+      public: false,
+    },
   ],
 };
 
@@ -58,11 +83,18 @@ const reverseCopy: SeedProblem = {
   topic: "Arrays",
   difficulty: "easy",
   functionName: "reverseCopy",
-  disallow: [".reverse(", ".toReversed("],
+  disallow: [".reverse(", ".toReversed(", ".sort(", ".toSorted("],
+  immutableArgs: [0],
+  distinctArrayReturnFromArg: 0,
   promptMd: `
-Return a new array with the values of \`nums\` in reverse order.
+Implement \`reverseCopy(nums)\`.
 
-Do not mutate \`nums\`. Do not call \`.reverse()\` or \`.toReversed()\`. An empty array returns an empty array.
+- **Input:** \`nums\` is an array of finite numbers.
+- **Output:** return a new array containing every input value in the opposite order.
+- **Edge cases:** an empty input returns \`[]\`; a one-value input returns a different array with that value. Preserve duplicates, negative values, and zero.
+- **Required technique:** walk the input from its last index to its first and append each value to a new array.
+- **Complexity:** O(n) time and O(n) output space.
+- **Do not:** mutate \`nums\`, sort it, or use \`.reverse()\`/\`.toReversed()\`.
   `.trim(),
   starterCode: `export function reverseCopy(nums: number[]): number[] {
   return [];
@@ -93,6 +125,18 @@ Do not mutate \`nums\`. Do not call \`.reverse()\` or \`.toReversed()\`. An empt
       expected: [4, 0, -1],
       public: false,
     },
+    {
+      name: "preserves duplicates",
+      args: [[2, 1, 2, 2]],
+      expected: [2, 2, 1, 2],
+      public: true,
+    },
+    {
+      name: "does not numerically sort",
+      args: [[10, 2, 30]],
+      expected: [30, 2, 10],
+      public: false,
+    },
   ],
 };
 
@@ -102,11 +146,22 @@ const hasDuplicate: SeedProblem = {
   topic: "Hash maps",
   difficulty: "easy",
   functionName: "hasDuplicate",
-  disallow: [],
+  disallow: [
+    ".includes(",
+    ".indexOf(",
+    ".lastIndexOf(",
+    ".sort(",
+    ".toSorted(",
+  ],
   promptMd: `
-Return true when any value in \`nums\` appears more than once.
+Implement \`hasDuplicate(nums)\`.
 
-One pass with a hash map is enough. An empty array returns false.
+- **Input:** \`nums\` is an array of finite numbers.
+- **Output:** return \`true\` as soon as one value has appeared at two different indexes; otherwise return \`false\`.
+- **Edge cases:** arrays with fewer than two values return \`false\`. Duplicate zeroes and duplicate negative values count.
+- **Required technique:** keep a hash-based record of values already seen during one left-to-right pass.
+- **Complexity:** O(n) expected time and O(n) extra space.
+- **Do not:** sort the input, rescan it with \`.includes()\`/\`.indexOf()\`, or compare every pair of indexes.
   `.trim(),
   starterCode: `export function hasDuplicate(nums: number[]): boolean {
   return false;
@@ -137,6 +192,24 @@ One pass with a hash map is enough. An empty array returns false.
       expected: true,
       public: false,
     },
+    {
+      name: "duplicate zero",
+      args: [[0, -1, 2, 0]],
+      expected: true,
+      public: true,
+    },
+    {
+      name: "same absolute value is not duplicate",
+      args: [[-3, 3, 0]],
+      expected: false,
+      public: false,
+    },
+    {
+      name: "non-adjacent duplicate among many values",
+      args: [[9, 1, 8, 2, 7, 3, 6, 1]],
+      expected: true,
+      public: false,
+    },
   ],
 };
 
@@ -146,11 +219,27 @@ const hasPairSum: SeedProblem = {
   topic: "Two pointers",
   difficulty: "easy",
   functionName: "hasPairSum",
-  disallow: [],
+  disallow: [
+    ".includes(",
+    ".indexOf(",
+    ".some(",
+    ".find(",
+    "new Set",
+    "new Map",
+    ".sort(",
+    ".toSorted(",
+  ],
   promptMd: `
-\`nums\` is sorted ascending and may contain negatives. Return true when two different indexes add up to \`target\`.
+Implement \`hasPairSum(nums, target)\`.
 
-Move inward pointers. A nested loop also works, and it is the cost this lesson is trying to beat.
+- **Input:** \`nums\` is sorted in non-decreasing order and contains finite numbers; \`target\` is finite. Duplicates and negative values are allowed.
+- **Output:** return \`true\` when there are two **different indexes** \`left < right\` whose values sum to \`target\`; otherwise return \`false\`.
+- **Edge cases:** fewer than two values returns \`false\`. Two equal values may form a pair only when they occur at two indexes.
+- **Required technique:** start one pointer at each end. If the sum is too small, move only the left pointer. If it is too large, move only the right pointer. Stop when the pointers meet.
+- **Complexity:** O(n) time and O(1) extra space.
+- **Do not:** move both pointers after a failed comparison, reuse one index, use nested loops, build a lookup set/map, search the array repeatedly, or sort the already-sorted input.
+
+The runner rejects \`for\` loops for this exercise so the intended \`while\`-based two-pointer traversal remains visible.
   `.trim(),
   starterCode: `export function hasPairSum(nums: number[], target: number): boolean {
   return false;
@@ -181,6 +270,37 @@ Move inward pointers. A nested loop also works, and it is the cost this lesson i
       expected: false,
       public: false,
     },
+    {
+      name: "move only left pointer",
+      args: [[1, 2, 3, 4, 9], 11],
+      expected: true,
+      public: true,
+    },
+    {
+      name: "move only right pointer",
+      args: [[1, 2, 8, 9, 10], 10],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "cannot reuse the middle index",
+      args: [[1, 2, 5, 11], 10],
+      expected: false,
+      public: false,
+    },
+    {
+      name: "negatives and zero",
+      args: [[-8, -3, 0, 2, 7, 12], 4],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "large absent pair stays linear",
+      args: [pairSumStressInput, 79_997],
+      expected: false,
+      public: false,
+      timeoutMs: 300,
+    },
   ],
 };
 
@@ -190,11 +310,16 @@ const minWindowSum: SeedProblem = {
   topic: "Sliding window",
   difficulty: "easy",
   functionName: "minWindowSum",
-  disallow: [],
+  disallow: [".slice(", ".reduce("],
   promptMd: `
-Return the minimum sum of any contiguous block of exactly \`k\` elements.
+Implement \`minWindowSum(nums, k)\`.
 
-If \`k\` is less than 1 or greater than \`nums.length\`, return 0. Reuse the previous window instead of re-summing it.
+- **Input:** \`nums\` is an array of finite numbers. \`k\` is an integer.
+- **Output:** return the smallest sum among all contiguous windows containing exactly \`k\` values.
+- **Edge cases:** return \`0\` when \`k < 1\`, \`k > nums.length\`, or no valid window exists. If \`k === nums.length\`, return the whole-array sum. Values may be negative.
+- **Required technique:** sum the first window once, then slide it by subtracting the outgoing value and adding the incoming value.
+- **Complexity:** O(n) time and O(1) extra space.
+- **Do not:** create slices or reduce/re-sum every window.
   `.trim(),
   starterCode: `export function minWindowSum(nums: number[], k: number): number {
   return 0;
@@ -225,6 +350,24 @@ If \`k\` is less than 1 or greater than \`nums.length\`, return 0. Reuse the pre
       expected: 2,
       public: false,
     },
+    {
+      name: "invalid zero window",
+      args: [[1, 2, 3], 0],
+      expected: 0,
+      public: true,
+    },
+    {
+      name: "window of one finds negative minimum",
+      args: [[5, -4, 8, -2], 1],
+      expected: -4,
+      public: false,
+    },
+    {
+      name: "minimum is the final window",
+      args: [[9, 8, 7, 1, 1], 2],
+      expected: 2,
+      public: false,
+    },
   ],
 };
 
@@ -234,11 +377,16 @@ const listSum: SeedProblem = {
   topic: "Linked lists",
   difficulty: "easy",
   functionName: "listSum",
-  disallow: [],
+  disallow: [".reduce(", ".filter("],
   promptMd: `
-\`listSum\` receives numbers. The starter builds a linked list from them. Walk the nodes and return the sum of their values.
+Implement \`listSum(values)\`. The supplied \`fromArray\` helper converts \`values\` into a linked list and gives you its head.
 
-An empty list returns 0. Sum the nodes, not a second copy of the array.
+- **Input:** \`values\` is an array of finite numbers used only to construct the list.
+- **Output:** return the sum of the \`value\` field on every node.
+- **Edge cases:** an empty list sums to \`0\`; a one-node list returns that node's value. Values may be negative or zero.
+- **Required technique:** call \`fromArray(values)\`, then advance a node pointer through \`next\` until it becomes \`null\`.
+- **Complexity:** O(n) time and O(1) extra space after the provided list construction.
+- **Do not:** sum \`values\` directly with array helpers, copy the list into an array, or mutate/relink nodes.
   `.trim(),
   starterCode: listStarter(
     "export function listSum(values: number[]): number",
@@ -269,6 +417,18 @@ An empty list returns 0. Sum the nodes, not a second copy of the array.
       expected: 2,
       public: false,
     },
+    {
+      name: "zero total with several nodes",
+      args: [[10, -3, -7, 0]],
+      expected: 0,
+      public: true,
+    },
+    {
+      name: "repeated nodes all count",
+      args: [[2, 2, 2, 2]],
+      expected: 8,
+      public: false,
+    },
   ],
 };
 
@@ -278,11 +438,18 @@ const removeAdjacent: SeedProblem = {
   topic: "Stacks",
   difficulty: "easy",
   functionName: "removeAdjacent",
-  disallow: [],
+  disallow: [".replace(", ".replaceAll("],
   promptMd: `
-Return \`value\` after repeatedly removing pairs of adjacent equal letters.
+Implement \`removeAdjacent(value)\`.
 
-\`removeAdjacent("abbaca")\` is \`"ca"\`. A stack is a good fit: the top is the letter you just kept. An empty string stays empty.
+- **Input:** \`value\` is a string of lowercase English letters.
+- **Output:** repeatedly remove adjacent equal pairs until no such pair remains, then return the remaining characters in order.
+- **Edge cases:** \`""\` remains \`""\`; a string with no pair is unchanged. Removing a pair may create a new pair across the gap, so \`"abba"\` becomes \`""\`.
+- **Required technique:** use an array as a stack. Compare each character with the stack top; pop on a match and push otherwise.
+- **Complexity:** O(n) time and O(n) extra space.
+- **Do not:** use \`.replace()\`/\`.replaceAll()\`, repeatedly rescan the string, or hard-code known examples.
+
+Example: \`removeAdjacent("abbaca")\` returns \`"ca"\`.
   `.trim(),
   starterCode: `export function removeAdjacent(value: string): string {
   return "";
@@ -313,6 +480,24 @@ Return \`value\` after repeatedly removing pairs of adjacent equal letters.
       expected: "abc",
       public: false,
     },
+    {
+      name: "cascade across removed pair",
+      args: ["azxxzy"],
+      expected: "ay",
+      public: true,
+    },
+    {
+      name: "odd run leaves one",
+      args: ["aaabcccb"],
+      expected: "abcb",
+      public: false,
+    },
+    {
+      name: "case consists of several cascades",
+      args: ["aabccba"],
+      expected: "a",
+      public: false,
+    },
   ],
 };
 
@@ -322,13 +507,19 @@ const recentValues: SeedProblem = {
   topic: "Queues",
   difficulty: "easy",
   functionName: "recentValues",
-  disallow: [],
+  disallow: [".splice(", ".reverse(", ".toReversed("],
+  immutableArgs: [0],
   promptMd: `
-Treat \`values\` as arrivals, in order. After each arrival, keep only the most recent \`window\` values and record that snapshot.
+Implement \`recentValues(values, window)\`.
 
-\`recentValues([1, 2, 3, 4], 2)\` is \`[[1], [1, 2], [2, 3], [3, 4]]\`.
+- **Input:** \`values\` is an array of finite numbers in arrival order. \`window\` is a positive integer.
+- **Output:** after each arrival, append a snapshot containing at most the most recent \`window\` values. Return one independent snapshot per input value.
+- **Edge cases:** an empty input returns \`[]\`; \`window === 1\` keeps only the newest value; a window wider than the input never evicts.
+- **Required technique:** enqueue each value, dequeue the oldest value when the queue becomes too long, and copy the current queue into the result.
+- **Complexity:** O(n × window) time for the required snapshots and O(n × window) output space, with O(window) working queue space.
+- **Do not:** reverse the input, splice the input, mutate \`values\`, or store the same mutable queue object as every snapshot.
 
-Enqueue the new value. When the queue is longer than the window, dequeue the oldest.
+\`recentValues([1, 2, 3, 4], 2)\` returns \`[[1], [1, 2], [2, 3], [3, 4]]\`.
   `.trim(),
   starterCode: `export function recentValues(values: number[], window: number): number[][] {
   return [];
@@ -359,6 +550,18 @@ Enqueue the new value. When the queue is longer than the window, dequeue the old
       expected: [[4], [5], [6]],
       public: false,
     },
+    {
+      name: "snapshots retain earlier states",
+      args: [[1, 1, 2, 3], 3],
+      expected: [[1], [1, 1], [1, 1, 2], [1, 2, 3]],
+      public: true,
+    },
+    {
+      name: "negative arrivals preserve order",
+      args: [[-2, 0, -1], 2],
+      expected: [[-2], [-2, 0], [0, -1]],
+      public: false,
+    },
   ],
 };
 
@@ -368,11 +571,17 @@ const sumNested: SeedProblem = {
   topic: "Recursion",
   difficulty: "easy",
   functionName: "sumNested",
-  disallow: [],
+  disallow: [".flat(", ".flatMap(", ".reduce("],
   promptMd: `
-\`value\` is a number or an array of the same shape, nested to any depth. Return the sum of every number.
+Implement \`sumNested(value)\` for the recursive \`Nested\` type supplied in the starter.
 
-A number sums to itself. An empty array sums to 0. Each recursive call must be a smaller piece.
+- **Input:** \`value\` is either a finite number or an array whose elements are recursively \`Nested\`. Nesting depth and array lengths may vary.
+- **Output:** return the sum of every number in the structure.
+- **Base cases:** a number returns itself and an empty array returns \`0\`.
+- **Edge cases:** include negative values, zero, empty arrays at any depth, and sibling arrays.
+- **Required technique:** recursively solve each child and accumulate the returned sums. Every recursive call must receive a smaller nested value.
+- **Complexity:** O(n) time for n total numbers/arrays and O(d) call-stack space for maximum nesting depth d.
+- **Do not:** flatten the structure, stringify it, or use \`.reduce()\` in place of writing the recursive traversal.
   `.trim(),
   starterCode: `type Nested = number | Nested[];
 
@@ -405,6 +614,24 @@ export function sumNested(value: Nested): number {
       expected: 6,
       public: false,
     },
+    {
+      name: "empty arrays at several depths",
+      args: [[[], [[], 4], []]],
+      expected: 4,
+      public: true,
+    },
+    {
+      name: "negatives and zero",
+      args: [[-5, [0, [2, -1]], 4]],
+      expected: 0,
+      public: false,
+    },
+    {
+      name: "deep single branch",
+      args: [[[[[[7]]]]]],
+      expected: 7,
+      public: false,
+    },
   ],
 };
 
@@ -414,11 +641,18 @@ const searchInsert: SeedProblem = {
   topic: "Binary search",
   difficulty: "easy",
   functionName: "searchInsert",
-  disallow: [],
+  disallow: [".findIndex(", ".indexOf(", ".includes(", ".sort(", ".toSorted("],
   promptMd: `
-\`nums\` is sorted ascending and has no duplicates. Return the index of \`target\` if it is present. If it is absent, return the index where it would be inserted so the array stays sorted.
+Implement \`searchInsert(nums, target)\`.
 
-An empty array returns 0. Use binary search.
+- **Input:** \`nums\` is sorted in strictly increasing order and contains finite numbers; \`target\` is finite.
+- **Output:** return the target's index when present. Otherwise return the index where inserting it would preserve ascending order.
+- **Edge cases:** an empty array returns \`0\`; the insertion point may be \`0\` or \`nums.length\`. Negative values are valid.
+- **Required technique:** binary search a half-open range and keep the first index whose value is not less than \`target\`.
+- **Complexity:** O(log n) time and O(1) extra space.
+- **Do not:** linearly scan, call search helpers, sort, or mutate \`nums\`.
+
+The runner rejects \`for\` loops for this exercise so a \`while\`-based binary search remains visible.
   `.trim(),
   starterCode: `export function searchInsert(nums: number[], target: number): number {
   return 0;
@@ -449,6 +683,30 @@ An empty array returns 0. Use binary search.
       expected: 0,
       public: false,
     },
+    {
+      name: "single present",
+      args: [[4], 4],
+      expected: 0,
+      public: false,
+    },
+    {
+      name: "single absent after",
+      args: [[4], 9],
+      expected: 1,
+      public: false,
+    },
+    {
+      name: "negative insertion point",
+      args: [[-10, -3, 2, 8], -4],
+      expected: 1,
+      public: true,
+    },
+    {
+      name: "between final values",
+      args: [[1, 4, 9, 15, 22], 14],
+      expected: 3,
+      public: false,
+    },
   ],
 };
 
@@ -458,11 +716,18 @@ const mergeSorted: SeedProblem = {
   topic: "Sorting",
   difficulty: "easy",
   functionName: "mergeSorted",
-  disallow: [".sort("],
+  disallow: [".sort(", ".toSorted("],
+  immutableArgs: [0, 1],
+  distinctArrayReturnFromArg: 0,
   promptMd: `
-\`left\` and \`right\` are sorted ascending. Return one sorted array with every value from both.
+Implement \`mergeSorted(left, right)\`.
 
-This is the merge step on its own. Do not call \`.sort()\`. Two pointers are enough.
+- **Input:** \`left\` and \`right\` are arrays of finite numbers, each sorted in non-decreasing order. Either may be empty and duplicates are allowed.
+- **Output:** return a new non-decreasing array containing every value from both inputs, including all duplicate occurrences.
+- **Edge cases:** two empty inputs return \`[]\`; when one input is exhausted, append the remaining values from the other.
+- **Required technique:** use one pointer per input, repeatedly append the smaller current value, then drain either remainder.
+- **Complexity:** O(left.length + right.length) time and O(left.length + right.length) output space.
+- **Do not:** mutate either input, concatenate then sort, call \`.sort()\`/\`.toSorted()\`, or omit duplicates.
   `.trim(),
   starterCode: `export function mergeSorted(left: number[], right: number[]): number[] {
   return [];
@@ -499,6 +764,33 @@ This is the merge step on its own. Do not call \`.sort()\`. Two pointers are eno
       expected: [],
       public: false,
     },
+    {
+      name: "left remainder",
+      args: [
+        [1, 2, 8, 9],
+        [3, 4],
+      ],
+      expected: [1, 2, 3, 4, 8, 9],
+      public: true,
+    },
+    {
+      name: "right remainder with negatives",
+      args: [
+        [-5, 0],
+        [-4, -1, 3, 7],
+      ],
+      expected: [-5, -4, -1, 0, 3, 7],
+      public: false,
+    },
+    {
+      name: "equal values from both sides",
+      args: [
+        [2, 2],
+        [2, 2],
+      ],
+      expected: [2, 2, 2, 2],
+      public: false,
+    },
   ],
 };
 
@@ -508,11 +800,16 @@ const countNodes: SeedProblem = {
   topic: "Trees",
   difficulty: "easy",
   functionName: "countNodes",
-  disallow: [],
+  disallow: [".filter(", ".reduce("],
   promptMd: `
-\`values\` is a binary tree in level order. \`null\` means a missing child. Return how many nodes the tree has.
+Implement \`countNodes(values)\`. The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
 
-An empty list returns 0. Use \`buildTree\`, then walk every child.
+- **Input:** \`values\` is a valid level-order binary-tree encoding. Numbers are nodes and \`null\` marks a missing child.
+- **Output:** return the number of actual \`TreeNode\` objects in the constructed tree.
+- **Edge cases:** \`[]\` returns \`0\`; a root by itself returns \`1\`; missing children and one-sided trees are valid.
+- **Required technique:** call \`buildTree(values)\`, then recursively traverse both \`left\` and \`right\` children (or use an explicit traversal stack/queue).
+- **Complexity:** O(n) time for n nodes and O(h) recursive stack space, or O(n) explicit traversal space.
+- **Do not:** count entries in \`values\` directly with array helpers. Traverse the tree produced by \`buildTree\`.
   `.trim(),
   starterCode: treeStarter(
     "export function countNodes(values: Array<number | null>): number",
@@ -543,6 +840,24 @@ An empty list returns 0. Use \`buildTree\`, then walk every child.
       expected: 3,
       public: false,
     },
+    {
+      name: "right spine",
+      args: [[1, null, 2, null, 3]],
+      expected: 3,
+      public: true,
+    },
+    {
+      name: "missing children inside tree",
+      args: [[8, 4, 12, null, 6, 10, null]],
+      expected: 5,
+      public: false,
+    },
+    {
+      name: "zero and negative node values still count",
+      args: [[0, -1, 2, null, null, -3, 4]],
+      expected: 5,
+      public: false,
+    },
   ],
 };
 
@@ -552,11 +867,24 @@ const bstMin: SeedProblem = {
   topic: "Binary search trees",
   difficulty: "easy",
   functionName: "bstMin",
-  disallow: [".includes", "Math.min", ".sort("],
+  disallow: [
+    ".includes(",
+    ".indexOf(",
+    ".filter(",
+    ".reduce(",
+    "Math.min",
+    ".sort(",
+    ".toSorted(",
+  ],
   promptMd: `
-Insert every value of \`values\`, in order, into a binary search tree. Return the minimum value stored in the tree.
+Implement \`bstMin(values)\` using the supplied \`TreeNode\` class.
 
-An empty list returns \`null\`. Walk left until the left child is missing. Do not scan the array with \`Math.min\`, \`sort\`, or \`includes\`.
+- **Input:** \`values\` is an array of finite, distinct numbers. Insert them from left to right into an initially empty binary search tree: smaller values go left and larger values go right.
+- **Output:** return the smallest value stored in the completed tree, or \`null\` when no values were inserted.
+- **Edge cases:** the root may already be the minimum; values may be negative; a descending input creates a left spine.
+- **Required technique:** build the BST with \`TreeNode\` links, then follow \`left\` pointers until no left child remains.
+- **Complexity:** O(nh) tree construction in the unbalanced worst case and O(h) minimum lookup, where h is tree height.
+- **Do not:** take the minimum directly from \`values\`, sort/search/filter/reduce the array, or call \`Math.min\`.
   `.trim(),
   starterCode: bstStarter(
     "export function bstMin(values: number[]): number | null",
@@ -587,6 +915,24 @@ An empty list returns \`null\`. Walk left until the left child is missing. Do no
       expected: -4,
       public: false,
     },
+    {
+      name: "minimum is deep left descendant",
+      args: [[10, 5, 15, 7, 3, 4, 1]],
+      expected: 1,
+      public: true,
+    },
+    {
+      name: "descending input",
+      args: [[9, 7, 5, 3, 1]],
+      expected: 1,
+      public: false,
+    },
+    {
+      name: "all negative values",
+      args: [[-4, -2, -8, -6]],
+      expected: -8,
+      public: false,
+    },
   ],
 };
 
@@ -596,11 +942,17 @@ const isMinHeap: SeedProblem = {
   topic: "Heaps",
   difficulty: "easy",
   functionName: "isMinHeap",
-  disallow: [],
+  disallow: [".sort(", ".toSorted(", "Math.min"],
+  immutableArgs: [0],
   promptMd: `
-\`nums\` is a complete binary tree stored in an array. Return true when every parent is less than or equal to its children.
+Implement \`isMinHeap(nums)\`.
 
-An empty array is a min-heap. Compare each index with its parent, \`Math.floor((i - 1) / 2)\`.
+- **Input:** \`nums\` is a complete binary tree stored in level order, with finite numbers. For child index \`i > 0\`, its parent is \`Math.floor((i - 1) / 2)\`.
+- **Output:** return \`true\` exactly when every parent value is less than or equal to each child value.
+- **Edge cases:** empty and one-value arrays are valid min-heaps. Equal parent/child values are allowed. A violation may occur below an otherwise valid root.
+- **Required technique:** scan each non-root index once and compare it with its parent, returning early on a violation.
+- **Complexity:** O(n) time and O(1) extra space.
+- **Do not:** sort the array, compute a global minimum, mutate \`nums\`, or check only the root's children.
   `.trim(),
   starterCode: `export function isMinHeap(nums: number[]): boolean {
   return false;
@@ -631,6 +983,24 @@ An empty array is a min-heap. Compare each index with its parent, \`Math.floor((
       expected: true,
       public: false,
     },
+    {
+      name: "equal parent and child allowed",
+      args: [[1, 1, 2, 1, 3]],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "deep violation outside root children",
+      args: [[1, 3, 2, 7, 4, 0]],
+      expected: false,
+      public: true,
+    },
+    {
+      name: "negative min heap",
+      args: [[-10, -8, -9, -3, -2]],
+      expected: true,
+      public: false,
+    },
   ],
 };
 
@@ -640,11 +1010,16 @@ const canReach: SeedProblem = {
   topic: "Graphs",
   difficulty: "easy",
   functionName: "canReach",
-  disallow: [],
+  disallow: [".includes(", ".indexOf("],
   promptMd: `
-\`edges\` is a list of undirected edges \`[from, to]\`. Return true when \`end\` is reachable from \`start\`, including the case \`start === end\`.
+Implement \`canReach(edges, start, end)\`.
 
-Mark vertices you have already queued, or a cycle will loop forever.
+- **Input:** each item in \`edges\` is an undirected edge \`[from, to]\` between integer vertex labels. Labels need not be consecutive and isolated \`start\`/\`end\` labels may be absent from the edges.
+- **Output:** return whether any path connects \`start\` to \`end\`. A vertex is always reachable from itself.
+- **Edge cases:** handle an empty graph, disconnected components, cycles, self-edges, and paths that require traversing an edge in either direction.
+- **Required technique:** build an adjacency record, then run BFS or DFS while marking a vertex when it is first queued/visited.
+- **Complexity:** O(V + E) time and O(V + E) space.
+- **Do not:** repeatedly search the edge list for every path step, enumerate paths, or omit the visited record.
   `.trim(),
   starterCode: `export function canReach(
   edges: number[][],
@@ -694,6 +1069,53 @@ Mark vertices you have already queued, or a cycle will loop forever.
       expected: true,
       public: false,
     },
+    {
+      name: "undirected edge works in reverse",
+      args: [
+        [
+          [1, 2],
+          [2, 3],
+        ],
+        3,
+        1,
+      ],
+      expected: true,
+      public: true,
+    },
+    {
+      name: "cycle in disconnected component",
+      args: [
+        [
+          [0, 1],
+          [1, 0],
+          [3, 4],
+        ],
+        0,
+        4,
+      ],
+      expected: false,
+      public: false,
+    },
+    {
+      name: "non-consecutive labels on longer path",
+      args: [
+        [
+          [10, 20],
+          [30, 40],
+          [20, 30],
+        ],
+        10,
+        40,
+      ],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "isolated vertices differ",
+      args: [[], -1, 1],
+      expected: false,
+      public: false,
+    },
   ],
 };
 
@@ -703,11 +1125,17 @@ const canAttendAll: SeedProblem = {
   topic: "Greedy",
   difficulty: "easy",
   functionName: "canAttendAll",
-  disallow: [],
+  disallow: [".some(", ".every(", ".find("],
+  immutableArgs: [0],
   promptMd: `
-Each interval is \`[start, end)\` and does not include \`end\`. Return true when one person can attend every interval.
+Implement \`canAttendAll(intervals)\`.
 
-Touching is allowed: \`[1, 2]\` and \`[2, 4]\` do not overlap. An empty list returns true.
+- **Input:** each interval is a valid finite pair \`[start, end)\` with \`start < end\`. Intervals may be unsorted.
+- **Output:** return \`true\` when no two intervals overlap, so one person can attend all of them.
+- **Edge cases:** an empty or one-interval input returns \`true\`. Endpoints are exclusive, so intervals that only touch are compatible. Negative times are valid.
+- **Required technique:** copy and sort intervals by start time, then compare each start with the previous interval's end.
+- **Complexity:** O(n log n) time and O(n) space for the non-mutating sorted copy.
+- **Do not:** mutate \`intervals\`, compare every pair with nested loops, or treat touching endpoints as overlap.
   `.trim(),
   starterCode: `export function canAttendAll(intervals: number[][]): boolean {
   return false;
@@ -753,6 +1181,47 @@ Touching is allowed: \`[1, 2]\` and \`[2, 4]\` do not overlap. An empty list ret
       expected: true,
       public: false,
     },
+    {
+      name: "unsorted hidden overlap",
+      args: [
+        [
+          [8, 10],
+          [1, 4],
+          [3, 6],
+        ],
+      ],
+      expected: false,
+      public: true,
+    },
+    {
+      name: "interval contained inside another",
+      args: [
+        [
+          [1, 10],
+          [3, 4],
+        ],
+      ],
+      expected: false,
+      public: false,
+    },
+    {
+      name: "negative touching chain",
+      args: [
+        [
+          [-5, -2],
+          [0, 3],
+          [-2, 0],
+        ],
+      ],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "single interval",
+      args: [[[2, 9]]],
+      expected: true,
+      public: false,
+    },
   ],
 };
 
@@ -762,13 +1231,18 @@ const countSubsets: SeedProblem = {
   topic: "Backtracking",
   difficulty: "easy",
   functionName: "countSubsets",
-  disallow: [],
+  disallow: ["**", "Math.pow(", "<<", ">>", ".reduce("],
   promptMd: `
-Return how many subsets \`nums\` has, including the empty subset.
+Implement \`countSubsets(nums)\`.
 
-\`nums\` contains distinct numbers. \`[1, 2]\` has 4 subsets. An empty list has 1 subset, the empty one.
+- **Input:** \`nums\` contains distinct finite numbers and has at most 20 values.
+- **Output:** return the number of distinct subsets, including both the empty subset and the full input.
+- **Edge cases:** \`[]\` has one subset; each additional distinct value doubles the count.
+- **Expected technique:** use include/exclude backtracking: at each index, recursively count the branch that skips the value and the branch that takes it. A direct \`2 ** nums.length\` calculation is also a valid constant-time optimization for this count-only variant.
+- **Complexity:** O(2^n) recursive calls and O(n) call-stack space for backtracking.
+- **Do not:** generate and retain all subset arrays when only the count is required, use exponentiation, bit shifts, or \`.reduce()\`. Static restrictions and output tests encourage the recursive exercise but cannot formally prove how the count was produced.
 
-Choose, explore, then undo. A formula that returns a power of two also passes, and the next exercise asks you to list them.
+\`countSubsets([1, 2])\` returns \`4\`.
   `.trim(),
   starterCode: `export function countSubsets(nums: number[]): number {
   return 0;
@@ -799,6 +1273,18 @@ Choose, explore, then undo. A formula that returns a power of two also passes, a
       expected: 8,
       public: false,
     },
+    {
+      name: "five values",
+      args: [[-3, -1, 0, 2, 8]],
+      expected: 32,
+      public: true,
+    },
+    {
+      name: "ten values",
+      args: [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]],
+      expected: 1_024,
+      public: false,
+    },
   ],
 };
 
@@ -808,11 +1294,19 @@ const minCostClimb: SeedProblem = {
   topic: "Dynamic programming",
   difficulty: "medium",
   functionName: "minCostClimb",
-  disallow: [],
+  disallow: [".sort(", ".toSorted(", ".shift(", ".unshift("],
+  immutableArgs: [0],
   promptMd: `
-\`cost[i]\` is the cost of stepping on stair \`i\`. After you pay it, you may climb 1 or 2 stairs. You may start at stair 0 or stair 1. Return the minimum cost to reach the top, which is just past the last stair.
+Implement \`minCostClimb(cost)\`.
 
-\`minCostClimb([10, 15, 20])\` is 15. Write the recurrence, then fill it from the bottom or cache it.
+- **Input:** \`cost\` is an array of non-negative finite numbers. \`cost[i]\` is paid when stepping on stair \`i\`.
+- **Output:** return the minimum total cost needed to reach the top, one position past the final stair. You may start on stair 0 or stair 1 and move one or two stairs after each payment.
+- **Edge cases:** zero or one stair costs \`0\` because you may start at or beyond the top. Zero-cost stairs and repeated costs are valid.
+- **Required technique:** use the recurrence based on the cheapest cost to reach the previous two positions, either bottom-up or with memoization.
+- **Complexity:** O(n) time and O(1) extra space for the bottom-up two-state solution (or O(n) memo space).
+- **Do not:** greedily choose only the locally cheaper next stair, sort/reorder the costs, or mutate \`cost\`.
+
+\`minCostClimb([10, 15, 20])\` returns \`15\`.
   `.trim(),
   starterCode: `export function minCostClimb(cost: number[]): number {
   return 0;
@@ -843,6 +1337,30 @@ const minCostClimb: SeedProblem = {
       expected: 2,
       public: false,
     },
+    {
+      name: "empty staircase",
+      args: [[]],
+      expected: 0,
+      public: true,
+    },
+    {
+      name: "one stair can be skipped",
+      args: [[9]],
+      expected: 0,
+      public: false,
+    },
+    {
+      name: "zero-cost route",
+      args: [[0, 5, 0, 5, 0]],
+      expected: 0,
+      public: false,
+    },
+    {
+      name: "local cheapest choice is misleading",
+      args: [[5, 1, 2, 100, 1, 1]],
+      expected: 4,
+      public: false,
+    },
   ],
 };
 
@@ -852,13 +1370,18 @@ const hasPrefix: SeedProblem = {
   topic: "Tries",
   difficulty: "medium",
   functionName: "hasPrefix",
-  disallow: ["new Set", "new Map"],
+  disallow: [".startsWith(", ".includes(", ".indexOf(", ".some(", ".find("],
   promptMd: `
-Insert every string in \`words\` into a trie. Then, for each query, return whether that query is a prefix of some inserted word, or an inserted word itself.
+Implement \`hasPrefix(words, queries)\`.
 
-\`hasPrefix(["cat", "car"], ["ca", "cab", "cat"])\` is \`[true, false, true]\`.
+- **Input:** \`words\` and \`queries\` contain lowercase English strings. Insert every word into one trie.
+- **Output:** return one boolean per query, in query order. The result is \`true\` when the entire query labels a path from the trie root, meaning it is a prefix of at least one inserted word (including an exact word).
+- **Edge cases:** an empty query is a prefix only when at least one word was inserted. With no words, every query is false. Queries may be longer than all matching words, and duplicate words do not change the answers.
+- **Required technique:** represent trie children with \`Record<string, TrieNode>\`; build the trie once, then traverse characters for each query.
+- **Complexity:** O(W + Q) time, where W is the total characters inserted and Q is the total query characters examined, and O(W) trie space.
+- **Do not:** scan all words separately for every query or call \`.startsWith()\`/\`.includes()\`. A map used for each node's children is still a trie; a flat collection of whole words does not provide prefix lookup.
 
-An empty query is true when at least one word was inserted. Build a trie of characters. Do not use \`Set\` or \`Map\`.
+\`hasPrefix(["cat", "car"], ["ca", "cab", "cat"])\` returns \`[true, false, true]\`.
   `.trim(),
   starterCode: `export function hasPrefix(words: string[], queries: string[]): boolean[] {
   return [];
@@ -890,6 +1413,39 @@ An empty query is true when at least one word was inserted. Build a trie of char
       name: "no words",
       args: [[], [""]],
       expected: [false],
+      public: false,
+    },
+    {
+      name: "exact word prefix and longer query",
+      args: [
+        ["a", "ant"],
+        ["a", "an", "ant", "ants"],
+      ],
+      expected: [true, true, true, false],
+      public: true,
+    },
+    {
+      name: "shared first character diverges",
+      args: [
+        ["dog", "dot", "dove"],
+        ["do", "dog", "dor", "dov"],
+      ],
+      expected: [true, true, false, true],
+      public: false,
+    },
+    {
+      name: "duplicate words and mixed queries",
+      args: [
+        ["cat", "cat"],
+        ["", "c", "cat", "cater"],
+      ],
+      expected: [true, true, true, false],
+      public: false,
+    },
+    {
+      name: "no words makes non-empty query false",
+      args: [[], ["a", "cat"]],
+      expected: [false, false],
       public: false,
     },
   ],

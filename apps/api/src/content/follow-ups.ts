@@ -2,6 +2,21 @@ import type { SeedLesson, SeedProblem } from "./types.js";
 import { stepBitesize } from "./step-bitesize.js";
 import { listStarter, treeStarter, bstStarter } from "./scaffolds.js";
 
+const contractsFor = (
+  id: string,
+): Pick<SeedProblem, "immutableArgs" | "distinctArrayReturnFromArg"> => {
+  switch (id) {
+    case "remove-at":
+    case "insert-at":
+    case "bubble-sort": {
+      return { immutableArgs: [0], distinctArrayReturnFromArg: 0 };
+    }
+    default: {
+      return {};
+    }
+  }
+};
+
 const problem = (
   id: string,
   title: string,
@@ -22,6 +37,7 @@ const problem = (
   starterCode,
   tests,
   disallow,
+  ...contractsFor(id),
 });
 
 const lesson = (
@@ -171,7 +187,7 @@ If \`index\` is outside the array, return a copy of \`nums\`.
       `
 Return a new array with \`value\` inserted at \`index\`. Values that were at that index and after it shift right.
 
-If \`index\` is past the end, add \`value\` at the end. Do not mutate \`nums\`.
+If \`index\` is negative, insert at the front. If it is past the end, add \`value\` at the end. Do not mutate \`nums\`.
       `,
       `export function insertAt(nums: number[], index: number, value: number): number[] {
   return [];
@@ -191,6 +207,12 @@ If \`index\` is past the end, add \`value\` at the end. Do not mutate \`nums\`.
           public: true,
         },
         { name: "end", args: [[1], 5, 9], expected: [1, 9], public: false },
+        {
+          name: "negative inserts at front",
+          args: [[2, 3], -4, 1],
+          expected: [1, 2, 3],
+          public: false,
+        },
         { name: "empty", args: [[], 0, 4], expected: [4], public: false },
       ],
     ),
@@ -331,7 +353,7 @@ An empty array and a one-element array are palindromes. Compare the ends and mov
       "easy",
       "pairIndices",
       `
-\`nums\` is sorted ascending. Return the indexes of two different values that add up to \`target\`, smaller index first.
+\`nums\` is sorted ascending. Return the indexes of two different values that add up to \`target\`, smaller index first. When more than one pair works, return the pair found by starting at both ends and moving only the left pointer for a sum that is too small or only the right pointer for a sum that is too large.
 
 If no pair exists, return \`[-1, -1]\`.
       `,
@@ -362,6 +384,12 @@ If no pair exists, return \`[-1, -1]\`.
           name: "duplicates",
           args: [[1, 1, 2], 2],
           expected: [0, 1],
+          public: false,
+        },
+        {
+          name: "multiple pairs use the inward scan",
+          args: [[1, 2, 3, 4, 5], 6],
+          expected: [0, 4],
           public: false,
         },
       ],
@@ -398,7 +426,7 @@ You will look for the shortest slice that reaches a target, then the longest sli
       `
 \`nums\` contains only zeros and positive numbers. Return the length of the shortest contiguous slice whose sum is at least \`target\`.
 
-If no slice qualifies, return 0.
+\`target\` is a positive number. If no slice qualifies, return 0.
       `,
       `export function shortestAtLeast(nums: number[], target: number): number {
   return 0;
@@ -1279,7 +1307,7 @@ Mark a visited set as you go.
       `
 Vertices are \`0\` through \`count - 1\`. \`edges\` is undirected. Return true when every vertex is reachable from \`start\`.
 
-\`count\` is at least 1.
+\`count\` is at least 1. Every edge endpoint and \`start\` are integers from \`0\` through \`count - 1\`.
       `,
       `export function reachesAll(
   edges: number[][],
@@ -1400,7 +1428,7 @@ If two share that end, return the one with the smaller start. An empty list retu
       `
 \`nums[i]\` is the farthest jump you may take from index \`i\`. Return true when you can reach the last index.
 
-Jumps are zero or positive. A one-element array is already at the end.
+Jumps are zero or positive. An empty array has no last index and returns false. A one-element array is already at the end.
       `,
       `export function canJump(nums: number[]): boolean {
   return false;
@@ -1420,6 +1448,7 @@ Jumps are zero or positive. A one-element array is already at the end.
           public: true,
         },
         { name: "already there", args: [[0]], expected: true, public: false },
+        { name: "empty", args: [[]], expected: false, public: false },
         {
           name: "zero then a step",
           args: [[0, 1]],
@@ -1593,7 +1622,7 @@ Each later value is the sum of the two before it. Fill from the base case upward
       "medium",
       "rob",
       `
-\`nums[i]\` is the value of house \`i\`. You cannot take two adjacent houses. Return the maximum you can take.
+\`nums[i]\` is the non-negative value of house \`i\`. You cannot take two adjacent houses. Return the maximum you can take.
 
 An empty street returns 0. One house returns that house.
       `,
@@ -1666,7 +1695,6 @@ If \`words\` is empty, or the strings share nothing, return \`""\`. A trie walk 
         { name: "empty", args: [[]], expected: "", public: false },
         { name: "one word", args: [["a"]], expected: "a", public: false },
       ],
-      ["new Set", "new Map"],
     ),
     problem(
       "prefix-counts",
@@ -1677,7 +1705,7 @@ If \`words\` is empty, or the strings share nothing, return \`""\`. A trie walk 
       `
 Insert \`words\` into a trie. For each query, return how many inserted words have that query as a prefix.
 
-\`prefixCounts(["cat", "car", "carpet"], ["ca", "car", "dog"])\` is \`[3, 2, 0]\`. An empty query counts every inserted word. Do not use \`Set\` or \`Map\`.
+\`prefixCounts(["cat", "car", "carpet"], ["ca", "car", "dog"])\` is \`[3, 2, 0]\`. An empty query counts every inserted word. A \`Map\` for child edges is a valid trie representation.
       `,
       `export function prefixCounts(words: string[], queries: string[]): number[] {
   return [];
@@ -1707,7 +1735,6 @@ Insert \`words\` into a trie. For each query, return how many inserted words hav
           public: false,
         },
       ],
-      ["new Set", "new Map"],
     ),
   ],
 );

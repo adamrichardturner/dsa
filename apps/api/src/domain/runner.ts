@@ -1,5 +1,11 @@
 import vm from "node:vm";
 import { transform } from "sucrase";
+import {
+  createScanner,
+  LanguageVariant,
+  ScriptTarget,
+  SyntaxKind,
+} from "typescript";
 import type { CompareMode } from "../content/types.js";
 import { isRecord } from "../lib/guards.js";
 
@@ -8,6 +14,9 @@ export interface RunTest {
   readonly args: readonly unknown[];
   readonly expected: unknown;
   readonly compare: CompareMode;
+  readonly timeoutMs?: number;
+  readonly immutableArgs?: readonly number[];
+  readonly distinctArrayReturnFromArg?: number;
 }
 
 export interface TestResult {
@@ -36,16 +45,285 @@ interface RunnerContext {
   __result?: unknown;
 }
 
-const blockedPatterns: readonly { readonly pattern: RegExp; readonly reason: string }[] = [
-  { pattern: /\brequire\s*\(/, reason: "require is not available in the runner." },
-  { pattern: /\bimport\s/, reason: "Imports are not available in the runner." },
-  { pattern: /\bprocess\b/, reason: "process is not available in the runner." },
-  { pattern: /\bglobalThis\b/, reason: "globalThis is not available in the runner." },
-  { pattern: /\beval\s*\(/, reason: "eval is not available in the runner." },
-  { pattern: /\bFunction\s*\(/, reason: "The Function constructor is not available in the runner." },
-];
+const defaultTimeoutMs = 1000;
+const minimumTimeoutMs = 10;
 
-const isFunction = (value: unknown): value is (...args: readonly unknown[]) => unknown => {
+interface SourceToken {
+  readonly kind: SyntaxKind;
+  readonly text: string;
+  readonly value: string;
+}
+
+const equalTokens = (
+  left: SourceToken | undefined,
+  right: SourceToken | undefined,
+): boolean => {
+  if (left === undefined || right === undefined) {
+    return false;
+  }
+  return left.kind === right.kind && left.text === right.text;
+};
+
+const tokens = (code: string): readonly SourceToken[] => {
+  const scanner = createScanner(
+    ScriptTarget.Latest,
+    true,
+    LanguageVariant.Standard,
+    code,
+  );
+  const result: SourceToken[] = [];
+
+  while (true) {
+    const kind = scanner.scan();
+    if (kind === SyntaxKind.EndOfFileToken) {
+      return result;
+    }
+    result.push({
+      kind,
+      text: scanner.getTokenText(),
+      value: scanner.getTokenValue(),
+    });
+  }
+};
+
+const containsTokenSequence = (
+  sourceTokens: readonly SourceToken[],
+  restriction: string,
+): boolean => {
+  const restrictedTokens = tokens(restriction);
+  if (restrictedTokens.length === 0) {
+    return false;
+  }
+
+  const lastStart = sourceTokens.length - restrictedTokens.length;
+  for (let start = 0; start <= lastStart; start += 1) {
+    let matches = true;
+    for (let offset = 0; offset < restrictedTokens.length; offset += 1) {
+      const source = sourceTokens[start + offset];
+      const restricted = restrictedTokens[offset];
+      if (equalTokens(source, restricted)) {
+        continue;
+      }
+      matches = false;
+      break;
+    }
+    if (matches) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const isToken = (
+  token: SourceToken | undefined,
+  kind: SyntaxKind,
+  value?: string,
+): boolean => {
+  if (token?.kind !== kind) {
+    return false;
+  }
+  if (value === undefined) {
+    return true;
+  }
+  if (token === undefined) {
+    return false;
+  }
+  return token.value === value;
+};
+
+const isName = (token: SourceToken | undefined, name: string): boolean => {
+  return token?.text === name;
+};
+
+const memberEnd = (
+  sourceTokens: readonly SourceToken[],
+  start: number,
+  name: string,
+): number | null => {
+  const accessor = sourceTokens[start];
+  if (
+    isToken(accessor, SyntaxKind.DotToken) ||
+    isToken(accessor, SyntaxKind.QuestionDotToken)
+  ) {
+    if (isName(sourceTokens[start + 1], name)) {
+      return start + 2;
+    }
+    if (isToken(accessor, SyntaxKind.QuestionDotToken)) {
+      return memberEnd(sourceTokens, start + 1, name);
+    }
+    return null;
+  }
+
+  if (
+    !isToken(accessor, SyntaxKind.OpenBracketToken) ||
+    !isToken(sourceTokens[start + 1], SyntaxKind.StringLiteral, name) ||
+    !isToken(sourceTokens[start + 2], SyntaxKind.CloseBracketToken)
+  ) {
+    return null;
+  }
+  return start + 3;
+};
+
+const restrictedMember = (
+  sourceTokens: readonly SourceToken[],
+  name: string,
+): boolean => {
+  for (let index = 0; index < sourceTokens.length; index += 1) {
+    const end = memberEnd(sourceTokens, index, name);
+    if (end === null) {
+      continue;
+    }
+    return true;
+  }
+  return false;
+};
+
+const restrictedDestructure = (
+  sourceTokens: readonly SourceToken[],
+  name: string,
+): boolean => {
+  for (let start = 0; start < sourceTokens.length; start += 1) {
+    if (!isToken(sourceTokens[start], SyntaxKind.OpenBraceToken)) {
+      continue;
+    }
+    let containsName = false;
+    for (let index = start + 1; index < sourceTokens.length; index += 1) {
+      const token = sourceTokens[index];
+      if (isToken(token, SyntaxKind.CloseBraceToken)) {
+        if (
+          containsName &&
+          isToken(sourceTokens[index + 1], SyntaxKind.EqualsToken)
+        ) {
+          return true;
+        }
+        break;
+      }
+      if (isName(token, name)) {
+        containsName = true;
+      }
+    }
+  }
+  return false;
+};
+
+const restrictedConstructor = (
+  sourceTokens: readonly SourceToken[],
+  name: string,
+): boolean => {
+  const aliases: Record<string, true> = { [name]: true };
+  for (let index = 1; index < sourceTokens.length - 1; index += 1) {
+    const alias = sourceTokens[index - 1];
+    const equals = sourceTokens[index];
+    const original = sourceTokens[index + 1];
+    if (
+      alias !== undefined &&
+      alias.kind === SyntaxKind.Identifier &&
+      isToken(equals, SyntaxKind.EqualsToken) &&
+      original !== undefined &&
+      aliases[original.text] === true
+    ) {
+      aliases[alias.text] = true;
+    }
+  }
+
+  for (let index = 0; index < sourceTokens.length - 1; index += 1) {
+    if (
+      isToken(sourceTokens[index], SyntaxKind.NewKeyword) &&
+      aliases[sourceTokens[index + 1]?.text ?? ""] === true
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const restrictedQualifiedMember = (
+  sourceTokens: readonly SourceToken[],
+  ownerName: string,
+  memberName: string,
+): boolean => {
+  for (let index = 0; index < sourceTokens.length; index += 1) {
+    if (!isName(sourceTokens[index], ownerName)) {
+      continue;
+    }
+    if (memberEnd(sourceTokens, index + 1, memberName) !== null) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const violatesRestriction = (
+  sourceTokens: readonly SourceToken[],
+  restriction: string,
+): boolean => {
+  const memberMatch = /^\.([A-Za-z_$][\w$]*)(\()?$/.exec(restriction);
+  if (memberMatch !== null) {
+    const name = memberMatch[1];
+    if (name !== undefined) {
+      return (
+        restrictedMember(sourceTokens, name) ||
+        restrictedDestructure(sourceTokens, name)
+      );
+    }
+  }
+
+  const constructorMatch = /^new\s+([A-Za-z_$][\w$]*)$/.exec(restriction);
+  if (constructorMatch !== null) {
+    const name = constructorMatch[1];
+    if (name !== undefined) {
+      return restrictedConstructor(sourceTokens, name);
+    }
+  }
+
+  const qualifiedMatch = /^([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)$/.exec(
+    restriction,
+  );
+  if (qualifiedMatch !== null) {
+    const ownerName = qualifiedMatch[1];
+    const memberName = qualifiedMatch[2];
+    if (ownerName !== undefined && memberName !== undefined) {
+      return restrictedQualifiedMember(sourceTokens, ownerName, memberName);
+    }
+  }
+
+  return containsTokenSequence(sourceTokens, restriction);
+};
+
+const blockedReason = (sourceTokens: readonly SourceToken[]): string | null => {
+  for (let index = 0; index < sourceTokens.length; index += 1) {
+    const token = sourceTokens[index];
+    const next = sourceTokens[index + 1];
+    if (isToken(token, SyntaxKind.ImportKeyword)) {
+      return "Imports are not available in the runner.";
+    }
+    if (isName(token, "require") && isToken(next, SyntaxKind.OpenParenToken)) {
+      return "require is not available in the runner.";
+    }
+    if (isName(token, "eval") && isToken(next, SyntaxKind.OpenParenToken)) {
+      return "eval is not available in the runner.";
+    }
+    const callsFunction =
+      isName(token, "Function") && isToken(next, SyntaxKind.OpenParenToken);
+    const constructsFunction =
+      isToken(token, SyntaxKind.NewKeyword) && isName(next, "Function");
+    if (callsFunction || constructsFunction) {
+      return "The Function constructor is not available in the runner.";
+    }
+    if (isName(token, "process")) {
+      return "process is not available in the runner.";
+    }
+    if (isName(token, "globalThis")) {
+      return "globalThis is not available in the runner.";
+    }
+  }
+  return null;
+};
+
+const isFunction = (
+  value: unknown,
+): value is (...args: readonly unknown[]) => unknown => {
   return typeof value === "function";
 };
 
@@ -89,6 +367,32 @@ const canonical = (value: unknown, compare: CompareMode): string => {
   return JSON.stringify(normalize(value)) ?? "undefined";
 };
 
+const contractFailure = (
+  test: RunTest,
+  args: readonly unknown[],
+  originalArgs: readonly unknown[],
+  received: unknown,
+): string | null => {
+  const immutableArgs = test.immutableArgs ?? [];
+  for (const index of immutableArgs) {
+    if (
+      canonical(args[index], "exact") !==
+      canonical(originalArgs[index], "exact")
+    ) {
+      return `Argument ${index + 1} must not be mutated.`;
+    }
+  }
+
+  const distinctIndex = test.distinctArrayReturnFromArg;
+  if (distinctIndex === undefined || !Array.isArray(received)) {
+    return null;
+  }
+  if (received === args[distinctIndex]) {
+    return `The returned array must be a new object, not argument ${distinctIndex + 1}.`;
+  }
+  return null;
+};
+
 export interface PreviewCase {
   readonly args: readonly unknown[];
 }
@@ -101,7 +405,9 @@ export interface PreviewLine {
 }
 
 const formatCall = (functionName: string, args: readonly unknown[]): string => {
-  const rendered = args.map((arg) => JSON.stringify(arg) ?? "undefined").join(", ");
+  const rendered = args
+    .map((arg) => JSON.stringify(arg) ?? "undefined")
+    .join(", ");
   return `${functionName}(${rendered})`;
 };
 
@@ -114,6 +420,22 @@ const callText = (functionName: string, args: readonly unknown[]): string => {
 };
 
 const copyValue = (value: unknown): unknown => {
+  if (
+    isRecord(value) &&
+    value.fixture === "number-sequence" &&
+    typeof value.length === "number" &&
+    typeof value.start === "number" &&
+    typeof value.step === "number" &&
+    Number.isSafeInteger(value.length) &&
+    value.length >= 0 &&
+    value.length <= 100_000
+  ) {
+    const generated: number[] = [];
+    for (let index = 0; index < value.length; index += 1) {
+      generated.push(value.start + index * value.step);
+    }
+    return generated;
+  }
   try {
     return structuredClone(value);
   } catch {
@@ -162,24 +484,37 @@ const formatLog = (args: readonly unknown[]): string => {
   return parts.join(" ");
 };
 
-const rejection = (code: string, disallow: readonly string[]): string | null => {
+const rejection = (
+  code: string,
+  disallow: readonly string[],
+): string | null => {
   if (code.length > 20_000) {
     return "The solution is too long to run.";
   }
 
-  for (const blocked of blockedPatterns) {
-    if (blocked.pattern.test(code)) {
-      return blocked.reason;
-    }
+  const sourceTokens = tokens(code);
+  const blocked = blockedReason(sourceTokens);
+  if (blocked !== null) {
+    return blocked;
   }
 
   for (const snippet of disallow) {
-    if (code.includes(snippet)) {
+    if (violatesRestriction(sourceTokens, snippet)) {
       return `This exercise asks you not to use ${snippet}. Use the approach from the lesson.`;
     }
   }
 
   return null;
+};
+
+const testTimeout = (test: RunTest): number => {
+  const requested = test.timeoutMs ?? defaultTimeoutMs;
+  if (!Number.isFinite(requested)) {
+    return defaultTimeoutMs;
+  }
+  return Math.floor(
+    Math.max(minimumTimeoutMs, Math.min(defaultTimeoutMs, requested)),
+  );
 };
 
 const compileSolution = (
@@ -195,12 +530,17 @@ const compileSolution = (
       }).code,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "The solution failed to compile.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "The solution failed to compile.";
     return { message };
   }
 };
 
-const createContext = (onLog: (args: readonly unknown[]) => void): RunnerContext => {
+const createContext = (
+  onLog: (args: readonly unknown[]) => void,
+): RunnerContext => {
   const exportsObject: Record<string, unknown> = {};
   return {
     exports: exportsObject,
@@ -220,13 +560,21 @@ const errorText = (error: unknown, fallback: string): string => {
   if (error instanceof Error && error.message.length > 0) {
     return error.message;
   }
-  if (isRecord(error) && typeof error.message === "string" && error.message.length > 0) {
+  if (
+    isRecord(error) &&
+    typeof error.message === "string" &&
+    error.message.length > 0
+  ) {
     return error.message;
   }
   return fallback;
 };
 
-const takeLogs = (lines: PreviewLine[], logs: readonly string[], cursor: { index: number }) => {
+const takeLogs = (
+  lines: PreviewLine[],
+  logs: readonly string[],
+  cursor: { index: number },
+) => {
   while (cursor.index < logs.length) {
     const text = logs[cursor.index] ?? "";
     cursor.index += 1;
@@ -259,15 +607,25 @@ export const runSolution = (
   vm.createContext(context);
 
   try {
-    const script = new vm.Script(compiled.compiled, { filename: "solution.ts" });
+    const script = new vm.Script(compiled.compiled, {
+      filename: "solution.ts",
+    });
     script.runInContext(context, { timeout: 1000 });
   } catch (error) {
-    return failed(functionName, tests, errorText(error, "The solution failed to run."));
+    return failed(
+      functionName,
+      tests,
+      errorText(error, "The solution failed to run."),
+    );
   }
 
   const exported = context.module.exports[functionName];
   if (!isFunction(exported)) {
-    return failed(functionName, tests, `Export a function named ${functionName}.`);
+    return failed(
+      functionName,
+      tests,
+      `Export a function named ${functionName}.`,
+    );
   }
 
   const results: TestResult[] = [];
@@ -277,13 +635,25 @@ export const runSolution = (
     const input = callText(functionName, test.args);
     context.__fn = exported;
     context.__args = copyArgs(test.args);
+    const originalArgs = copyArgs(context.__args);
     context.__result = undefined;
 
     try {
-      const call = new vm.Script("__result = __fn(...__args);", { filename: "call.js" });
-      call.runInContext(context, { timeout: 1000 });
+      const call = new vm.Script("__result = __fn(...__args);", {
+        filename: "call.js",
+      });
+      call.runInContext(context, { timeout: testTimeout(test) });
       const received = context.__result;
-      const passed = canonical(received, test.compare) === canonical(test.expected, test.compare);
+      const valueMatches =
+        canonical(received, test.compare) ===
+        canonical(test.expected, test.compare);
+      const contractError = contractFailure(
+        test,
+        context.__args,
+        originalArgs,
+        received,
+      );
+      const passed = valueMatches && contractError === null;
       if (passed) {
         testsPassed += 1;
       }
@@ -293,10 +663,10 @@ export const runSolution = (
         input,
         expected: preview(test.expected),
         received: preview(received),
-        error: null,
+        error: contractError,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "The test threw.";
+      const message = errorText(error, "The test threw.");
       results.push({
         name: test.name,
         passed: false,
@@ -350,12 +720,17 @@ export const previewSolution = (
   vm.createContext(context);
 
   try {
-    const script = new vm.Script(compiled.compiled, { filename: "solution.ts" });
+    const script = new vm.Script(compiled.compiled, {
+      filename: "solution.ts",
+    });
     script.runInContext(context, { timeout: 1000 });
   } catch (error) {
     const lines: PreviewLine[] = [];
     takeLogs(lines, logs, cursor);
-    lines.push({ kind: "error", text: errorText(error, "The solution failed to run.") });
+    lines.push({
+      kind: "error",
+      text: errorText(error, "The solution failed to run."),
+    });
     return lines;
   }
 
@@ -363,7 +738,10 @@ export const previewSolution = (
   if (!isFunction(exported)) {
     const lines: PreviewLine[] = [];
     takeLogs(lines, logs, cursor);
-    lines.push({ kind: "error", text: `Export a function named ${functionName}.` });
+    lines.push({
+      kind: "error",
+      text: `Export a function named ${functionName}.`,
+    });
     return lines;
   }
 
@@ -371,13 +749,18 @@ export const previewSolution = (
   takeLogs(lines, logs, cursor);
 
   for (const testCase of cases) {
-    lines.push({ kind: "prompt", text: formatCall(functionName, testCase.args) });
+    lines.push({
+      kind: "prompt",
+      text: formatCall(functionName, testCase.args),
+    });
     context.__fn = exported;
     context.__args = testCase.args;
     context.__result = undefined;
 
     try {
-      const call = new vm.Script("__result = __fn(...__args);", { filename: "call.js" });
+      const call = new vm.Script("__result = __fn(...__args);", {
+        filename: "call.js",
+      });
       call.runInContext(context, { timeout: 1000 });
       takeLogs(lines, logs, cursor);
       lines.push({ kind: "result", text: preview(context.__result) });
@@ -391,7 +774,12 @@ export const previewSolution = (
     return lines;
   }
 
-  return [{ kind: "log", text: "The code ran. This exercise has no public examples." }];
+  return [
+    {
+      kind: "log",
+      text: "The code ran. This exercise has no public examples.",
+    },
+  ];
 };
 
 const logLimit = 100;
@@ -432,7 +820,10 @@ export const runSnippet = (code: string): readonly PreviewLine[] => {
   } catch (error) {
     const lines: PreviewLine[] = [];
     takeLogs(lines, logs, { index: 0 });
-    lines.push({ kind: "error", text: errorText(error, "The code failed to run.") });
+    lines.push({
+      kind: "error",
+      text: errorText(error, "The code failed to run."),
+    });
     return lines;
   }
 

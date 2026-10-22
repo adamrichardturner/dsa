@@ -49,7 +49,12 @@ describe("previewSolution", () => {
   });
 
   it("reports a missing export", () => {
-    const lines = previewSolution("export const value = 1;\n", "countBelow", [], []);
+    const lines = previewSolution(
+      "export const value = 1;\n",
+      "countBelow",
+      [],
+      [],
+    );
     assert.equal(lines.at(-1)?.kind, "error");
     assert.match(lines.at(-1)?.text ?? "", /countBelow/);
   });
@@ -62,14 +67,21 @@ describe("previewSolution", () => {
   });
 
   it("reports a syntax error", () => {
-    const lines = previewSolution("export function countBelow( {", "countBelow", [], []);
+    const lines = previewSolution(
+      "export function countBelow( {",
+      "countBelow",
+      [],
+      [],
+    );
     assert.equal(lines[0]?.kind, "error");
   });
 });
 
 describe("runSnippet", () => {
   it("prints console output after stripping types", () => {
-    const lines = runSnippet("const value: number = 2;\nconsole.log(value + 1);");
+    const lines = runSnippet(
+      "const value: number = 2;\nconsole.log(value + 1);",
+    );
     assert.deepEqual(lines, [{ kind: "log", text: "3" }]);
   });
 
@@ -81,7 +93,8 @@ console.log(seen.get(1));`);
   });
 
   it("runs current JavaScript, including map iteration", () => {
-    const lines = runSnippet(`const counts = new Map<number, number>([[1, 1], [2, 2]]);
+    const lines =
+      runSnippet(`const counts = new Map<number, number>([[1, 1], [2, 2]]);
 let best = 0;
 for (const [value, count] of counts) {
   if (count > (counts.get(best) ?? 0)) {
@@ -95,12 +108,16 @@ console.log(best, extra.size, [1, 2, 3].values().drop(1).toArray().join(","));`)
 
   it("says when nothing was printed", () => {
     const lines = runSnippet("const value: number = 2;");
-    assert.deepEqual(lines, [{ kind: "log", text: "The code ran. Nothing was printed." }]);
+    assert.deepEqual(lines, [
+      { kind: "log", text: "The code ran. Nothing was printed." },
+    ]);
   });
 
   it("rejects an empty snippet", () => {
     const lines = runSnippet("   \n");
-    assert.deepEqual(lines, [{ kind: "error", text: "Write some code before running it." }]);
+    assert.deepEqual(lines, [
+      { kind: "error", text: "Write some code before running it." },
+    ]);
   });
 
   it("rejects blocked syntax", () => {
@@ -111,7 +128,9 @@ console.log(best, extra.size, [1, 2, 3].values().drop(1).toArray().join(","));`)
   });
 
   it("reports a runtime error after earlier logs", () => {
-    const lines = runSnippet('console.log("before");\nthrow new Error("nope");');
+    const lines = runSnippet(
+      'console.log("before");\nthrow new Error("nope");',
+    );
     assert.deepEqual(lines, [
       { kind: "log", text: "before" },
       { kind: "error", text: "nope" },
@@ -176,5 +195,214 @@ describe("runSolution", () => {
     assert.equal(outcome.results[1]?.input, "insertAt([], 0, 4)");
     assert.equal(outcome.results[1]?.expected, "[4]");
     assert.equal(outcome.results[1]?.received, "[4,4]");
+  });
+
+  it("rejects mutation even when the returned value is correct", () => {
+    const outcome = runSolution(
+      `export function solve(values: number[]): number[] {
+        const result = values.slice().reverse();
+        values[0] = 99;
+        return result;
+      }`,
+      "solve",
+      [
+        {
+          name: "immutable input",
+          args: [[1, 2, 3]],
+          expected: [3, 2, 1],
+          compare: "exact",
+          immutableArgs: [0],
+        },
+      ],
+      [],
+    );
+
+    assert.equal(outcome.passed, false);
+    assert.match(outcome.results[0]?.error ?? "", /must not be mutated/);
+  });
+
+  it("requires a distinct array return when requested", () => {
+    const outcome = runSolution(
+      `export function solve(values: number[]): number[] {
+        return values;
+      }`,
+      "solve",
+      [
+        {
+          name: "new output",
+          args: [[1, 2]],
+          expected: [1, 2],
+          compare: "exact",
+          distinctArrayReturnFromArg: 0,
+        },
+      ],
+      [],
+    );
+
+    assert.equal(outcome.passed, false);
+    assert.match(outcome.results[0]?.error ?? "", /new object/);
+  });
+
+  it("rejects forbidden member calls despite whitespace and optional chaining", () => {
+    const whitespace = runSolution(
+      `export function solve(values: number[]): number[] {
+        return values . reverse ();
+      }`,
+      "solve",
+      [],
+      [".reverse("],
+    );
+    const optional = runSolution(
+      `export function solve(values: number[]): number[] | undefined {
+        return values?.toReversed?.();
+      }`,
+      "solve",
+      [],
+      [".toReversed("],
+    );
+
+    assert.match(whitespace.feedback, /not to use \.reverse\(/);
+    assert.match(optional.feedback, /not to use \.toReversed\(/);
+  });
+
+  it("rejects statically named bracket access to forbidden members", () => {
+    const outcome = runSolution(
+      `export function solve(values: number[]): number[] {
+        return values["sort"]();
+      }`,
+      "solve",
+      [],
+      [".sort("],
+    );
+    const alias = runSolution(
+      `export function solve(values: number[]): number[] {
+        const shortcut = values.sort;
+        return shortcut.call(values);
+      }`,
+      "solve",
+      [],
+      [".sort("],
+    );
+
+    assert.match(outcome.feedback, /not to use \.sort\(/);
+    assert.match(alias.feedback, /not to use \.sort\(/);
+  });
+
+  it("rejects forbidden constructors and qualified APIs with trivia", () => {
+    const constructor = runSolution(
+      `export function solve(values: number[]): number {
+        return new /* no shortcut */ Set(values).size;
+      }`,
+      "solve",
+      [],
+      ["new Set"],
+    );
+    const qualified = runSolution(
+      `export function solve(left: number, right: number): number {
+        return Math?.["min"](left, right);
+      }`,
+      "solve",
+      [],
+      ["Math.min"],
+    );
+
+    assert.match(constructor.feedback, /not to use new Set/);
+    assert.match(qualified.feedback, /not to use Math\.min/);
+  });
+
+  it("rejects destructured members and constructor aliases", () => {
+    const destructured = runSolution(
+      `export function solve(values: number[]): number[] {
+        const { sort: order } = values;
+        return order.call(values);
+      }`,
+      "solve",
+      [],
+      [".sort("],
+    );
+    const constructorAlias = runSolution(
+      `const Unique = Set;
+      export function solve(values: number[]): number {
+        return new Unique(values).size;
+      }`,
+      "solve",
+      [],
+      ["new Set"],
+    );
+
+    assert.match(destructured.feedback, /not to use \.sort\(/);
+    assert.match(constructorAlias.feedback, /not to use new Set/);
+  });
+
+  it("does not enforce restrictions inside comments or strings", () => {
+    const outcome = runSolution(
+      `export function solve(): string {
+        // values.reverse()
+        return ".sort( and new Set";
+      }`,
+      "solve",
+      [
+        {
+          name: "text",
+          args: [],
+          expected: ".sort( and new Set",
+          compare: "exact",
+        },
+      ],
+      [".reverse(", ".sort(", "new Set"],
+    );
+
+    assert.equal(outcome.passed, true);
+  });
+
+  it("applies a bounded per-test timeout", () => {
+    const outcome = runSolution(
+      `export function solve(): number {
+        while (true) {
+          continue;
+        }
+      }`,
+      "solve",
+      [
+        {
+          name: "terminates",
+          args: [],
+          expected: 1,
+          compare: "exact",
+          timeoutMs: 10,
+        },
+      ],
+      [],
+    );
+
+    assert.equal(outcome.passed, false);
+    assert.match(outcome.results[0]?.error ?? "", /timed out/i);
+  });
+
+  it("materialises compact number-sequence fixtures", () => {
+    const outcome = runSolution(
+      `export function solve(values: number[]): number {
+        return values[values.length - 1] ?? -1;
+      }`,
+      "solve",
+      [
+        {
+          name: "generated",
+          args: [
+            {
+              fixture: "number-sequence",
+              length: 4,
+              start: 2,
+              step: 3,
+            },
+          ],
+          expected: 11,
+          compare: "exact",
+        },
+      ],
+      [],
+    );
+
+    assert.equal(outcome.passed, true);
   });
 });

@@ -5,10 +5,12 @@ export const treeArticles: readonly Article[] = [
     "trees",
     "What Is a Tree? Roots, Leaves, and Depth in Nodes",
     "Trees and graphs",
-    "A tree has one root, no cycles, and children under each node. In this course the depth is the number of nodes on the longest path down: an empty tree is 0 and a single node is 1.",
+    "A tree is a connected, acyclic hierarchy with one root and one parent per non-root node. This course's maxDepth counts nodes on the longest root-to-leaf path: an empty tree is 0 and a single node is 1.",
     ["tree", "trees", "leaf", "root"],
     `
-A tree has one root, and the links from parent to child never run back into a cycle. A node with no children is a leaf, and a node with at most two children, left and right, sits in a binary tree. Depth in this course is the number of nodes on the longest path from the root down: an empty tree is 0 and a single node is 1. The drawing has depth 3, because the longest path is the nodes 8, 3, and 1.
+A tree is a connected hierarchy with one root. Every other node has exactly one parent, and following child links can never lead back to an ancestor. Those properties give exactly one path from the root to each node. A node with no children is a leaf. A binary tree allows at most two children per node, conventionally named left and right.
+
+Terminology varies, so fix the convention before calculating. In many textbooks, a node's **depth** is its distance from the root, while a tree's **height** is its longest downward distance. This course names the requested tree-wide value \`maxDepth\` and counts **nodes**: an empty tree is 0 and a single node is 1. Under that convention, the drawing has maximum depth 3 because a longest path is 8, 3, 1.
 
 \`\`\`mermaid
 flowchart TD
@@ -18,21 +20,74 @@ flowchart TD
   n3 --> n6["6"]
 \`\`\`
 
+\`\`\`mermaid
+flowchart LR
+  root["8 (level 1)"] --> left["3 (level 2)"]
+  root --> right["10 (level 2)"]
+  left --> leaf1["1 (level 3)"]
+  left --> leaf6["6 (level 3)"]
+  longest["Longest root-to-leaf path"] -.-> root
+  longest -.-> left
+  longest -.-> leaf1
+\`\`\`
+
 ## How it works
 
 You start at the root. A binary node holds a value, a left link, and a right link, and either link can be null. One path runs from the root to each node. Nothing points back at an ancestor, so the walk cannot cycle the way a graph search can.
 
-Depth counts nodes on the longest path down. An empty tree is 0. A single node is 1. People also say height for a closely related count. Count edges and that single node becomes 0, so every answer is off by one against the tests. Use the node count.
+The course's maximum depth counts nodes on the longest path down. An empty tree is 0. A single node is 1. A textbook using edge-counted height gives that single node height 0, so its non-empty answers are one lower. Neither convention is universally wrong; mixing conventions inside one implementation is wrong. Here, use the node count.
 
 A missing node returns 0. A real node returns 1 plus the larger of the children's depths. The 1 is the node you are on. You keep the larger child, because depth is one path, not the sum of both sides. Pass 0 for a missing child.
 
-\`\`\`ts
-const deeper = (leftDepth: number, rightDepth: number): number => {
-  return 1 + Math.max(leftDepth, rightDepth);
-};
+\`\`\`mermaid
+flowchart TD
+  visit["depth(node)"] --> missing{"Is node null?"}
+  missing -->|yes| zero["Return 0"]
+  missing -->|no| left["Compute depth(left)"]
+  left --> right["Compute depth(right)"]
+  right --> combine["Return 1 + max(left, right)"]
 \`\`\`
 
-That evaluation is depth-first: one branch finishes before the other starts. Visiting every node on one level before the next wants a queue, which is level order and breadth-first search. \`buildTree\` already uses that queue on a level-order list, with null for a missing child. A leaf has no children. Binary only caps the child count. It does not order the values.
+\`\`\`ts
+type TreeNode = {
+  value: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+};
+
+const maxDepth = (node: TreeNode | null): number => {
+  if (node === null) {
+    return 0;
+  }
+
+  const leftDepth = maxDepth(node.left);
+  const rightDepth = maxDepth(node.right);
+  return 1 + Math.max(leftDepth, rightDepth);
+};
+
+const tree: TreeNode = {
+  value: 8,
+  left: {
+    value: 3,
+    left: { value: 1, left: null, right: null },
+    right: { value: 6, left: null, right: null },
+  },
+  right: { value: 10, left: null, right: null },
+};
+
+console.log(maxDepth(tree));
+console.log(maxDepth(null));
+\`\`\`
+
+The example prints \`3\` and then \`0\`. Its return-value invariant is: \`maxDepth(node)\` equals the number of real nodes on the longest path beginning at \`node\`. The null case establishes 0; the recursive case adds the current real node to the larger child result.
+
+That evaluation is depth-first: one branch finishes before the other starts. Visiting every node on one level before the next wants a queue, which is level order and breadth-first search. \`buildTree\` already uses that queue on a level-order list, with null for a missing child. A leaf has no children. “Binary” only caps the child count; it does not order the values.
+
+\`\`\`mermaid
+flowchart LR
+  preorder["Depth-first preorder"] --> p8["8"] --> p3["3"] --> p1["1"] --> p6["6"] --> p10["10"]
+  level["Breadth-first level order"] --> l8["8"] --> l3["3"] --> l10["10"] --> l1["1"] --> l6["6"]
+\`\`\`
 
 ## A numeric example
 
@@ -68,7 +123,7 @@ Use a tree for one start and branches that do not loop: folders, a nested expres
 
 ## When not to
 
-A cycle needs the seen-set from graph search, or a tree walk never finishes. Depth does not answer the minimum, the kth largest, or a full sort. The count of every node is not the depth. Seven nodes in a full bush still have depth 3.
+A general graph with a cycle needs the seen-set from graph search, or this recursive walk may never finish. Maximum depth does not answer the minimum, the kth largest, or a full sort. The count of every node is not the maximum depth. Seven nodes in a perfect three-level tree still produce 3.
 
 ## FAQ
 
@@ -100,7 +155,7 @@ Read the ordered tree next, then the search that also finishes one branch before
     "A binary search tree keeps every value in the left subtree smaller than the node and every value in the right subtree larger. This course leaves duplicates out, and search costs the height, not automatically log n.",
     ["binary search tree"],
     `
-A binary search tree is a binary tree with an order on the values. Every value in the left subtree is smaller than the node, and every value in the right subtree is larger. This course leaves duplicates out, so an equal value goes neither left nor right. The drawing is the tree after inserting 4, then 2, then 6, then 1, then 3.
+A binary search tree (BST) is a binary tree with a global ordering invariant. For every node, every value in its entire left subtree is smaller, and every value in its entire right subtree is larger. Checking only immediate children is not enough. This course leaves duplicates out, so an equal value goes neither left nor right. The drawing is the tree after inserting 4, then 2, then 6, then 1, then 3.
 
 \`\`\`mermaid
 flowchart TD
@@ -108,6 +163,12 @@ flowchart TD
   b4 --> b6["6"]
   b2 --> b1["1"]
   b2 --> b3["3"]
+\`\`\`
+
+\`\`\`mermaid
+flowchart LR
+  s4{"Compare 3 with 4"} -->|"3 < 4"| s2{"Compare 3 with 2"}
+  s2 -->|"3 > 2"| s3["Match 3: true"]
 \`\`\`
 
 ## How it works
@@ -119,39 +180,55 @@ The time is proportional to the height: the number of nodes on the longest path 
 Insert uses the same walk. The empty spot on the correct side is where the new node goes. The first value becomes the root. Duplicates are a policy decision. Some trees push equals left, and some push them right. This course leaves duplicates out, so a value that is already stored is not inserted again.
 
 \`\`\`ts
-type TreeNode = {
+class TreeNode {
   value: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
+  left: TreeNode | null = null;
+  right: TreeNode | null = null;
+
+  constructor(value: number) {
+    this.value = value;
+  }
+}
+
+const insert = (node: TreeNode | null, value: number): TreeNode => {
+  if (node === null) {
+    return new TreeNode(value);
+  }
+  if (value < node.value) {
+    node.left = insert(node.left, value);
+    return node;
+  }
+  if (value > node.value) {
+    node.right = insert(node.right, value);
+  }
+  return node;
 };
 
-const found = (node: TreeNode | null, target: number): boolean => {
+const contains = (node: TreeNode | null, target: number): boolean => {
   if (node === null) {
     return false;
   }
+  if (target === node.value) {
+    return true;
+  }
   if (target < node.value) {
-    return found(node.left, target);
+    return contains(node.left, target);
   }
-  if (target > node.value) {
-    return found(node.right, target);
-  }
-  return true;
+  return contains(node.right, target);
 };
 
-const root: TreeNode = {
-  value: 4,
-  left: {
-    value: 2,
-    left: { value: 1, left: null, right: null },
-    right: { value: 3, left: null, right: null },
-  },
-  right: { value: 6, left: null, right: null },
-};
+const values = [4, 2, 6, 1, 3, 2];
+let root: TreeNode | null = null;
+for (const value of values) {
+  root = insert(root, value);
+}
 
-console.log(found(root, 3), found(root, 7));
+console.log(contains(root, 3), contains(root, 7));
 \`\`\`
 
-A scan of the original array misses the point. The links help only when lookup follows them. Without the order rule you still have a root, leaves, and a depth, and you cannot discard a side.
+The example prints \`true false\`. The repeated 2 is ignored, so each distinct value has one node. During insertion, the returned subtree contains the old values plus the new value while preserving the ordering invariant. During search, if the target exists, it remains inside the subtree passed to \`contains\`; ordering proves that the discarded subtree cannot contain it.
+
+A scan of the original array misses the point. The links help only when lookup follows them. Without the order rule you still have a root, leaves, and a maximum depth, but you cannot safely discard a side.
 
 ## A numeric example
 
@@ -161,15 +238,24 @@ Search for 3 goes left at 4 and right at 2, then matches. Search for 7 goes righ
 
 Insert 1, then 2, then 3, then 4 and the shape changes. 2 hangs right of 1, 3 hangs right of 2, and 4 hangs right of 3. Every left link is empty. Search for 4 compares all 4 nodes. The left-and-right rule still holds, and the cost is O(n). If 2 is already stored, leave the next 2 out. Do not place it left, and do not place it right.
 
+\`\`\`mermaid
+flowchart LR
+  one["1"] --> two["2"]
+  two --> three["3"]
+  three --> four["4"]
+\`\`\`
+
+This skewed BST is valid but not balanced. Validity determines whether search is correct; shape determines how many comparisons it needs.
+
 ## Cost
 
-Search and insert each follow one path, so both are O(h). Say O(log n) only when the height is about log n. One node per value means O(n) memory.
+One search or insertion follows one path, so it costs O(h), where h is the current height. Building from n input values performs n insertions: O(n log n) when the evolving shape stays balanced and O(n²) for a sorted input that forms a spine. Say O(log n) for one operation only when height is O(log n). One node per distinct value means O(n) memory in the worst case.
 
-| Shape of n nodes | Search and insert | Memory |
+| Shape after n inserts | One search or insert | Build all n values |
 | --- | --- | --- |
-| Height about log n | O(log n) | O(n) |
-| Straight line, height n | O(n) | O(n) |
-| Empty tree | O(1), the root is null | O(1) |
+| Height O(log n) | O(log n) | O(n log n) |
+| Straight line, height n | O(n) | O(n²) |
+| Empty tree | O(1) | O(1) |
 
 The first row is a balanced tree, or inserts that landed on both sides. The second row is sorted input and no repair. The search code is the same.
 
@@ -218,7 +304,7 @@ Binary search throws away half of a sorted array. A balanced tree keeps this wal
     "balanced-trees",
     "What Is a Balanced Tree? AVL, Red-Black, and Height",
     "Trees and graphs",
-    "AVL and red-black trees rotate nodes so the height stays about log n. A skewed tree is a list drawn vertically, and that rotation is a tree move, not the array rotation from week one.",
+    "AVL and red-black trees enforce different invariants with rotations and, for red-black trees, recoloring so height remains O(log n). A skewed BST is a list drawn vertically.",
     ["balanced tree", "AVL", "red-black"],
     `
 A balanced tree keeps its height near log n, so a walk from the root stays short as n grows. AVL and red-black trees rotate after an insert or a delete would leave one side too tall. The drawing is 7 nodes with a longest path of 3, close to log2(7). A tree that never rotates can keep the search rule and still become a line.
@@ -237,7 +323,20 @@ flowchart TD
 
 The left-and-right rule can be true while search is still O(n). If every insert goes right, the drawing is a linked list stood on end. You compare, and there is only one child to follow, so you visit every node. The order holds. It does not save work.
 
-Balance promises a height of about log n for n nodes. AVL trees compare child heights after an insert or a delete and rotate when the two sides differ by more than 1. Red-black trees color each node, then rotate and recolor, so the longest path stays within a small factor of log n. You do not implement a rotation this month. You do need to notice a spine.
+Balance is not one universal condition; each balanced-tree family defines an invariant that implies O(log n) height. AVL trees require the left and right subtree heights at every node to differ by at most 1, then rotate after an update if that invariant is broken. Red-black trees use color and equal-black-height rules, then rotate and recolor after updates. Their shapes need not look perfectly symmetric, but their invariants keep root-to-leaf paths within a constant factor of log n. You do not implement a rotation this month. You do need to notice a spine.
+
+\`\`\`mermaid
+flowchart LR
+  subgraph before["Before: right-heavy"]
+    a1["1"] --> a2["2"]
+    a2 --> a3["3"]
+  end
+  before -->|"left rotation at 1"| after
+  subgraph after["After: same sorted order"]
+    b2["2"] --> b1["1"]
+    b2 --> b3["3"]
+  end
+\`\`\`
 
 \`\`\`ts
 const heavierSide = (leftHeight: number, rightHeight: number): string => {
@@ -250,9 +349,15 @@ const heavierSide = (leftHeight: number, rightHeight: number): string => {
   }
   return "neither";
 };
+
+console.log(heavierSide(1, 3));
+console.log(heavierSide(3, 1));
+console.log(heavierSide(2, 2));
 \`\`\`
 
-A rotation is a tree move. A node and its child change places, so a different node becomes the parent, and the search rule still holds. It is not the array rotation from week one. Same English word, different operation. An array rotation slides the front of a contiguous block to the back. A tree rotation changes the parent. When someone says balanced, ask what it does on insert to keep the height honest.
+The example prints \`right\`, \`left\`, and \`neither\`. A balance factor with magnitude at most 1 satisfies the AVL height condition at that node; “neither” here does not mean the two heights must be equal.
+
+A rotation is a local tree move. A node and its child change parent-child roles while preserving the BST's in-order sequence. It is not the array rotation from week one. Same English word, different operation. An array rotation slides the front of a contiguous block to the back. A tree rotation changes links. When someone says balanced, ask which invariant and update procedure keep the height bounded.
 
 ## A numeric example
 
@@ -260,20 +365,29 @@ Insert 1, then 2, then 3, then 4 with no rotation. Each value hangs on the right
 
 Rotate the top three. Before the move, 1 is the parent of 2 and 2 is the parent of 3. After it, 2 is the parent, 1 is the left child, and 3 is the right child. 1 is still smaller than 2, and 3 is still larger, so search still works. The path drops from 3 nodes to 2.
 
-The drawing is that shape for the values 1 through 7, rooted at 4. The path 4, 2, 1 has 3 nodes, and log2(7) is about 2.8. log2(1,000,000) is about 20, because 2 to the 20th is 1,048,576. A balanced million nodes is about 20 steps. A line of a million nodes is a million steps.
+The drawing is that perfect shape for the values 1 through 7, rooted at 4. The path 4, 2, 1 has 3 nodes, and log2(7) is about 2.8. log2(1,000,000) is about 20 because 2 to the 20th is 1,048,576. A perfectly packed million-node tree needs about 20 levels. AVL and red-black trees guarantee O(log n) height but may use more than 20 levels because their guarantees allow less compact shapes. A line of a million nodes still needs a million steps.
+
+\`\`\`mermaid
+flowchart TB
+  update["Insert or delete"] --> check["Check balance invariant on ancestor path"]
+  check --> ok{"Invariant holds?"}
+  ok -->|yes| done["No local repair"]
+  ok -->|no| repair["Rotate; red-black may also recolor"]
+  repair --> done
+\`\`\`
 
 ## Cost
 
-Search costs the height. One rotation rewires a constant number of links, so the local move is O(1) once you hold the nodes. AVL and red-black insert and delete stay O(log n) by doing a bounded amount of that work on one path. You are not coding it this month.
+Search costs the height. One rotation rewires a constant number of links, so the local move is O(1) once you hold the nodes. An update checks at most O(log n) ancestors; each local check or repair is O(1), so AVL and red-black insertion and deletion remain O(log n). You are not coding them this month.
 
 | Shape of n nodes | Height | One search |
 | --- | --- | --- |
 | AVL or red-black | about log n | O(log n) |
-| n = 1,000,000, balanced | about 20 | about 20 steps |
+| n = 1,000,000, perfectly packed | about 20 levels | about 20 steps |
 | Right spine | n | O(n) |
 | n = 1,000,000, a line | 1,000,000 | 1,000,000 steps |
 
-Memory is O(n), plus a height or a color so the repair can run on the way back up. A sorted array never needs this move. Binary search throws away half by index.
+The nodes occupy O(n) memory. Implementations also store O(1) metadata per node, such as an AVL height or a red-black color, so total memory remains O(n). A recursive update can use O(log n) call-stack space; an implementation with parent links can walk upward iteratively. A sorted array never needs this move. Binary search throws away half by index.
 
 ## In the course
 
@@ -330,12 +444,19 @@ A binary search tree is the order a rotation must preserve. A heap is the array 
       "complete binary tree",
     ],
     `
-A heap is a complete binary tree stored in an array, with the minimum or the maximum at the root. Complete means every level is full except possibly the last, filled from the left. Updating that extreme is O(log n), enough to find the kth largest without a full sort. The drawing is the min-heap of the 3 largest among 3, 2, 1, 5, 6, and 4, and the root is 4.
+A binary heap combines two invariants. Its **shape invariant** says it is complete: every level is full except possibly the last, which fills from the left. Its **heap-order invariant** says each parent is no greater than its children in a min-heap, or no smaller in a max-heap. These guarantees put one extreme at the root, but they do not fully sort the values. Updating that extreme is O(log n), enough to find the kth largest without a full sort. The drawing is the min-heap holding the 3 largest values from 3, 2, 1, 5, 6, and 4; its root is 4.
 
 \`\`\`mermaid
 flowchart TD
   i0["0: 4"] --> i1["1: 6"]
   i0 --> i2["2: 5"]
+\`\`\`
+
+\`\`\`mermaid
+flowchart LR
+  array["Array [4, 6, 5]"] --> zero["index 0: root 4"]
+  zero --> one["index 1: left child 6"]
+  zero --> two["index 2: right child 5"]
 \`\`\`
 
 ## How it works
@@ -354,13 +475,28 @@ const leftChild = (index: number): number => {
 const rightChild = (index: number): number => {
   return 2 * index + 2;
 };
+
+console.log(parentIndex(2));
+console.log(leftChild(0), rightChild(0));
 \`\`\`
 
-A min-heap keeps the smallest value at the root. A max-heap keeps the largest. The two children need not be ordered against each other, so this is not a binary search tree. You use a heap when you keep asking for the current extreme.
+The example prints \`0\` and then \`1 2\`. Call \`parentIndex\` only for a non-root index; index 0 has no parent. A min-heap keeps the smallest value at the root. A max-heap keeps the largest. Siblings need not be ordered against each other, and neither subtree has the BST ordering rule, so searching for an arbitrary value is O(n).
 
 Insert writes at the next open index, then swaps upward while the value belongs above its parent: smaller, in a min-heap, or larger, in a max-heap. Removing the root moves the last value into the hole and swaps downward, with the smaller child or the larger child. Both walks are one path. Height is about log n, so both are O(log n). Reading the root is O(1).
 
 For the kth largest, keep a min-heap of size k. Push each value, and if the size passes k, pop the smallest. Anything smaller than the root cannot be one of the k largest. The root is the smallest survivor, which is the kth largest. Duplicates count separately.
+
+\`\`\`mermaid
+flowchart LR
+  next["Read next value"] --> push["Push into min-heap"]
+  push --> size{"More than k values?"}
+  size -->|yes| pop["Remove minimum"]
+  size -->|no| keep["Keep heap"]
+  pop --> keep
+  keep --> more{"Input remains?"}
+  more -->|yes| next
+  more -->|no| answer["Root is kth largest"]
+\`\`\`
 
 ## A numeric example
 
@@ -379,7 +515,7 @@ Reading the root is O(1). Insert and remove-root are O(log n). The size-k heap s
 | kth largest, heap of size k | O(n log k) | O(k) |
 | Sort the whole array | O(n log n) | depends on the sort |
 
-The complete shape is what makes log n honest. A binary search tree gets that bound only when it stays balanced. A heap swaps along a path. It does not rotate.
+The complete shape makes the height \`floor(log2(n)) + 1\` for a non-empty heap, which makes O(log n) updates unconditional. A binary search tree gets that bound only when it stays balanced. A heap swaps values along an index path; it does not rotate links.
 
 ## In the course
 
