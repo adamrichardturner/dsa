@@ -80,6 +80,19 @@ console.log(seen.get(1));`);
     assert.deepEqual(lines, [{ kind: "log", text: "2" }]);
   });
 
+  it("runs current JavaScript, including map iteration", () => {
+    const lines = runSnippet(`const counts = new Map<number, number>([[1, 1], [2, 2]]);
+let best = 0;
+for (const [value, count] of counts) {
+  if (count > (counts.get(best) ?? 0)) {
+    best = value;
+  }
+}
+const extra = new Set([best]).union(new Set([3]));
+console.log(best, extra.size, [1, 2, 3].values().drop(1).toArray().join(","));`);
+    assert.deepEqual(lines, [{ kind: "log", text: "2 2 2,3" }]);
+  });
+
   it("says when nothing was printed", () => {
     const lines = runSnippet("const value: number = 2;");
     assert.deepEqual(lines, [{ kind: "log", text: "The code ran. Nothing was printed." }]);

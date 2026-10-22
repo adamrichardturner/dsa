@@ -189,6 +189,8 @@ const compileSolution = (
     return {
       compiled: transform(code, {
         transforms: ["typescript", "imports"],
+        // Leave current syntax in place. The Node runtime executes it.
+        disableESTransforms: true,
         production: true,
       }).code,
     };

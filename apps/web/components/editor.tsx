@@ -60,14 +60,17 @@ const useMonacoOverflowHost = (): HTMLDivElement | null => {
 };
 
 const prepareEditor: BeforeMount = (monaco) => {
-  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+  const typescript = monaco.languages.typescript;
+  typescript.typescriptDefaults.setCompilerOptions({
     strict: true,
-    target: monaco.languages.typescript.ScriptTarget.ES2022,
-    module: monaco.languages.typescript.ModuleKind.ESNext,
+    // Yearly targets after ES2020 are missing from Monaco's public enum.
+    // Latest is the newest target the bundled TypeScript worker understands.
+    target: typescript.ScriptTarget.Latest,
+    module: typescript.ModuleKind.ESNext,
     esModuleInterop: true,
     noEmit: true,
     allowNonTsExtensions: true,
-    lib: ["es2022"],
+    lib: ["esnext"],
   });
   monaco.languages.typescript.typescriptDefaults.addExtraLib(
     "declare const console: { log(...data: readonly unknown[]): void };",
