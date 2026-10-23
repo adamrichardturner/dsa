@@ -153,7 +153,7 @@ V is vertices and E is edges. One slot per vertex stores the mark. A search that
 
 ## In the course
 
-The graphs lesson gives you undirected integer pairs, a start, and a target. Return the number of edges on a shortest path. Distance from a vertex to itself is 0, before you walk. A target you never reach is -1, which means no path, not distance 0.
+The graphs lesson gives you undirected integer pairs, a start, and a target. Return the number of edges on a shortest path. Distance from a vertex to itself is 0, before you walk. A target you never reach is -1, which means no path, not distance 0. Connected components then counts every piece in \`0..count - 1\`. An isolated vertex that never appears in an edge is still one component.
 
 Build the neighbour lists, then search, and mark a vertex when you first decide to visit it. Breadth-first search matches the question, because every edge costs one hop. Depth-first search can say a path exists and still hand you a longer one. The queue rule does not change: whoever has waited longest comes out next. The payload is a vertex, often with a distance beside it.
 
@@ -508,7 +508,7 @@ Enqueue each vertex once and the neighbour scans sum to a constant times E, so t
 
 ## In the course
 
-Return the edge count from \`start\` to \`end\`. Return 0 when they are the same vertex. Return -1 when no path exists. Every edge costs the same, so build the lists, enqueue the start at distance 0, mark on enqueue, and carry the distance. The public triangle answers 1. A disconnected pair answers -1. The line 0–1–2–3 answers 3, one hop at a time, with no shortcut. Level order on a tree is this queue: grandchildren wait behind children, just as distance 2 waits behind distance 1.
+Return the edge count from \`start\` to \`end\`. Return 0 when they are the same vertex. Return -1 when no path exists. Every edge costs the same, so build the lists, enqueue the start at distance 0, mark on enqueue, and carry the distance. The public triangle answers 1. A disconnected pair answers -1. The line 0–1–2–3 answers 3, one hop at a time, with no shortcut. Level order on a tree is this queue: \`levelOrder\` emits real nodes left to right, and grandchildren wait behind children, just as distance 2 waits behind distance 1.
 
 ## Common mistakes
 
@@ -688,7 +688,7 @@ The time bound matches breadth-first search: vertices plus the neighbour entries
 
 ## In the course
 
-The graphs exercise wants fewest edges, so you submit a breadth-first search. This walk is for reachability, a connected piece, or the tree-depth recursion you already wrote. It answers whether you can get there and which vertices are in this component. It does not answer the shortest path. You meet the same dive in backtracking, on choices you generate, and you mark on the way in if you sketch it. Reachability must match between a stack and recursion. The printed order need not.
+The graphs exercise wants fewest edges, so you submit a breadth-first search. This walk is for reachability, a connected piece, or the tree-depth recursion you already wrote. It answers whether you can get there and which vertices are in this component. \`countComponents\` starts one such walk from every still-unvisited vertex in \`0..count - 1\`. It does not answer the shortest path. You meet the same dive in backtracking, on choices you generate, and you mark on the way in if you sketch it. Reachability must match between a stack and recursion. The printed order need not.
 
 ## Common mistakes
 

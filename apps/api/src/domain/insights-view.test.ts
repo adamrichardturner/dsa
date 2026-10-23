@@ -30,7 +30,7 @@ describe("buildInsights", () => {
     const view = buildInsights({
       now,
       problems: [
-        problem("p1", "l1", "Complexity", "complexity", "The cost of a loop", "easy", 1),
+        problem("p1", "l1", "Complexity", "complexity", "Time complexity and Big O", "easy", 1),
         problem("p2", "l2", "Arrays", "arrays", "Arrays", "easy", 2),
       ],
       stats: [],

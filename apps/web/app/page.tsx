@@ -27,9 +27,9 @@ const weeks = [
     week: "Week 1",
     title: "Foundations",
     detail:
-      "Learn to name the cost of a loop, then practice the scans you will reuse all month.",
+      "Learn to name time complexity and Big O, then practice the scans you will reuse all month.",
     lessons: [
-      "The cost of a loop",
+      "Time complexity and Big O",
       "The cost of a pair",
       "Arrays",
       "Moving the middle",
@@ -57,8 +57,8 @@ const weeks = [
       "Two recursive calls",
       "Binary search",
       "The empty range",
-      "Merge sort",
-      "Which sort you meant",
+      "Sorting with merge sort",
+      "Comparing sorting algorithms",
     ],
   },
   {
@@ -70,11 +70,11 @@ const weeks = [
       "Trees",
       "Leaves and totals",
       "Binary search trees",
-      "A tree can be a line",
+      "BST height and insertion order",
       "Heaps",
       "Parents and children",
-      "Graphs",
-      "Mark where you have been",
+      "Graphs and breadth-first search",
+      "Connected components",
     ],
   },
   {
@@ -83,7 +83,7 @@ const weeks = [
     detail:
       "Finish with the patterns that turn a hard problem into a smaller one.",
     lessons: [
-      "Greedy choices",
+      "Greedy algorithms",
       "Try to break the rule",
       "Backtracking",
       "When order matters",
@@ -269,7 +269,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
               <p>
-                Short lessons, two exercises on each, then a slightly harder
+                Short lessons, a few exercises on each, then a slightly harder
                 step. An editor, tests, and a progress page that stays on your
                 account.
               </p>

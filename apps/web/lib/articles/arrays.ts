@@ -675,7 +675,7 @@ Use prefix sums for many aggregate queries over mostly immutable data. Besides s
 
 ## In the course
 
-The leading zero, half-open range convention, cancellation formula, and O(n + q) analysis are core. Fenwick trees, segment trees, and two-dimensional prefix sums are enrichment for workloads with updates or grid queries.
+The leading zero, half-open range convention, cancellation formula, and O(n + q) analysis are core. The sliding-window exercise \`rangeSum\` uses the same cancellation with an inclusive right end: \`prefix[right + 1] - prefix[left]\` is the half-open span \`[left, right + 1)\`. A prefix of \`[0]\` is an empty original array and that exercise returns 0. Fenwick trees, segment trees, and two-dimensional prefix sums are enrichment for workloads with updates or grid queries.
 
 ## FAQ
 

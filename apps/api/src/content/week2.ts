@@ -549,7 +549,7 @@ export function flatten(value: Nested): number[] {
     {
       id: "sorting",
       slug: "sorting",
-      title: "Merge sort",
+      title: "Sorting with merge sort",
       summary: "Split, sort the halves, then merge them in order.",
       estimatedMinutes: 40,
       bitesizeMd: bitesize.sorting,

@@ -172,6 +172,10 @@ An empty tree produces an empty sequence. A single node produces the same one-it
 
 Do not call a traversal “inorder” on a general node with an arbitrary number of children without defining where the parent visit belongs. Preorder and postorder generalise naturally to many children; binary inorder depends on having a distinguished left and right.
 
+## In the course
+
+\`levelOrder\` builds the tree from the level-order encoding, then emits real nodes left to right with a queue. \`null\` slots are holes in the encoding, not values in the output. An empty encoding returns an empty array.
+
 ## Related
 
 - [What Is a Tree? Roots, Leaves, and Depth in Nodes](/articles/trees)

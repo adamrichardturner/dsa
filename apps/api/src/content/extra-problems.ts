@@ -1451,21 +1451,551 @@ Implement \`hasPrefix(words, queries)\`.
   ],
 };
 
+const rangeSum: SeedProblem = {
+  id: "range-sum",
+  title: "Range sum with a prefix array",
+  topic: "Sliding window",
+  difficulty: "easy",
+  functionName: "rangeSum",
+  disallow: [".slice(", ".reduce("],
+  immutableArgs: [0],
+  promptMd: `
+Implement \`rangeSum(prefix, left, right)\`.
+
+- **Input:** \`prefix\` is a prefix-sum array. \`prefix[0]\` is \`0\`, and \`prefix[i]\` is the sum of the original values at indexes \`0\` through \`i - 1\`. \`left\` and \`right\` are inclusive indexes into that original array, with \`0 <= left <= right\`. The original values may be negative or zero.
+- **Output:** return the sum of the original values from \`left\` through \`right\`, inclusive.
+- **Edge cases:** \`left === right\` returns that one value. A span that starts at index \`0\` uses the same formula as any other span. A prefix of \`[0]\` means the original array was empty; \`rangeSum([0], 0, 0)\` returns \`0\`.
+- **Required technique:** subtract two prefix entries. The inclusive sum is \`prefix[right + 1] - prefix[left]\`. That is the half-open cancellation \`prefix[end] - prefix[start]\` with \`end = right + 1\`.
+- **Complexity:** O(1) time and O(1) extra space. Building the prefix array is separate work and is not part of this function.
+- **Do not:** rescan the range, call \`.reduce()\` or \`.slice()\`, or rebuild the prefix array. Do not mutate \`prefix\`.
+
+For \`nums = [2, 1, 5, 3, 4]\`, the prefix is \`[0, 2, 3, 8, 11, 15]\` and \`rangeSum(prefix, 1, 3)\` is \`9\`.
+  `.trim(),
+  starterCode: `export function rangeSum(
+  prefix: number[],
+  left: number,
+  right: number,
+): number {
+  return 0;
+}
+`,
+  tests: [
+    {
+      name: "an interior inclusive span",
+      args: [[0, 2, 3, 8, 11, 15], 1, 3],
+      expected: 9,
+      public: true,
+    },
+    {
+      name: "one stored value",
+      args: [[0, 5], 0, 0],
+      expected: 5,
+      public: true,
+    },
+    {
+      name: "a single middle value",
+      args: [[0, 2, 3, 8, 11, 15], 2, 2],
+      expected: 5,
+      public: false,
+    },
+    {
+      name: "the whole array from the left end",
+      args: [[0, 2, 3, 8, 11, 15], 0, 4],
+      expected: 15,
+      public: false,
+    },
+    {
+      name: "empty original array",
+      args: [[0], 0, 0],
+      expected: 0,
+      public: false,
+    },
+    {
+      name: "negatives cancel inside the span",
+      args: [[0, -2, 3, 2], 0, 2],
+      expected: 2,
+      public: true,
+    },
+    {
+      name: "a negative one-value span",
+      args: [[0, -2, 3, 2], 0, 0],
+      expected: -2,
+      public: false,
+    },
+    {
+      name: "a span that does not start at zero",
+      args: [[0, -2, 3, 2], 1, 2],
+      expected: 4,
+      public: false,
+    },
+  ],
+};
+
+const removeDuplicates: SeedProblem = {
+  id: "remove-duplicates-sorted",
+  title: "Remove duplicates in a sorted array",
+  topic: "Two pointers",
+  difficulty: "easy",
+  functionName: "removeDuplicates",
+  disallow: [".filter(", ".reduce(", ".sort(", ".toSorted(", "new Set"],
+  immutableArgs: [0],
+  distinctArrayReturnFromArg: 0,
+  promptMd: `
+Implement \`removeDuplicates(nums)\`.
+
+- **Input:** \`nums\` is sorted in non-decreasing order and contains finite numbers. Equal values are adjacent because of that order. Negatives and zero are allowed.
+- **Output:** return a new array containing each distinct value once, in the same order. Its length is the number of unique values.
+- **Edge cases:** an empty input returns \`[]\`. A one-value input returns a different array holding that value. An array of identical values returns a one-value array.
+- **Required technique:** scan with a read index and write into a new array. Keep the first value. Keep each later value only when it differs from the last value written.
+- **Complexity:** O(n) time. The returned array uses O(k) space for \`k\` unique values, and extra memory besides that array is O(1).
+- **Do not:** mutate \`nums\`, sort it, or build the answer with \`.filter()\`, \`.reduce()\`, or a set. The write pointer is the skill being practised.
+
+\`removeDuplicates([1, 1, 2, 2, 3])\` returns \`[1, 2, 3]\`.
+  `.trim(),
+  starterCode: `export function removeDuplicates(nums: number[]): number[] {
+  return [];
+}
+`,
+  tests: [
+    {
+      name: "adjacent duplicates",
+      args: [[1, 1, 2]],
+      expected: [1, 2],
+      public: true,
+    },
+    {
+      name: "already unique",
+      args: [[1, 2, 3]],
+      expected: [1, 2, 3],
+      public: true,
+    },
+    {
+      name: "empty",
+      args: [[]],
+      expected: [],
+      public: false,
+    },
+    {
+      name: "one value",
+      args: [[4]],
+      expected: [4],
+      public: false,
+    },
+    {
+      name: "every value is equal",
+      args: [[7, 7, 7]],
+      expected: [7],
+      public: false,
+    },
+    {
+      name: "negatives zero and a repeated run",
+      args: [[-2, -2, -1, 0, 0, 0, 3]],
+      expected: [-2, -1, 0, 3],
+      public: true,
+    },
+    {
+      name: "several runs",
+      args: [[1, 1, 1, 2, 2, 3, 3, 3, 3]],
+      expected: [1, 2, 3],
+      public: false,
+    },
+    {
+      name: "unique negatives stay in order",
+      args: [[-5, -1, 0, 2]],
+      expected: [-5, -1, 0, 2],
+      public: false,
+    },
+    {
+      name: "many identical values stay linear",
+      args: [
+        {
+          fixture: "number-sequence",
+          length: 12_000,
+          start: 4,
+          step: 0,
+        },
+      ],
+      expected: [4],
+      public: false,
+      timeoutMs: 300,
+    },
+  ],
+};
+
+const maxArea: SeedProblem = {
+  id: "max-area",
+  title: "Container with most water",
+  topic: "Two pointers",
+  difficulty: "medium",
+  functionName: "maxArea",
+  disallow: [".sort(", ".toSorted("],
+  immutableArgs: [0],
+  promptMd: `
+Implement \`maxArea(heights)\`.
+
+- **Input:** \`heights\` is an array of non-negative finite numbers. Index \`i\` is a vertical line of that height. The width between two indexes is their distance.
+- **Output:** return the largest area a container can hold. The container between \`left < right\` has area \`min(heights[left], heights[right]) * (right - left)\`. Return \`0\` when fewer than two lines exist.
+- **Edge cases:** two lines have width \`1\`. Equal heights are allowed. A zero height contributes area \`0\`. The widest pair is not always the answer, and the tallest line is not always part of it.
+- **Required technique:** start pointers at the two ends. The area is limited by the shorter line, so move that shorter pointer inward by one. When the heights are equal, move the left pointer. The width only shrinks, so the shorter height cannot form a larger area with any index still between the pointers.
+- **Complexity:** O(n) time and O(1) extra space.
+- **Do not:** mutate \`heights\`, sort it, or check every pair. A nested scan is too slow for the large hidden case.
+
+\`maxArea([1, 8, 6, 2, 5, 4, 8, 3, 7])\` returns \`49\`.
+  `.trim(),
+  starterCode: `export function maxArea(heights: number[]): number {
+  return 0;
+}
+`,
+  tests: [
+    {
+      name: "the classic lines",
+      args: [[1, 8, 6, 2, 5, 4, 8, 3, 7]],
+      expected: 49,
+      public: true,
+    },
+    {
+      name: "two equal lines",
+      args: [[1, 1]],
+      expected: 1,
+      public: true,
+    },
+    {
+      name: "empty",
+      args: [[]],
+      expected: 0,
+      public: false,
+    },
+    {
+      name: "one line",
+      args: [[5]],
+      expected: 0,
+      public: false,
+    },
+    {
+      name: "equal heights use the full width",
+      args: [[4, 4, 4, 4]],
+      expected: 12,
+      public: false,
+    },
+    {
+      name: "zeros cannot hold water",
+      args: [[0, 2, 0]],
+      expected: 0,
+      public: false,
+    },
+    {
+      name: "the ends beat the tall middle",
+      args: [[1, 100, 1]],
+      expected: 2,
+      public: true,
+    },
+    {
+      name: "the shorter left end moves",
+      args: [[1, 3, 2]],
+      expected: 2,
+      public: false,
+    },
+    {
+      name: "the shorter right end moves",
+      args: [[8, 6, 2, 5]],
+      expected: 15,
+      public: false,
+    },
+    {
+      name: "a narrow tall pair beats a wide short pair",
+      args: [[1, 3, 2, 5, 25, 24, 5]],
+      expected: 24,
+      public: false,
+    },
+    {
+      name: "wide equal heights stay linear",
+      args: [
+        {
+          fixture: "number-sequence",
+          length: 40_000,
+          start: 5,
+          step: 0,
+        },
+      ],
+      expected: 199_995,
+      public: false,
+      timeoutMs: 300,
+    },
+  ],
+};
+
+const levelOrder: SeedProblem = {
+  id: "level-order",
+  title: "Level-order traversal",
+  topic: "Trees",
+  difficulty: "easy",
+  functionName: "levelOrder",
+  disallow: [".filter(", ".reduce(", ".flat("],
+  immutableArgs: [0],
+  distinctArrayReturnFromArg: 0,
+  promptMd: `
+Implement \`levelOrder(values)\`. The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
+
+- **Input:** \`values\` is a valid level-order binary-tree encoding. Numbers are nodes and \`null\` marks a missing child.
+- **Output:** return the node values from a left-to-right breadth-first walk. Skip missing children. Do not include \`null\` in the output.
+- **Edge cases:** \`[]\` returns \`[]\`. A root by itself returns \`[value]\`. A left spine and a right spine are both valid, and node values may be negative or zero.
+- **Required technique:** call \`buildTree(values)\`, then walk with a queue. Emit a real node when you take it from the queue, and enqueue its left child before its right child. A front index avoids the cost of \`shift()\`.
+- **Complexity:** O(n) time and O(n) queue space for n nodes.
+- **Do not:** copy the non-null entries of \`values\` with array helpers. The encoding is level order already, and the exercise is the queue walk on the tree \`buildTree\` produces.
+
+\`levelOrder([3, 9, 20, null, null, 15, 7])\` returns \`[3, 9, 20, 15, 7]\`.
+  `.trim(),
+  starterCode: treeStarter(
+    "export function levelOrder(values: Array<number | null>): number[]",
+    "  return [];",
+  ),
+  tests: [
+    {
+      name: "the lesson tree",
+      args: [[3, 9, 20, null, null, 15, 7]],
+      expected: [3, 9, 20, 15, 7],
+      public: true,
+    },
+    {
+      name: "single node",
+      args: [[1]],
+      expected: [1],
+      public: true,
+    },
+    {
+      name: "empty",
+      args: [[]],
+      expected: [],
+      public: false,
+    },
+    {
+      name: "left spine",
+      args: [[1, 2, null, 3]],
+      expected: [1, 2, 3],
+      public: false,
+    },
+    {
+      name: "right spine",
+      args: [[1, null, 2, null, 3]],
+      expected: [1, 2, 3],
+      public: true,
+    },
+    {
+      name: "zero and negative values",
+      args: [[0, -1, 2, null, null, -3, 4]],
+      expected: [0, -1, 2, -3, 4],
+      public: false,
+    },
+    {
+      name: "a complete tree",
+      args: [[4, 2, 6, 1, 3, 5, 7]],
+      expected: [4, 2, 6, 1, 3, 5, 7],
+      public: false,
+    },
+  ],
+};
+
+const isValidBst: SeedProblem = {
+  id: "is-valid-bst",
+  title: "Validate a binary search tree",
+  topic: "Binary search trees",
+  difficulty: "medium",
+  functionName: "isValidBst",
+  disallow: [".sort(", ".toSorted("],
+  immutableArgs: [0],
+  promptMd: `
+Implement \`isValidBst(values)\`. The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
+
+- **Input:** \`values\` is a level-order binary-tree encoding. Numbers are nodes and \`null\` marks a missing child. This tree was not necessarily built by the course's insertion routine.
+- **Output:** return \`true\` exactly when every node obeys the strict BST rule: every value in its left subtree is smaller than the node, and every value in its right subtree is larger.
+- **Edge cases:** an empty tree and a single node are valid. Equal values are not valid anywhere in a subtree. A violation may be a grandchild even when every parent and child look ordered.
+- **Required technique:** call \`buildTree(values)\`, then carry an exclusive lower bound and upper bound into each subtree. A null child is valid. A node outside \`(low, high)\` is not. Checking only the two children is not enough.
+- **Complexity:** O(n) time and O(h) call-stack space.
+- **Do not:** sort the encoding. Level order is not sorted order, and sorting would hide the tree shape.
+
+\`isValidBst([2, 1, 3])\` is \`true\`. \`isValidBst([5, 1, 4, null, null, 3, 6])\` is \`false\`.
+  `.trim(),
+  starterCode: treeStarter(
+    "export function isValidBst(values: Array<number | null>): boolean",
+    "  return false;",
+  ),
+  tests: [
+    {
+      name: "a small valid tree",
+      args: [[2, 1, 3]],
+      expected: true,
+      public: true,
+    },
+    {
+      name: "a right child is too small",
+      args: [[5, 1, 4, null, null, 3, 6]],
+      expected: false,
+      public: true,
+    },
+    {
+      name: "empty",
+      args: [[]],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "single node",
+      args: [[1]],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "a grandchild breaks an ancestor bound",
+      args: [[5, 4, 6, null, null, 3, 7]],
+      expected: false,
+      public: false,
+    },
+    {
+      name: "a value in the right subtree is below the root",
+      args: [[10, 5, 15, null, null, 6, 20]],
+      expected: false,
+      public: true,
+    },
+    {
+      name: "a valid left spine",
+      args: [[3, 2, null, 1]],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "a valid right spine",
+      args: [[1, null, 2, null, 3]],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "equal left child",
+      args: [[2, 2, 3]],
+      expected: false,
+      public: false,
+    },
+    {
+      name: "equal right child",
+      args: [[2, 1, 2]],
+      expected: false,
+      public: false,
+    },
+    {
+      name: "negative values can still be ordered",
+      args: [[-10, null, -3]],
+      expected: true,
+      public: false,
+    },
+    {
+      name: "a deeper valid tree",
+      args: [[8, 3, 10, 1, 6, null, 14, null, null, 4, 7]],
+      expected: true,
+      public: false,
+    },
+  ],
+};
+
+const heapPush: SeedProblem = {
+  id: "heap-push",
+  title: "Push into a min-heap array",
+  topic: "Heaps",
+  difficulty: "medium",
+  functionName: "pushMinHeap",
+  disallow: [".sort(", ".toSorted("],
+  immutableArgs: [0],
+  distinctArrayReturnFromArg: 0,
+  promptMd: `
+Implement \`pushMinHeap(heap, value)\`.
+
+- **Input:** \`heap\` is a 0-based min-heap array of finite numbers: every parent is less than or equal to each child. For index \`i > 0\`, the parent is \`Math.floor((i - 1) / 2)\`. \`value\` is a finite number to insert.
+- **Output:** return a new min-heap array that contains every original value plus \`value\`.
+- **Canonical order:** copy \`heap\`, append \`value\`, then sift that index up. While the index is not the root and its value is **strictly less** than its parent, swap with the parent. Stop when the parent is less than or equal to the value. Equal values do not swap. The tests expect this exact array, not another valid min-heap.
+- **Edge cases:** pushing into \`[]\` returns \`[value]\`. A value that is already in heap order stays at the end. A new minimum sifts all the way to index 0. Negatives compare numerically.
+- **Complexity:** O(log n) time. The returned array uses O(n) space, and the sift uses O(1) extra memory besides that copy.
+- **Do not:** mutate \`heap\`, sort the array, or rebuild the heap from scratch.
+
+\`pushMinHeap([1, 3, 5], 2)\` returns \`[1, 2, 5, 3]\`.
+  `.trim(),
+  starterCode: `export function pushMinHeap(heap: number[], value: number): number[] {
+  return [];
+}
+`,
+  tests: [
+    {
+      name: "sift up one level",
+      args: [[1, 3, 5], 2],
+      expected: [1, 2, 5, 3],
+      public: true,
+    },
+    {
+      name: "empty heap",
+      args: [[], 4],
+      expected: [4],
+      public: true,
+    },
+    {
+      name: "new minimum becomes the root",
+      args: [[1], 0],
+      expected: [0, 1],
+      public: false,
+    },
+    {
+      name: "already in order",
+      args: [[1, 3, 5], 7],
+      expected: [1, 3, 5, 7],
+      public: true,
+    },
+    {
+      name: "an equal value does not pass its parent",
+      args: [[2, 4, 6], 2],
+      expected: [2, 2, 6, 4],
+      public: false,
+    },
+    {
+      name: "equal values stay where they were appended",
+      args: [[1, 1], 1],
+      expected: [1, 1, 1],
+      public: false,
+    },
+    {
+      name: "sift through the root",
+      args: [[1, 3, 5, 7, 4], 0],
+      expected: [0, 3, 1, 7, 4, 5],
+      public: false,
+    },
+    {
+      name: "negative minimum",
+      args: [[-1, 0, 2], -3],
+      expected: [-3, -1, 2, 0],
+      public: false,
+    },
+    {
+      name: "swap along the right side",
+      args: [[5, 8, 6, 9], 4],
+      expected: [4, 5, 6, 9, 8],
+      public: false,
+    },
+  ],
+};
+
 export const extras: Record<string, LessonExtras> = {
   complexity: { before: none, after: [countEqual] },
   arrays: { before: [reverseCopy], after: none },
   "hash-maps": { before: [hasDuplicate], after: none },
-  "two-pointers": { before: none, after: [hasPairSum] },
-  "sliding-window": { before: none, after: [minWindowSum] },
+  "two-pointers": {
+    before: none,
+    after: [hasPairSum, removeDuplicates, maxArea],
+  },
+  "sliding-window": { before: none, after: [minWindowSum, rangeSum] },
   "linked-lists": { before: [listSum], after: none },
   stacks: { before: none, after: [removeAdjacent] },
   queues: { before: [recentValues], after: none },
   recursion: { before: none, after: [sumNested] },
   "binary-search": { before: none, after: [searchInsert] },
   sorting: { before: [mergeSorted], after: none },
-  trees: { before: none, after: [countNodes] },
-  "binary-search-trees": { before: none, after: [bstMin] },
-  heaps: { before: none, after: [isMinHeap] },
+  trees: { before: none, after: [countNodes, levelOrder] },
+  "binary-search-trees": { before: none, after: [bstMin, isValidBst] },
+  heaps: { before: none, after: [isMinHeap, heapPush] },
   graphs: { before: [canReach], after: none },
   greedy: { before: [canAttendAll], after: none },
   backtracking: { before: [countSubsets], after: none },

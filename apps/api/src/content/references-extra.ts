@@ -1179,4 +1179,202 @@ export function prefixCounts(words: string[], queries: string[]): number[] {
   return counts;
 }
 `,
+  "range-sum": `export function rangeSum(
+  prefix: number[],
+  left: number,
+  right: number,
+): number {
+  const end = prefix[right + 1];
+  const start = prefix[left];
+  if (end === undefined || start === undefined) {
+    return 0;
+  }
+  return end - start;
+}
+`,
+  "remove-duplicates-sorted": `export function removeDuplicates(nums: number[]): number[] {
+  const unique: number[] = [];
+  for (let index = 0; index < nums.length; index += 1) {
+    const value = nums[index];
+    if (value === undefined) {
+      continue;
+    }
+    const previous = unique[unique.length - 1];
+    if (previous === value) {
+      continue;
+    }
+    unique.push(value);
+  }
+  return unique;
+}
+`,
+  "max-area": `export function maxArea(heights: number[]): number {
+  let left = 0;
+  let right = heights.length - 1;
+  let best = 0;
+  while (left < right) {
+    const leftHeight = heights[left];
+    const rightHeight = heights[right];
+    if (leftHeight === undefined || rightHeight === undefined) {
+      break;
+    }
+    const width = right - left;
+    const height = leftHeight < rightHeight ? leftHeight : rightHeight;
+    const area = height * width;
+    if (area > best) {
+      best = area;
+    }
+    if (leftHeight <= rightHeight) {
+      left += 1;
+      continue;
+    }
+    right -= 1;
+  }
+  return best;
+}
+`,
+  "level-order": `${treeHelpers}
+export function levelOrder(values: Array<number | null>): number[] {
+  const root = buildTree(values);
+  if (root === null) {
+    return [];
+  }
+  const order: number[] = [];
+  const queue: TreeNode[] = [root];
+  for (let index = 0; index < queue.length; index += 1) {
+    const node = queue[index];
+    if (node === undefined) {
+      continue;
+    }
+    order.push(node.value);
+    if (node.left !== null) {
+      queue.push(node.left);
+    }
+    if (node.right !== null) {
+      queue.push(node.right);
+    }
+  }
+  return order;
+}
+`,
+  "is-valid-bst": `${treeHelpers}
+function valid(
+  node: TreeNode | null,
+  low: number | null,
+  high: number | null,
+): boolean {
+  if (node === null) {
+    return true;
+  }
+  if (low !== null && node.value <= low) {
+    return false;
+  }
+  if (high !== null && node.value >= high) {
+    return false;
+  }
+  if (!valid(node.left, low, node.value)) {
+    return false;
+  }
+  return valid(node.right, node.value, high);
+}
+
+export function isValidBst(values: Array<number | null>): boolean {
+  return valid(buildTree(values), null, null);
+}
+`,
+  "heap-push": `export function pushMinHeap(heap: number[], value: number): number[] {
+  const next = heap.slice();
+  next.push(value);
+  let index = next.length - 1;
+  while (index > 0) {
+    const parent = Math.floor((index - 1) / 2);
+    const childValue = next[index];
+    const parentValue = next[parent];
+    if (
+      childValue === undefined ||
+      parentValue === undefined ||
+      childValue >= parentValue
+    ) {
+      return next;
+    }
+    next[index] = parentValue;
+    next[parent] = childValue;
+    index = parent;
+  }
+  return next;
+}
+`,
+  "fib-memo": `export function fibMemo(n: number): number {
+  const cache: Array<number | undefined> = [];
+  const solve = (value: number): number => {
+    if (value <= 2) {
+      return 1;
+    }
+    const saved = cache[value];
+    if (saved !== undefined) {
+      return saved;
+    }
+    const result = solve(value - 1) + solve(value - 2);
+    cache[value] = result;
+    return result;
+  };
+  return solve(n);
+}
+`,
+  "count-components": `export function countComponents(
+  edges: number[][],
+  count: number,
+): number {
+  const neighbours: Record<string, number[]> = {};
+  for (let vertex = 0; vertex < count; vertex += 1) {
+    neighbours[String(vertex)] = [];
+  }
+  for (let edgeIndex = 0; edgeIndex < edges.length; edgeIndex += 1) {
+    const edge = edges[edgeIndex];
+    const from = edge?.[0];
+    const to = edge?.[1];
+    if (from === undefined || to === undefined) {
+      continue;
+    }
+    const fromList = neighbours[String(from)];
+    const toList = neighbours[String(to)];
+    if (fromList === undefined || toList === undefined) {
+      continue;
+    }
+    fromList.push(to);
+    toList.push(from);
+  }
+  const seen: Record<string, true> = {};
+  let components = 0;
+  for (let vertex = 0; vertex < count; vertex += 1) {
+    const key = String(vertex);
+    if (seen[key] === true) {
+      continue;
+    }
+    components += 1;
+    const queue = [vertex];
+    seen[key] = true;
+    for (let index = 0; index < queue.length; index += 1) {
+      const current = queue[index];
+      if (current === undefined) {
+        continue;
+      }
+      const list = neighbours[String(current)] ?? [];
+      for (let cursor = 0; cursor < list.length; cursor += 1) {
+        const next = list[cursor];
+        if (next === undefined) {
+          continue;
+        }
+        const nextKey = String(next);
+        if (seen[nextKey] === true) {
+          continue;
+        }
+        seen[nextKey] = true;
+        queue.push(next);
+      }
+    }
+  }
+  return components;
+}
+`,
 };

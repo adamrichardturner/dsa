@@ -376,7 +376,7 @@ Do not remove duplicates with a \`Set\`, and do not sort the input or a copy. Th
     {
       id: "graphs",
       slug: "graphs",
-      title: "Graphs",
+      title: "Graphs and breadth-first search",
       summary:
         "Vertices, edges, and breadth-first search for the shortest path.",
       estimatedMinutes: 45,

@@ -391,7 +391,7 @@ The recurrence and bases are part of the contract:
 - \`fib(1) = 1\`
 - \`fib(n) = fib(n - 1) + fib(n - 2)\` for \`n >= 2\`
 
-This is zero-based Fibonacci. A course exercise that calls 1 and 2 the first two values uses a different indexing convention even if the later addition looks identical.
+This is zero-based Fibonacci. \`fib\` and \`fibMemo\`, on Two recursive calls, use one-based bases: \`fib(1) = fib(2) = 1\`. \`fibMemo\` stores each completed state before returning, so \`n = 40\` does not rebuild the call tree. Do not copy the \`fib(0) = 0\` base into that exercise.
 
 ## The key is the state
 

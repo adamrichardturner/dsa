@@ -5,13 +5,13 @@ import { reading } from "./reading.js";
 export const week4: SeedModule = {
   id: "patterns",
   title: "Patterns",
-  summary: "Greedy choices, backtracking, dynamic programming, and a trie.",
+  summary: "Greedy algorithms, backtracking, dynamic programming, and a trie.",
   weekNumber: 4,
   lessons: [
     {
       id: "greedy",
       slug: "greedy",
-      title: "Greedy choices",
+      title: "Greedy algorithms",
       summary:
         "Take the local option that you can prove does not block a better future.",
       estimatedMinutes: 35,

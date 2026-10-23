@@ -317,7 +317,7 @@ export function nestedDepth(value: Nested): number {
   }
   return 1 + deepestChild;
 }`,
-    'For Fibonacci, return 1 when `n <= 2`; otherwise return `fib(n - 1) + fib(n - 2)`. For nesting, narrow with `typeof value === "number"` before iteration; TypeScript then knows the remaining value is `Nested[]`. Sibling depths use `Math.max`, not addition.\n\nNested depth visits each nested value once: O(N) time and O(d) call-stack space for nesting depth `d`. Naive Fibonacci repeats states, taking O(2ⁿ) time and O(n) stack space; that inefficiency is intentional here. Later, **memoisation** removes the repeated states.',
+    'For Fibonacci, return 1 when `n <= 2`; otherwise return `fib(n - 1) + fib(n - 2)`. For nesting, narrow with `typeof value === "number"` before iteration; TypeScript then knows the remaining value is `Nested[]`. Sibling depths use `Math.max`, not addition.\n\nNested depth visits each nested value once: O(N) time and O(d) call-stack space for nesting depth `d`. The uncached `fib` exercise keeps the repeated states, which takes O(2ⁿ) time and O(n) stack space. `fibMemo` stores each completed `n` before returning, using the same one-based bases, so a larger `n` stays linear. The later dynamic-programming lesson fills that recurrence upward.',
     [
       "Forgetting the base case overflows the call stack.",
       "Treating an empty array as depth 0 misses the array level the tests count.",
@@ -517,7 +517,7 @@ export function childIndexes(index: number): number[] {
   }
   return queue.length;
 }`,
-    "`componentSize` can return the number of enqueued vertices because each is enqueued exactly once. For `reachesAll`, perform the same walk and compare that size with `count`; the problem guarantees vertices and start are in `0..count - 1`.\n\nBuilding and walking are O(V + E) time and O(V + E) space. A front cursor avoids the reindexing cost of repeated `shift()`. Guard the two edge entries and queued lookup for strict indexed access.",
+    "`componentSize` can return the number of enqueued vertices because each is enqueued exactly once. For `reachesAll`, perform the same walk and compare that size with `count`; the problem guarantees vertices and start are in `0..count - 1`. `countComponents` starts a new walk from every still-unvisited vertex in `0..count - 1`, so an isolated vertex that never appears in `edges` still counts.\n\nBuilding and walking are O(V + E) time and O(V + E) space. A front cursor avoids the reindexing cost of repeated `shift()`. Guard the two edge entries and queued lookup for strict indexed access.",
     [
       "Marking on dequeue lets the same neighbour sit in the queue many times.",
       "Storing the edge in only one direction makes an undirected graph look one-way.",

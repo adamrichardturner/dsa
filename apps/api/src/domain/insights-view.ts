@@ -72,7 +72,7 @@ const describe = (
   focusAreas: readonly string[],
 ): string => {
   if (attempts === 0) {
-    return "You have not submitted a solution yet. Start with The cost of a loop. The first exercises are short on purpose.";
+    return "You have not submitted a solution yet. Start with Time complexity and Big O. The first exercises are short on purpose.";
   }
   if (problemsSolved === problemsTotal) {
     return "You have solved every exercise. The same patterns show up in longer problems.";

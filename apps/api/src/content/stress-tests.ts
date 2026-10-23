@@ -127,6 +127,12 @@ export const stressTests: Record<string, SeedTest> = {
     [lineEdges(2_000), 0, 1_999],
     true,
   ),
+  "count-components": hidden(
+    "scale one component",
+    [lineEdges(20_000), 20_000],
+    1,
+    500,
+  ),
   "max-non-overlapping": hidden(
     "scale greedy intervals",
     [touchingIntervals.slice(0, 24)],

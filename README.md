@@ -1,8 +1,8 @@
 # Data Structures and Algorithms
 
-![The course desk: the syllabus, a lesson on the cost of a loop, and a TypeScript editor with a terminal](apps/web/preview.png)
+![The course desk: the syllabus, a lesson on time complexity and Big O, and a TypeScript editor with a terminal](apps/web/preview.png)
 
-A free, four-week course in data structures and algorithms, taught by writing TypeScript. Each lesson is short enough to finish in one sitting. You read the idea, then work through two short exercises and submit each one against tests. Every exercise has to pass before the lesson is done and the next one opens. After a failed attempt you can open a written solution, or skip the lesson without points and come back later. Audit mode, chosen during a short introduction and kept on the account, opens any lesson without waiting for the ones before it.
+A free, four-week course in data structures and algorithms, taught by writing TypeScript. Each lesson is short enough to finish in one sitting. You read the idea, then work through the lesson's exercises and submit each one against tests. Every exercise has to pass before the lesson is done and the next one opens. After a failed attempt you can open a written solution, or skip the lesson without points and come back later. Audit mode, chosen during a short introduction and kept on the account, opens any lesson without waiting for the ones before it.
 
 The live course is at [datastructuresandalgorithms.com](https://datastructuresandalgorithms.com). Creating an account, the lessons, the editor, the tests, the articles, and saved progress do not cost anything. There is no trial and no paid tier.
 
@@ -18,11 +18,11 @@ Passing every exercise marks the lesson done. A skip does not. Your draft and yo
 
 ## Syllabus
 
-Thirty-eight short lessons across four weeks. Each idea is a lesson and then a slightly harder follow-up, and each of those lessons has two exercises. The table lists the first lesson of each pair. The follow-up sits immediately after it in the course.
+Thirty-eight short lessons across four weeks. Each idea is a lesson and then a slightly harder follow-up. Most lessons have two exercises. Sliding window, trees, binary search trees, heaps, two recursive calls, and connected components have three, and two pointers has four. The table lists the first lesson of each pair. The follow-up sits immediately after it in the course.
 
 | Week | Lesson | First exercise |
 | --- | --- | --- |
-| 1. Foundations | The cost of a loop | Count values below a limit |
+| 1. Foundations | Time complexity and Big O | Count values below a limit |
 | | Arrays | Rotate left |
 | | Hash maps | Two sum |
 | | Two pointers | Squares of a sorted array |
@@ -32,17 +32,17 @@ Thirty-eight short lessons across four weeks. Each idea is a lesson and then a s
 | | Queues | Window sums |
 | | Recursion | Flatten nested numbers |
 | | Binary search | Binary search |
-| | Merge sort | Merge sort |
+| | Sorting with merge sort | Merge sort |
 | 3. Trees and graphs | Trees | Maximum depth |
 | | Binary search trees | Search a binary search tree |
 | | Heaps | Kth largest |
-| | Graphs | Shortest path |
-| 4. Patterns | Greedy choices | Non-overlapping intervals |
+| | Graphs and breadth-first search | Shortest path |
+| 4. Patterns | Greedy algorithms | Non-overlapping intervals |
 | | Backtracking | Subsets |
 | | Dynamic programming | Climbing stairs |
 | | Tries | Trie lookup |
 
-Week one is cost, arrays, hash maps, and the two scanning patterns the rest of the month reuses. Week two builds the structures interviews expect, plus a sort you can explain out loud. Week three walks hierarchical data, keeps a priority queue, and searches a graph. Week four finishes with the patterns that turn a hard problem into a smaller one: greedy choices, backtracking, dynamic programming, and tries.
+Week one is cost, arrays, hash maps, and the two scanning patterns the rest of the month reuses. Week two builds the structures interviews expect, plus a sort you can explain out loud. Week three walks hierarchical data, keeps a priority queue, and searches a graph. Week four finishes with the patterns that turn a hard problem into a smaller one: greedy algorithms, backtracking, dynamic programming, and tries.
 
 Lesson prose, starter code, and tests live in `apps/api/src/content/`. The API upserts that course into Postgres on startup.
 

@@ -131,7 +131,7 @@ The table is the depth walk. Searching for one value is a later cost, and it dep
 
 ## In the course
 
-\`maxDepth\` takes a level-order list and returns the node count on the longest path. The lesson tree returns 3, one node returns 1, an empty list returns 0, and [1, 2, null, 3] returns 3. Call \`buildTree\`, then use the recursive rule. The lesson list has length 7 and depth 3, so length is the wrong number. Missing returns 0. A real node returns 1 plus the deeper child.
+\`maxDepth\` takes a level-order list and returns the node count on the longest path. The lesson tree returns 3, one node returns 1, an empty list returns 0, and [1, 2, null, 3] returns 3. Call \`buildTree\`, then use the recursive rule. The lesson list has length 7 and depth 3, so length is the wrong number. Missing returns 0. A real node returns 1 plus the deeper child. \`levelOrder\` uses the same \`buildTree\` call and a queue, emitting real nodes left to right. That walk is breadth-first order, not this depth recurrence.
 
 ## Common mistakes
 
@@ -306,7 +306,7 @@ The first row is a balanced tree, or inserts that landed on both sides. The seco
 
 ## In the course
 
-\`bstContains\` inserts \`values\` from left to right, then reports whether \`target\` is present. Smaller goes left, larger goes right, and equals stay out. [8, 3, 10, 1, 6] contains 6 and does not contain 7. [4, 2, 6] contains the root 4. An empty list does not contain 1. \`.includes\`, \`.indexOf\`, and \`new Set\` skip the walk, and the runner rejects them. Sorted input still returns the right boolean, at a cost equal to the length of the list.
+\`bstContains\` inserts \`values\` from left to right, then reports whether \`target\` is present. Smaller goes left, larger goes right, and equals stay out. [8, 3, 10, 1, 6] contains 6 and does not contain 7. [4, 2, 6] contains the root 4. An empty list does not contain 1. \`.includes\`, \`.indexOf\`, and \`new Set\` skip the walk, and the runner rejects them. Sorted input still returns the right boolean, at a cost equal to the length of the list. \`isValidBst\` checks a level-order encoding that may not have come from that insertion. Carry an exclusive lower and upper bound. [5, 4, 6, null, null, 3, 7] fails because 3 sits in the right subtree of 5, even though 3 and 6 look ordered with each other.
 
 ## Common mistakes
 
@@ -736,7 +736,7 @@ The complete shape makes the height \`floor(log2(n)) + 1\` for a non-empty heap,
 
 ## In the course
 
-\`kthLargest\` returns the kth largest in \`nums\`, with k from 1 through the length. \`kthLargest([3, 2, 1, 5, 6, 4], 2)\` is 5. Duplicates count separately, so the 2nd largest of [2, 2] is 2. The example above used k = 3 and finished with root 4. Sorting a copy also passes. The heap you would write is the three index formulas, a swap upward, a swap downward, and a pop once the size passes k. A wrong parent stops the root from being the extreme.
+\`kthLargest\` returns the kth largest in \`nums\`, with k from 1 through the length. \`kthLargest([3, 2, 1, 5, 6, 4], 2)\` is 5. Duplicates count separately, so the 2nd largest of [2, 2] is 2. The example above used k = 3 and finished with root 4. Sorting a copy also passes. The heap you would write is the three index formulas, a swap upward, a swap downward, and a pop once the size passes k. A wrong parent stops the root from being the extreme. \`pushMinHeap\` is only the upward swap: copy the array, append the value, and swap with the parent while the child is strictly smaller. Equal values do not swap, so \`pushMinHeap([1, 3, 5], 2)\` is exactly \`[1, 2, 5, 3]\`.
 
 ## Common mistakes
 

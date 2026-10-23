@@ -251,7 +251,7 @@ Each iteration moves at least one pointer inward, and neither pointer moves back
 
 ## In the course
 
-Sorted squares move the end whose square is larger. The next lesson uses the same inward shape for a palindrome and for the indexes of a pair. The earlier pair-sum exercise on the sorted-squares page only asks for a boolean. The follow-up asks for the indexes.
+Sorted squares move the end whose square is larger. The next lesson uses the same inward shape for a palindrome and for the indexes of a pair. The earlier pair-sum exercise on the sorted-squares page only asks for a boolean. The follow-up asks for the indexes. That same lesson also compacts a sorted array with a write pointer, returning a new array of the unique values, and then measures the container between two line heights. Move the shorter height inward: the width shrinks, so that shorter line cannot form a larger area with any index still between the pointers. When the heights are equal, move the left index.
 
 ## Common mistakes
 
@@ -351,7 +351,7 @@ The right pointer advances n times. The left pointer also advances at most n tim
 
 ## In the course
 
-The sliding-window lesson keeps k fixed so the update is obvious. Grow, then shrink is the next lesson. A [prefix sum](/articles/prefix-sums) can answer a range too. You do not need one while the window already holds the sum.
+The sliding-window lesson keeps k fixed so the update is obvious. Grow, then shrink is the next lesson. A [prefix sum](/articles/prefix-sums) can answer a range too. You do not need one while the window already holds the sum. \`rangeSum\` is the case that does: with \`prefix[0] === 0\`, the inclusive span from \`left\` through \`right\` is \`prefix[right + 1] - prefix[left]\`, in O(1) after the prefix exists.
 
 ## Common mistakes
 
@@ -747,7 +747,7 @@ With adjacency lists, each reached vertex is processed once and each outgoing ad
 
 ## In the course
 
-Graphs introduce the mark-on-enqueue rule, then ask whether you can reach a vertex and what the shortest path is. The next lesson asks for the component size and whether the walk reaches every vertex from 0 through count - 1. See [breadth-first search](/articles/breadth-first-search) for the queue that carries the marks.
+Graphs and breadth-first search introduce the mark-on-enqueue rule, then ask whether you can reach a vertex and what the shortest path is. The Connected components lesson asks for the component size, whether the walk reaches every vertex from 0 through count - 1, and then how many components that whole range contains, including vertices that never appear in an edge. See [breadth-first search](/articles/breadth-first-search) for the queue that carries the marks, and [depth-first search](/articles/depth-first-search) when the question is only which vertices share a piece.
 
 ## Common mistakes
 
@@ -841,7 +841,7 @@ Sorting n intervals takes O(n log n) time; the selection scan takes O(n). The co
 
 ## In the course
 
-Greedy choices use half-open intervals for the largest set you can keep, and for whether one person can attend every meeting. The next lesson asks for the single interval that finishes first, with a tie broken by the smaller start.
+Greedy algorithms use half-open intervals for the largest set you can keep, and for whether one person can attend every meeting. The next lesson asks for the single interval that finishes first, with a tie broken by the smaller start.
 
 ## Common mistakes
 
@@ -1438,7 +1438,7 @@ Nested depth has a different combine rule: a number returns 0; an array returns 
 
 ## Optional enrichment
 
-Memoise the one-based function and compare call counts for \`n = 10\`. Keep the cache key in the same one-based convention.
+\`fibMemo\` is that exercise. Keep \`fib(1) = fib(2) = 1\`, store each completed \`n\` before the two calls return, and check the cache with \`!== undefined\`. \`n = 40\` is the hidden time limit. The zero-based \`fib(0) = 0\` form in the memoisation article is a different base case.
 
 ## Related
 

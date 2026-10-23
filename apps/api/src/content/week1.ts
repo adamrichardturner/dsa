@@ -12,7 +12,7 @@ export const week1: SeedModule = {
     {
       id: "complexity",
       slug: "complexity",
-      title: "The cost of a loop",
+      title: "Time complexity and Big O",
       summary:
         "Big O is a way to talk about how work grows, before you memorise data structures.",
       estimatedMinutes: 30,

@@ -181,6 +181,12 @@ For a sorted array, **inward pointers** start at both ends. Compute \`sum = nums
 
 Stop at \`left >= right\`; one index cannot be reused. This boolean exercise establishes the movement rule. The follow-up then returns \`[left, right]\` and \`[-1, -1]\` when absent.
 
+## A write pointer, then the shorter side
+
+\`removeDuplicates\` scans a sorted array and writes a value into a new array only when it differs from the last value kept. The input stays unchanged. The returned array's length is the number of unique values.
+
+\`maxArea\` uses inward pointers on line heights. The area between the ends is limited by the shorter line, so move that shorter index inward. The width only shrinks, and the shorter height cannot form a larger area with any index still between the pointers. When the heights are equal, move the left index. Fewer than two lines has area 0.
+
 ## TypeScript guidance and edge cases
 
 Preallocate the sorted-squares result with \`new Array<number>(nums.length)\` or fill a typed \`number[]\`. Empty and one-value inputs work naturally. Equal endpoint squares may choose either side as long as exactly one pointer moves. The pair-sum input must already be sorted; sorting is disallowed because it changes indexes and hides the promised O(n) scan.
@@ -247,7 +253,7 @@ Negative values can invalidate that sliding window strategy.
 
 ## Exercises and follow-up
 
-Compute maximum window sum, then minimum window sum with the same update. The follow-up finds shortest-at-least and longest-at-most windows by moving a left pointer that never moves backward.
+Compute maximum window sum, then minimum window sum with the same update. \`rangeSum\` then answers an inclusive index range from a prefix array in O(1): if \`prefix[0] === 0\` and \`prefix[i]\` is the sum before index \`i\`, the sum of the original values from \`left\` through \`right\` is \`prefix[right + 1] - prefix[left]\`. That is the half-open cancellation in [prefix sums](/articles/prefix-sums), written with an inclusive right end. The follow-up finds shortest-at-least and longest-at-most windows by moving a left pointer that never moves backward.
 
 ## Recap
 
@@ -553,7 +559,7 @@ Use \`TreeNode | null\` and return early for \`null\`. Node values, including 0 
 
 ## Exercises and follow-up
 
-Use the supplied \`buildTree\`, then compute maximum depth. Next count nodes; the follow-up counts leaves and sums node values with the same depth-first traversal shape.
+Use the supplied \`buildTree\`, then compute maximum depth. Next count nodes. \`levelOrder\` walks that same tree with a queue and emits each real node from left to right. That is breadth-first order: see [tree traversals](/articles/tree-traversals) and [breadth-first search](/articles/breadth-first-search). The follow-up counts leaves and sums node values with a depth-first traversal shape.
 
 ## Recap
 
@@ -593,7 +599,7 @@ AVL and red-black trees restore balance using rotations and guarantee logarithmi
 
 ## Exercises and follow-up
 
-Insert values and search with comparison-guided movement, then insert and find the minimum. The follow-up measures the resulting height and demonstrates how sorted input degenerates into a list-like spine.
+Insert values and search with comparison-guided movement, then insert and find the minimum. \`isValidBst\` checks the same ordering rule on a level-order encoding that may not have come from insertion: carry an exclusive lower and upper bound into each subtree. A grandchild can break an ancestor's bound even when every parent and child look ordered. The follow-up measures the resulting height and demonstrates how sorted input degenerates into a list-like spine.
 
 ## Recap
 
@@ -637,7 +643,7 @@ Use a \`number[]\` heap and explicit swap assignments or destructuring. Validate
 
 ## Exercises and follow-up
 
-Implement kth largest with a size-k min-heap, then validate the parent rule. The follow-up isolates parent and child index formulas.
+Implement kth largest with a size-k min-heap, then validate the parent rule. \`pushMinHeap\` copies a min-heap, appends one value, and sifts it up. Swap with the parent while the child is strictly smaller. Equal values stay put, which fixes one array shape for the tests. The follow-up isolates parent and child index formulas.
 
 ## Recap
 
@@ -684,7 +690,7 @@ flowchart LR
 
 ## Reachability before shortest path
 
-First, DFS or BFS can answer whether \`end\` is reachable from \`start\`. Then breadth-first search answers the shortest number of edges in an unweighted graph. BFS explores distance 0, then distance 1, then distance 2, so the first discovery of a vertex has minimum distance.
+First, DFS or BFS can answer whether \`end\` is reachable from \`start\`. Then breadth-first search answers the shortest number of edges in an unweighted graph. BFS explores distance 0, then distance 1, then distance 2, so the first discovery of a vertex has minimum distance. [Breadth-first search](/articles/breadth-first-search) is the queue for that hop count. [Depth-first search](/articles/depth-first-search) answers reachability and one connected piece; it does not promise the fewest edges.
 
 Mark a vertex visited when it is enqueued, not when dequeued. The invariant is that every queued vertex has been discovered exactly once with its shortest known distance. This prevents cycles, duplicate edges, and self-loops from causing repeated work.
 
@@ -702,7 +708,7 @@ DFS does not guarantee shortest paths. Weighted shortest paths require algorithm
 
 ## Exercises
 
-Implement reachability, then shortest path, then component-size follow-ups. Build adjacency once, mark on discovery, and choose BFS specifically when equal-cost shortest distance matters.
+Implement reachability, then shortest path. The follow-up measures one component from a start, checks whether that walk covers every vertex, then \`countComponents\` counts every component in \`0..count - 1\`, including isolated vertices. Build adjacency once, mark on discovery, and choose BFS specifically when equal-cost shortest distance matters.
 
 ## Recap
 

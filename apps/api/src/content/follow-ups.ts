@@ -11,6 +11,9 @@ const contractsFor = (
     case "bubble-sort": {
       return { immutableArgs: [0], distinctArrayReturnFromArg: 0 };
     }
+    case "count-components": {
+      return { immutableArgs: [0] };
+    }
     default: {
       return {};
     }
@@ -993,7 +996,7 @@ flowchart TD
 
 ## Complexity
 
-Naive Fibonacci recursion takes exponential time, commonly bounded as O(2ⁿ), and O(n) call-stack space. **Memoisation** removes its repeated subproblems in the later dynamic-programming material.
+Naive Fibonacci recursion takes exponential time, commonly bounded as O(2ⁿ), and O(n) call-stack space. \`fib\` keeps those repeated calls so the recurrence is visible. \`fibMemo\` stores each completed state and reuses it, which is O(n) time and O(n) cache space for the same one-based bases. The later dynamic-programming lesson fills that recurrence from the bottom instead of from the top. See [memoisation](/articles/memoisation).
 
 Nested depth visits each number and array once, taking O(m) time and O(d) stack space for \`m\` values/arrays and maximum depth \`d\`.
 
@@ -1003,7 +1006,7 @@ Use \`Array.isArray(value)\` to narrow the recursive union. An empty array needs
 
 ## Exercise connection
 
-\`fib\` is specifically practice with two recursive calls and overlapping subproblems. \`nestedDepth\` practices a structural recurrence over a recursive TypeScript type.
+\`fib\` is specifically practice with two recursive calls and overlapping subproblems. \`nestedDepth\` practices a structural recurrence over a recursive TypeScript type. \`fibMemo\` keeps the same bases and caches each \`n\` before the two recursive calls return, so \`n = 40\` finishes inside the time limit.
 
 ## Recap
 
@@ -1060,6 +1063,45 @@ export function nestedDepth(value: Nested): number {
         { name: "empty array", args: [[]], expected: 1, public: false },
         { name: "siblings", args: [[[], [1]]], expected: 2, public: false },
       ],
+    ),
+    problem(
+      "fib-memo",
+      "Fibonacci with memoisation",
+      "Recursion",
+      "medium",
+      "fibMemo",
+      `
+Implement \`fibMemo(n)\`.
+
+- **Input:** \`n\` is an integer and at least 1. Use the same one-based Fibonacci indexing as \`fib\`: \`fibMemo(1)\` and \`fibMemo(2)\` are 1, and every later value is the sum of the two before it.
+- **Output:** return that Fibonacci number.
+- **Edge cases:** the two bases return 1 without a recursive call. \`fibMemo(6)\` is 8, the same value as \`fib(6)\`.
+- **Required technique:** keep a cache of completed states. Before making the two recursive calls, return the stored value when this \`n\` has already been solved. Store the completed sum before returning it. An array indexed by \`n\`, or a record keyed by \`String(n)\`, is enough. Check the cache with \`!== undefined\`, because a stored 0 would be a valid answer in other recurrences.
+- **Complexity:** O(n) time, O(n) cache space, and O(n) call-stack space. The hidden \`n = 40\` case must finish within 100ms.
+- **Do not:** leave the calls uncached, use a closed form such as \`Math.pow\`, or hard-code a table of answers. The later lesson fills this recurrence with a loop; this exercise wants the cache in front of the two calls.
+
+The indexing here is not the zero-based \`fib(0) = 0\` form. [Memoisation](/articles/memoisation) shows that other convention and the same cache idea.
+      `,
+      `export function fibMemo(n: number): number {
+  return 0;
+}
+`,
+      [
+        { name: "six", args: [6], expected: 8, public: true },
+        { name: "one", args: [1], expected: 1, public: true },
+        { name: "two", args: [2], expected: 1, public: false },
+        { name: "three", args: [3], expected: 2, public: false },
+        { name: "seven", args: [7], expected: 13, public: true },
+        { name: "ten", args: [10], expected: 55, public: false },
+        {
+          name: "forty stays memoised",
+          args: [40],
+          expected: 102_334_155,
+          public: false,
+          timeoutMs: 100,
+        },
+      ],
+      ["Math.pow", ".round("],
     ),
   ],
 );
@@ -1185,7 +1227,7 @@ Use binary search. After a match, keep looking right.
 
 const sortChoices = lesson(
   "sort-choices",
-  "Which sort you meant",
+  "Comparing sorting algorithms",
   "Bubble sort is easy to finish by hand. Merge sort is the one to keep.",
   25,
   stepBitesize.sortChoices,
@@ -1409,7 +1451,7 @@ An empty list returns 0.
 
 const bstShape = lesson(
   "bst-shape",
-  "A tree can be a line",
+  "BST height and insertion order",
   "A binary search tree is only fast when the height stays short.",
   25,
   stepBitesize.bstShape,
@@ -1602,7 +1644,7 @@ Do not check whether those indexes exist in a particular array.
 
 const visitedWalks = lesson(
   "visited-walks",
-  "Mark where you have been",
+  "Connected components",
   "A visited set is what stops a graph search from walking a cycle forever.",
   25,
   stepBitesize.visitedWalks,
@@ -1637,7 +1679,7 @@ An isolated start still counts as one reachable vertex even when it never appear
 
 ## Exercise connection
 
-\`componentSize\` counts visited vertices without a declared graph size. \`reachesAll\` compares visited count with \`count\`, including isolated vertices that do not appear in any edge.
+\`componentSize\` counts visited vertices without a declared graph size. \`reachesAll\` compares visited count with \`count\`, including isolated vertices that do not appear in any edge. \`countComponents\` starts one breadth-first or depth-first walk from every still-unvisited vertex in \`0..count - 1\` and returns how many walks that takes. [Breadth-first search](/articles/breadth-first-search) answers fewest edges; [depth-first search](/articles/depth-first-search) is enough when the question is only which vertices share a component.
 
 ## Recap
 
@@ -1750,6 +1792,113 @@ Vertices are \`0\` through \`count - 1\`. \`edges\` is undirected. Return true w
           name: "start is not enough",
           args: [[[1, 2]], 3, 0],
           expected: false,
+          public: false,
+        },
+      ],
+    ),
+    problem(
+      "count-components",
+      "Count connected components",
+      "Graphs",
+      "medium",
+      "countComponents",
+      `
+Implement \`countComponents(edges, count)\`.
+
+- **Input:** vertices are the integers \`0\` through \`count - 1\`. Each item in \`edges\` is an undirected edge \`[from, to]\` whose endpoints lie in that range. \`count\` may be 0.
+- **Output:** return how many connected components the graph has. An isolated vertex is its own component, even when it never appears in \`edges\`.
+- **Edge cases:** no edges and \`count > 0\` returns \`count\`. \`count === 0\` returns 0. \`count === 1\` returns 1. A cycle, a duplicate edge, or a self-loop does not create an extra component. A single path through every vertex returns 1.
+- **Required technique:** build an adjacency record, then start a breadth-first or depth-first search from every still-unvisited vertex in \`0..count - 1\`. Mark a vertex when it is first queued or pushed. Each time you start a fresh walk, add one to the component count.
+- **Complexity:** O(V + E) time and O(V + E) space.
+- **Do not:** scan the whole edge list once per vertex, or count only vertices that appear in \`edges\`. Isolated vertices are part of the declared range.
+
+\`countComponents([[0, 1], [1, 2], [3, 4]], 5)\` returns \`2\`. [Depth-first search](/articles/depth-first-search) and [breadth-first search](/articles/breadth-first-search) both label a component; shortest distance is not part of this question.
+      `,
+      `export function countComponents(edges: number[][], count: number): number {
+  return 0;
+}
+`,
+      [
+        {
+          name: "two components",
+          args: [
+            [
+              [0, 1],
+              [1, 2],
+              [3, 4],
+            ],
+            5,
+          ],
+          expected: 2,
+          public: true,
+        },
+        {
+          name: "no edges",
+          args: [[], 3],
+          expected: 3,
+          public: true,
+        },
+        {
+          name: "one vertex",
+          args: [[], 1],
+          expected: 1,
+          public: false,
+        },
+        {
+          name: "no vertices",
+          args: [[], 0],
+          expected: 0,
+          public: false,
+        },
+        {
+          name: "a cycle is one component",
+          args: [
+            [
+              [0, 1],
+              [1, 2],
+              [2, 0],
+            ],
+            3,
+          ],
+          expected: 1,
+          public: false,
+        },
+        {
+          name: "an isolated vertex between connected ones",
+          args: [[[0, 2]], 4],
+          expected: 3,
+          public: true,
+        },
+        {
+          name: "one path",
+          args: [
+            [
+              [0, 1],
+              [1, 2],
+              [2, 3],
+            ],
+            4,
+          ],
+          expected: 1,
+          public: false,
+        },
+        {
+          name: "a self-loop leaves the other vertex isolated",
+          args: [[[0, 0]], 2],
+          expected: 2,
+          public: false,
+        },
+        {
+          name: "duplicate edges",
+          args: [
+            [
+              [0, 1],
+              [1, 0],
+              [0, 1],
+            ],
+            2,
+          ],
+          expected: 1,
           public: false,
         },
       ],
