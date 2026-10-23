@@ -75,6 +75,29 @@ describe("previewSolution", () => {
     );
     assert.equal(lines[0]?.kind, "error");
   });
+
+  it("stops a lesson run that never returns", { timeout: 15_000 }, () => {
+    const started = Date.now();
+    const lines = previewSolution(
+      `export function solve(): number {
+        while (true) {
+          continue;
+        }
+      }`,
+      "solve",
+      [{ args: [] }, { args: [1] }],
+      [],
+    );
+    const elapsed = Date.now() - started;
+
+    assert.ok(elapsed >= 5_000, `finished in ${elapsed}ms`);
+    assert.ok(elapsed < 14_000, `finished in ${elapsed}ms`);
+    assert.equal(lines.filter((line) => line.kind === "prompt").length, 1);
+    assert.equal(
+      lines.at(-1)?.text,
+      "Execution timed out after 10 seconds.\nThe code was stopped. Check for an infinite loop.",
+    );
+  });
 });
 
 describe("runSnippet", () => {
@@ -140,6 +163,24 @@ console.log(best, extra.size, [1, 2, 3].values().drop(1).toArray().join(","));`)
   it("reports a syntax error", () => {
     const lines = runSnippet("const {");
     assert.equal(lines[0]?.kind, "error");
+  });
+
+  it("stops an example that never returns", { timeout: 15_000 }, () => {
+    const started = Date.now();
+    const lines = runSnippet(
+      "console.log('before');\nwhile (true) {\n  continue;\n}",
+    );
+    const elapsed = Date.now() - started;
+
+    assert.ok(elapsed >= 5_000, `finished in ${elapsed}ms`);
+    assert.ok(elapsed < 14_000, `finished in ${elapsed}ms`);
+    assert.deepEqual(lines, [
+      { kind: "log", text: "before" },
+      {
+        kind: "error",
+        text: "Execution timed out after 10 seconds.\nThe code was stopped. Check for an infinite loop.",
+      },
+    ]);
   });
 });
 
@@ -376,8 +417,52 @@ describe("runSolution", () => {
     );
 
     assert.equal(outcome.passed, false);
-    assert.match(outcome.results[0]?.error ?? "", /timed out/i);
+    assert.equal(
+      outcome.results[0]?.error,
+      "Execution timed out after 10ms. This case needs to finish faster.",
+    );
   });
+
+  it(
+    "stops the remaining tests when a call never returns",
+    { timeout: 15_000 },
+    () => {
+      const started = Date.now();
+      const outcome = runSolution(
+        `export function solve(): number {
+        while (true) {
+          continue;
+        }
+      }`,
+        "solve",
+        [
+          {
+            name: "first",
+            args: [],
+            expected: 1,
+            compare: "exact",
+          },
+          {
+            name: "second",
+            args: [],
+            expected: 1,
+            compare: "exact",
+          },
+        ],
+        [],
+      );
+      const elapsed = Date.now() - started;
+
+      assert.equal(outcome.passed, false);
+      assert.ok(elapsed >= 5_000, `finished in ${elapsed}ms`);
+      assert.ok(elapsed < 14_000, `finished in ${elapsed}ms`);
+      assert.equal(outcome.results.length, 1);
+      assert.equal(
+        outcome.feedback,
+        "Execution timed out after 10 seconds.\nThe code was stopped. Check for an infinite loop.",
+      );
+    },
+  );
 
   it("materialises compact number-sequence fixtures", () => {
     const outcome = runSolution(

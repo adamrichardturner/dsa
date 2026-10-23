@@ -404,7 +404,7 @@ function FailurePanel({
         <ResultMark tone="fail" label={title} className="mt-0.5 size-8" />
         <div className="min-w-0 space-y-1">
           <p className="font-medium text-foreground">{title}</p>
-          <p className="text-sm leading-relaxed text-muted-foreground">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
             {message}
           </p>
         </div>
@@ -432,7 +432,7 @@ function FailurePanel({
                       {item.expected}
                     </dd>
                     <dt className="text-muted-foreground">{result.label}</dt>
-                    <dd className="min-w-0 break-all text-foreground">
+                    <dd className="min-w-0 break-all whitespace-pre-wrap text-foreground">
                       {result.value}
                     </dd>
                   </dl>

@@ -55,7 +55,7 @@ Lessons open in order unless the account has audit mode on. `Catalog` marks a le
 
 ## The runner
 
-`src/domain/runner.ts` compiles the submission with Sucrase and runs it in `node:vm` with a one-second timeout. `require`, imports, `process`, `globalThis`, `eval`, and the `Function` constructor are rejected before the script runs. A problem can also list `disallow` snippets, which is how a lesson can refuse a nested loop when the point of the exercise is a single pass.
+`src/domain/runner.ts` compiles the submission with Sucrase and runs it in `node:vm` with a ten-second timeout. `require`, imports, `process`, `globalThis`, `eval`, and the `Function` constructor are rejected before the script runs. A problem can also list `disallow` snippets, which is how a lesson can refuse a nested loop when the point of the exercise is a single pass.
 
 Tests compare with `exact`, or with `set` when order does not matter. Public tests are the examples shown beside the prompt. Hidden tests are still executed. The learner sees the name, the expected value, and the received value for each result.
 

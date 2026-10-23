@@ -45,7 +45,7 @@ interface RunnerContext {
   __result?: unknown;
 }
 
-const defaultTimeoutMs = 1000;
+const scriptTimeoutMs = 10_000;
 const minimumTimeoutMs = 10;
 
 interface SourceToken {
@@ -508,12 +508,12 @@ const rejection = (
 };
 
 const testTimeout = (test: RunTest): number => {
-  const requested = test.timeoutMs ?? defaultTimeoutMs;
+  const requested = test.timeoutMs ?? scriptTimeoutMs;
   if (!Number.isFinite(requested)) {
-    return defaultTimeoutMs;
+    return scriptTimeoutMs;
   }
   return Math.floor(
-    Math.max(minimumTimeoutMs, Math.min(defaultTimeoutMs, requested)),
+    Math.max(minimumTimeoutMs, Math.min(scriptTimeoutMs, requested)),
   );
 };
 
@@ -570,6 +570,50 @@ const errorText = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
+const isScriptTimeout = (error: unknown): boolean => {
+  if (!isRecord(error)) {
+    return false;
+  }
+  if (error.code === "ERR_SCRIPT_EXECUTION_TIMEOUT") {
+    return true;
+  }
+  if (typeof error.message !== "string") {
+    return false;
+  }
+  return error.message.startsWith("Script execution timed out");
+};
+
+const durationText = (timeoutMs: number): string => {
+  const wholeSeconds = timeoutMs >= 1000 && timeoutMs % 1000 === 0;
+  if (!wholeSeconds) {
+    return `${timeoutMs}ms`;
+  }
+  const seconds = timeoutMs / 1000;
+  if (seconds === 1) {
+    return "1 second";
+  }
+  return `${seconds} seconds`;
+};
+
+const timeoutText = (timeoutMs: number): string => {
+  const duration = durationText(timeoutMs);
+  if (timeoutMs >= scriptTimeoutMs) {
+    return `Execution timed out after ${duration}.\nThe code was stopped. Check for an infinite loop.`;
+  }
+  return `Execution timed out after ${duration}. This case needs to finish faster.`;
+};
+
+const executionError = (
+  error: unknown,
+  timeoutMs: number,
+  fallback: string,
+): string => {
+  if (isScriptTimeout(error)) {
+    return timeoutText(timeoutMs);
+  }
+  return errorText(error, fallback);
+};
+
 const takeLogs = (
   lines: PreviewLine[],
   logs: readonly string[],
@@ -584,8 +628,8 @@ const takeLogs = (
 
 /**
  * Transpiles a student solution and runs each test in a fresh `node:vm` context.
- * The context has no `require`, and each script is killed after one second.
- * This is a course runner, not a hardened sandbox.
+ * The context has no `require`, and each script is stopped after ten seconds.
+ * A test can request a shorter limit. This is a course runner, not a hardened sandbox.
  */
 export const runSolution = (
   code: string,
@@ -610,12 +654,12 @@ export const runSolution = (
     const script = new vm.Script(compiled.compiled, {
       filename: "solution.ts",
     });
-    script.runInContext(context, { timeout: 1000 });
+    script.runInContext(context, { timeout: scriptTimeoutMs });
   } catch (error) {
     return failed(
       functionName,
       tests,
-      errorText(error, "The solution failed to run."),
+      executionError(error, scriptTimeoutMs, "The solution failed to run."),
     );
   }
 
@@ -638,11 +682,13 @@ export const runSolution = (
     const originalArgs = copyArgs(context.__args);
     context.__result = undefined;
 
+    const timeoutMs = testTimeout(test);
+
     try {
       const call = new vm.Script("__result = __fn(...__args);", {
         filename: "call.js",
       });
-      call.runInContext(context, { timeout: testTimeout(test) });
+      call.runInContext(context, { timeout: timeoutMs });
       const received = context.__result;
       const valueMatches =
         canonical(received, test.compare) ===
@@ -666,7 +712,7 @@ export const runSolution = (
         error: contractError,
       });
     } catch (error) {
-      const message = errorText(error, "The test threw.");
+      const message = executionError(error, timeoutMs, "The test threw.");
       results.push({
         name: test.name,
         passed: false,
@@ -675,6 +721,15 @@ export const runSolution = (
         received: "",
         error: message,
       });
+      if (isScriptTimeout(error) && timeoutMs >= scriptTimeoutMs) {
+        return {
+          passed: false,
+          testsPassed,
+          testsTotal: tests.length,
+          feedback: message,
+          results,
+        };
+      }
     }
   }
 
@@ -723,13 +778,17 @@ export const previewSolution = (
     const script = new vm.Script(compiled.compiled, {
       filename: "solution.ts",
     });
-    script.runInContext(context, { timeout: 1000 });
+    script.runInContext(context, { timeout: scriptTimeoutMs });
   } catch (error) {
     const lines: PreviewLine[] = [];
     takeLogs(lines, logs, cursor);
     lines.push({
       kind: "error",
-      text: errorText(error, "The solution failed to run."),
+      text: executionError(
+        error,
+        scriptTimeoutMs,
+        "The solution failed to run.",
+      ),
     });
     return lines;
   }
@@ -761,12 +820,18 @@ export const previewSolution = (
       const call = new vm.Script("__result = __fn(...__args);", {
         filename: "call.js",
       });
-      call.runInContext(context, { timeout: 1000 });
+      call.runInContext(context, { timeout: scriptTimeoutMs });
       takeLogs(lines, logs, cursor);
       lines.push({ kind: "result", text: preview(context.__result) });
     } catch (error) {
       takeLogs(lines, logs, cursor);
-      lines.push({ kind: "error", text: errorText(error, "The call threw.") });
+      lines.push({
+        kind: "error",
+        text: executionError(error, scriptTimeoutMs, "The call threw."),
+      });
+      if (isScriptTimeout(error)) {
+        break;
+      }
     }
   }
 
@@ -816,13 +881,13 @@ export const runSnippet = (code: string): readonly PreviewLine[] => {
 
   try {
     const script = new vm.Script(compiled.compiled, { filename: "example.ts" });
-    script.runInContext(context, { timeout: 1000 });
+    script.runInContext(context, { timeout: scriptTimeoutMs });
   } catch (error) {
     const lines: PreviewLine[] = [];
     takeLogs(lines, logs, { index: 0 });
     lines.push({
       kind: "error",
-      text: errorText(error, "The code failed to run."),
+      text: executionError(error, scriptTimeoutMs, "The code failed to run."),
     });
     return lines;
   }

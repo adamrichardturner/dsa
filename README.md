@@ -12,7 +12,7 @@ It is for people who already write TypeScript and want the structures and algori
 
 The desk opens the lesson and a TypeScript editor side by side. You can switch that split to horizontal when you want the editor underneath. The starter function is already in the editor, and type checking runs as you type. Choose an editor theme, run the code in the terminal, then submit.
 
-Public examples show the shape of the answer. Hidden tests check the cases that are easy to forget. The runner compiles the submission with Sucrase and executes it in `node:vm` with a one-second timeout. `require`, imports, `process`, `eval`, and the `Function` constructor are blocked. That is enough for these exercises. It is not a hardened sandbox for arbitrary untrusted programs.
+Public examples show the shape of the answer. Hidden tests check the cases that are easy to forget. The runner compiles the submission with Sucrase and executes it in `node:vm` with a ten-second timeout. `require`, imports, `process`, `eval`, and the `Function` constructor are blocked. That is enough for these exercises. It is not a hardened sandbox for arbitrary untrusted programs.
 
 Passing every exercise marks the lesson done. A skip does not. Your draft and your passing solution stay on the account, so the editor is yours when you come back. The progress page shows lessons completed, pass rate, skipped lessons, and the topics that still have an attempt which has not passed.
 
