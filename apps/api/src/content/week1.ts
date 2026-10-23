@@ -1,5 +1,6 @@
 import type { SeedModule } from "./types.js";
 import { bitesize } from "./bitesize.js";
+import { reading } from "./reading.js";
 
 export const week1: SeedModule = {
   id: "foundations",
@@ -16,25 +17,7 @@ export const week1: SeedModule = {
         "Big O is a way to talk about how work grows, before you memorise data structures.",
       estimatedMinutes: 30,
       bitesizeMd: bitesize.complexity,
-      contentMd: `
-A data structure is a way of arranging values so the operations you care about stay cheap. Before the structures, you need a shared way to say *cheap*.
-
-**Big O** describes how the number of steps grows as the input grows. It ignores constant factors and the speed of your laptop. An O(n) function that scans a list once will do about twice the work for twice the input. An O(n²) function, often a loop inside a loop, grows much faster.
-
-Three costs cover almost everything in this course:
-
-| Cost | Rough meaning | Example |
-| --- | --- | --- |
-| O(1) | Does not grow with the input | Read \`nums[0]\` |
-| O(n) | One pass over the input | Sum an array |
-| O(n²) | A pass for every element | Compare every pair |
-
-You do not need a formal proof. When you write a solution, name the loops. One loop over the input is linear. A loop that, for each index, scans the rest of the array is quadratic. Nested loops multiply.
-
-Memory has a cost too. A hash map uses extra space so later lookups can be fast. That trade, space for time, shows up in week one and again in dynamic programming.
-
-The exercise is deliberately small. Count values strictly below a limit in one pass. Then look at your function and say its cost out loud.
-      `.trim(),
+      contentMd: reading.complexity,
       problems: [
         {
           id: "count-below",
@@ -120,19 +103,7 @@ Implement \`countBelow(nums, limit)\`.
       summary: "Index reads are cheap. Shifting elements is not.",
       estimatedMinutes: 35,
       bitesizeMd: bitesize.arrays,
-      contentMd: `
-A TypeScript array is a contiguous list. \`nums[i]\` is O(1) because the runtime can jump straight to that slot. \`nums.push(value)\` is cheap on average: it writes at the end. Inserting or deleting in the middle is O(n), because every later element has to move.
-
-That single fact explains a lot of later choices. If you need fast inserts in the middle, an array is the wrong tool and a linked list might be the right one. If you need fast index access, stay with the array.
-
-**Rotation** is a good way to feel the movement. Rotating left by \`steps\` moves the front of the array to the back.
-
-\`[1, 2, 3, 4]\` rotated left by 1 is \`[2, 3, 4, 1]\`.
-
-\`steps\` can be larger than the length. Rotating by \`length\` puts every element back where it started, so only \`steps % nums.length\` matters. An empty array stays empty.
-
-You can allocate a new array and place each value at its new index, which is a clear O(n) solution. In-place reversal tricks exist; you do not need them yet.
-      `.trim(),
+      contentMd: reading.arrays,
       problems: [
         {
           id: "rotate-left",
@@ -226,24 +197,7 @@ Implement \`rotateLeft(nums, steps)\`.
       summary: "Spend a little memory so the next lookup does not scan.",
       estimatedMinutes: 40,
       bitesizeMd: bitesize.hashMaps,
-      contentMd: `
-A hash map (a plain object or a \`Map\`) associates a key with a value. On average, set and get are O(1). The occasional collision means it is not a promise about every single call, and that is good enough for almost every exercise here.
-
-The pattern is: **remember what you have already seen**.
-
-Two Sum is the classic. You are given numbers and a target, and you need the indices of two values that add up to the target. A nested loop checks every pair in O(n²). A map checks, for each number \`n\`, whether you have already seen \`target - n\`.
-
-Walk \`[2, 7, 11, 15]\` looking for target \`9\`:
-
-1. 2 has not been seen. Store \`2 → index 0\`. The complement 7 is missing.
-2. 7's complement is 2, which is in the map at index 0. Return \`[0, 1]\`.
-
-Store the index, not just the value. The answer is positions.
-
-In TypeScript, a \`Map<number, number>\` keeps the key as a number. An object would turn it into a string, which still works for this problem and is easier to get wrong. Prefer \`Map\` when the key is not already a string.
-
-This is the space-for-time trade from the first lesson: O(n) extra memory, O(n) time.
-      `.trim(),
+      contentMd: reading["hash-maps"],
       problems: [
         {
           id: "two-sum",
@@ -342,17 +296,7 @@ Implement \`twoSum(nums, target)\`.
         "When the data is ordered, the two ends know something the middle does not.",
       estimatedMinutes: 35,
       bitesizeMd: bitesize.twoPointers,
-      contentMd: `
-Two pointers means two indices moving through the same array according to a rule. You use it when the array is sorted, or when you are comparing the ends.
-
-Sorted squares is a clean example. \`[-4, -1, 0, 3, 10]\` is sorted, but the squares \`[16, 1, 0, 9, 100]\` are not, because a large negative becomes a large positive. The biggest squares sit at the **ends**, not in the middle.
-
-Put a pointer on the left and one on the right. Square both. Write the larger square into the back of a result array, and move the pointer that produced it inward. Repeat until the pointers meet.
-
-Each step does O(1) work and the pointers together cross the array once, so the whole algorithm is O(n). Sorting the squares afterwards would be O(n log n). The sorted input is what makes the linear solution possible. If the input were unsorted, you would not have this trick.
-
-You will see the same shape again: a left index, a right index, and a reason to move exactly one of them.
-      `.trim(),
+      contentMd: reading["two-pointers"],
       problems: [
         {
           id: "sorted-squares",
@@ -445,28 +389,7 @@ Implement \`sortedSquares(nums)\`.
       summary: "Reuse the work you did on the previous slice.",
       estimatedMinutes: 35,
       bitesizeMd: bitesize.slidingWindow,
-      contentMd: `
-A sliding window is a subarray you maintain as you walk forward. The fixed-size version is the one to learn first.
-
-Suppose you want the maximum sum of any \`k\` consecutive elements. Re-summing each block from scratch repeats almost the same additions. Once you know the sum of a window, the next window is:
-
-\`next = current - element that left + element that entered\`
-
-That update is O(1), and you do it once per element, so the scan is O(n). The first window is the only one you sum from scratch.
-
-Example: \`nums = [2, 1, 5, 1, 3, 2]\`, \`k = 3\`.
-
-- \`2 + 1 + 5 = 8\`
-- drop 2, add 1 → 7
-- drop 1, add 3 → 9
-- drop 5, add 2 → 6
-
-The maximum is 9.
-
-There is a second kind of window, the variable one, used for problems like "shortest subarray with sum at least target". One pointer grows the window, the other shrinks it. Same idea, slightly more bookkeeping. This week's exercise stays with a fixed size so the update rule is obvious.
-
-If \`k\` is larger than the array, there is no valid window. Return 0 in that case.
-      `.trim(),
+      contentMd: reading["sliding-window"],
       problems: [
         {
           id: "max-window-sum",

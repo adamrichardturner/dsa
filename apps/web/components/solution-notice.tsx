@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { cn } from "cn";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
+import { ExerciseCodeBlock } from "@/components/exercise-code-block";
 import { Spinner } from "@/components/ui/spinner";
 import type { PassCompletion } from "@/lib/exercise-order";
 import type { SubmissionView, TestResultView } from "@/lib/types";
@@ -418,24 +419,34 @@ function FailurePanel({
             {cases.map((item) => {
               const result = resultLine(item);
               return (
-                <li key={item.id} className="rounded-lg bg-muted px-3 py-2">
+                <li
+                  key={item.id}
+                  className="space-y-2 rounded-lg border bg-background px-3 py-2"
+                >
                   <p className="text-sm font-medium text-foreground">
                     {item.name}
                   </p>
-                  <dl className="mt-1 grid grid-cols-[4.75rem_minmax(0,1fr)] gap-x-2 gap-y-0.5 font-mono text-xs leading-relaxed">
-                    <dt className="text-muted-foreground">Input</dt>
-                    <dd className="min-w-0 break-all text-foreground">
-                      {item.input}
-                    </dd>
-                    <dt className="text-muted-foreground">Expected</dt>
-                    <dd className="min-w-0 break-all text-foreground">
-                      {item.expected}
-                    </dd>
-                    <dt className="text-muted-foreground">{result.label}</dt>
-                    <dd className="min-w-0 break-all whitespace-pre-wrap text-foreground">
-                      {result.value}
-                    </dd>
-                  </dl>
+                  <ExerciseCodeBlock
+                    title="Input"
+                    value={item.input}
+                    language="text"
+                    size="sm"
+                    wrap
+                  />
+                  <ExerciseCodeBlock
+                    title="Expected"
+                    value={item.expected}
+                    language="text"
+                    size="sm"
+                    wrap
+                  />
+                  <ExerciseCodeBlock
+                    title={result.label}
+                    value={result.value}
+                    language="text"
+                    size="sm"
+                    wrap
+                  />
                 </li>
               );
             })}

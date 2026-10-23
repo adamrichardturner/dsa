@@ -18,6 +18,7 @@ import {
   EditorThemeSelect,
   useEditorTheme,
 } from "@/components/editor-theme-select";
+import { ExerciseCodeBlock } from "@/components/exercise-code-block";
 import { ExerciseNav } from "@/components/exercise-nav";
 import { LessonMarkdown } from "@/components/markdown";
 import { SuggestedReading } from "@/components/suggested-reading";
@@ -590,14 +591,19 @@ export function Workspace({ slug }: { readonly slug: string }) {
                   />
                   <div className="space-y-2">
                     {problem.examples.map((example) => (
-                      <pre
-                        key={example.call}
-                        className="overflow-x-auto rounded-lg bg-zinc-950 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-100"
-                      >
-                        {example.call}
-                        {"\n"}
-                        {example.output}
-                      </pre>
+                      <div key={example.call} className="space-y-2">
+                        <ExerciseCodeBlock
+                          title="TypeScript"
+                          value={example.call}
+                          language="typescript"
+                        />
+                        <ExerciseCodeBlock
+                          title="Result"
+                          value={example.output}
+                          language="text"
+                          wrap
+                        />
+                      </div>
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">

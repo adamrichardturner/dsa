@@ -1,5 +1,6 @@
 import type { SeedModule } from "./types.js";
 import { bitesize } from "./bitesize.js";
+import { reading } from "./reading.js";
 
 export const week4: SeedModule = {
   id: "patterns",
@@ -15,17 +16,7 @@ export const week4: SeedModule = {
         "Take the local option that you can prove does not block a better future.",
       estimatedMinutes: 35,
       bitesizeMd: bitesize.greedy,
-      contentMd: `
-A greedy algorithm makes the choice that looks best right now and does not take it back. It is fast when the local choice is safe. It is wrong when a patient choice would have opened a better path later. The skill is telling those problems apart, not applying "sort and scan" to everything.
-
-Interval scheduling is a case where greedy is safe. You have half-open intervals \`[start, end)\`. Two intervals overlap when one starts before the other has finished. You want as many as possible without a pair overlapping.
-
-Sort by finishing time, earliest first. Take the first interval. Then take the next one that starts at or after that finish time. Repeat. Taking the interval that frees you soonest leaves the most room afterwards, and for this problem that local rule matches the best possible count.
-
-\`[[1, 3], [2, 4], [3, 5]]\` can keep \`[1, 3]\` and \`[3, 5]\`. \`[2, 4]\` overlaps both. The answer is 2.
-
-If you sorted by start time instead, an early interval that runs for a long time would block several short ones. Same data, worse rule. When you invent a greedy rule, try to name a case it gets wrong. If you cannot, you might be done. If you can, it is not the rule.
-      `.trim(),
+      contentMd: reading.greedy,
       problems: [
         {
           id: "max-non-overlapping",
@@ -195,33 +186,7 @@ Do not enumerate every subset of intervals or hard-code results for the examples
       summary: "Choose, explore, then undo the choice.",
       estimatedMinutes: 40,
       bitesizeMd: bitesize.backtracking,
-      contentMd: `
-Backtracking searches a tree of decisions. At each step you choose, recurse, then undo so the next choice starts from a clean state. It is depth-first search on decisions you are generating, rather than on a graph you were given.
-
-Subsets are the smallest useful version. For each number, it is either in the subset or it is not.
-
-\`\`\`ts
-function walk(index: number, path: number[]): void {
-  if (index === nums.length) {
-    results.push([...path]);
-    return;
-  }
-
-  walk(index + 1, path);
-  path.push(nums[index]);
-  walk(index + 1, path);
-  path.pop();
-}
-\`\`\`
-
-The copy \`[...path]\` matters. If you push \`path\` itself, later pops will empty the subsets you thought you had saved.
-
-The undo is \`path.pop()\`. Forget it and every later subset inherits the previous choice.
-
-\`[1, 2]\` has four subsets: \`[]\`, \`[1]\`, \`[2]\`, and \`[1, 2]\`. Order does not matter for this exercise. The tests compare the collection as a set.
-
-This explodes. n distinct numbers have 2ⁿ subsets. Backtracking is the right tool when the search space is modest or you can prune it ("stop once the partial sum already exceeds the target"). It is the wrong tool when a shorter dynamic-programming table would count the answers without listing them.
-      `.trim(),
+      contentMd: reading.backtracking,
       problems: [
         {
           id: "subsets",
@@ -337,26 +302,7 @@ Do not use \`flatMap\` or \`reduce\` to build the power set, use bitmask enumera
       summary: "Solve the small problems once, and reuse the answers.",
       estimatedMinutes: 45,
       bitesizeMd: bitesize.dynamicProgramming,
-      contentMd: `
-Dynamic programming applies when a problem is made of smaller problems that **overlap**. Recursion still describes the answer. The difference from backtracking is that you store results instead of exploring the same state twice.
-
-Climbing stairs is the friendly introduction. You can take 1 or 2 steps. How many ways can you climb \`n\` steps?
-
-Let \`ways(n)\` be that count.
-
-- \`ways(1) = 1\` — one single step
-- \`ways(2) = 2\` — two singles, or one double
-- \`ways(n) = ways(n - 1) + ways(n - 2)\` — the last action was a single step, or a double step
-
-Those subproblems overlap. A naive recursion recomputes \`ways(3)\` many times on the way to \`ways(10)\`. Two repairs:
-
-1. Memoisation. Keep an object from \`n\` to the answer. Before recursing, check it. After computing, store it.
-2. A loop. Fill an array from the bottom. \`dp[i] = dp[i - 1] + dp[i - 2]\`. This uses O(n) time and, if you only keep the last two numbers, O(1) extra memory.
-
-Both are dynamic programming. The loop is usually what you write once you trust the recurrence.
-
-The same idea extends to two dimensions. Unique paths across a grid is \`dp[row][col] = dp[row - 1][col] + dp[row][col - 1]\`. Coin change is a 1D table updated once per coin. If you can write the recurrence and the base case, the table is mechanical. This week stops at the stairs so the recurrence stays visible.
-      `.trim(),
+      contentMd: reading["dynamic-programming"],
       problems: [
         {
           id: "climb-stairs",
@@ -448,22 +394,7 @@ Do not enumerate the move sequences, use exponential recursion that recomputes t
       summary: "A tree of characters, for looking words up by their spelling.",
       estimatedMinutes: 40,
       bitesizeMd: bitesize.tries,
-      contentMd: `
-A trie (pronounced "try") is a tree where each edge is a character. Words that share a prefix share the path from the root. \`cat\` and \`car\` share the \`c → a\` path, then split into \`t\` and \`r\`.
-
-Each node holds:
-
-- an object of children, keyed by character
-- a flag, \`isWord\`, that is true when some inserted word ends here
-
-Insert walks the characters, creating a child when it is missing, and marks the last node as a word. Search walks the same way and checks the flag. Both are O(length of the word), independent of how many other words you have stored. A hash set of whole words is also O(length) on average and is shorter to write. The trie earns its place when you care about prefixes: "which words start with \`ca\`?" is a walk to that node and then a small traversal of what sits underneath.
-
-The exercise only asks for exact lookup, so a set would pass. Build the trie anyway. The point of the last lesson is to leave with one more structure you can draw.
-
-A node can be a small class or a plain object. Children as \`Record<string, TrieNode>\` is enough. You do not need a 26-slot array unless you know every character is a lowercase letter and you want the practice.
-
-This is the end of the guided path. The structures repeat: arrays, maps, stacks, queues, trees, and a willingness to name the cost. The next problems you meet in the wild are usually one of those, wearing a story.
-      `.trim(),
+      contentMd: reading.tries,
       problems: [
         {
           id: "words-found",
@@ -491,7 +422,7 @@ For example, \`wordsFound(["cat", "car"], ["cat", "cab", "car"])\` returns \`[tr
 
 **Algorithm expectation**
 
-Build a trie whose nodes store character-keyed child objects and an end-of-word flag. Insertion and lookup should each take O(L) time for a string of length L. Across all inputs, aim for O(total characters in \`words\` and \`queries\`) time and O(total characters in \`words\`) trie space.
+Build a trie whose nodes store character-keyed child objects and an \`isWord\` flag. Insertion and lookup should each take O(L) time for a string of length L. Across all inputs, aim for O(total characters in \`words\` and \`queries\`) time and O(total characters in \`words\`) trie space.
 
 Do not use whole-word linear search helpers such as \`includes\`, \`indexOf\`, \`some\`, or \`find\`, and do not scan the full \`words\` array separately for each query. A \`Map\` for each node's children is a valid trie representation; the supplied object shape is simpler for this starter.
           `.trim(),

@@ -10,7 +10,9 @@ export const treeArticles: readonly Article[] = [
     `
 A tree is a connected hierarchy with one root. Every other node has exactly one parent, and following child links can never lead back to an ancestor. Those properties give exactly one path from the root to each node. A node with no children is a leaf. A binary tree allows at most two children per node, conventionally named left and right.
 
-Terminology varies, so fix the convention before calculating. In many textbooks, a node's **depth** is its distance from the root, while a tree's **height** is its longest downward distance. This course names the requested tree-wide value \`maxDepth\` and counts **nodes**: an empty tree is 0 and a single node is 1. Under that convention, the drawing has maximum depth 3 because a longest path is 8, 3, 1.
+Terminology varies, so fix the convention before calculating. In many textbooks, a node's **depth** is the number of edges from the root, while a node's **height** is the number of edges on its longest path to a leaf. This course's tree-wide \`maxDepth\` uses a different but common node-count convention: an empty tree has height/depth 0, a leaf has height 1, and the answer is the number of nodes on a longest root-to-leaf path. Under that convention, the drawing has maximum depth 3 because a longest path is 8, 3, 1.
+
+Keep node depth separate when edges matter. Root 8 has edge-counted node depth 0, nodes 3 and 10 have node depth 1, and the leaves below 3 have node depth 2. Their course levels are 1, 2, and 3 respectively. Thus \`level = edge-counted node depth + 1\` for a non-empty tree.
 
 \`\`\`mermaid
 flowchart TD
@@ -81,7 +83,21 @@ console.log(maxDepth(null));
 
 The example prints \`3\` and then \`0\`. Its return-value invariant is: \`maxDepth(node)\` equals the number of real nodes on the longest path beginning at \`node\`. The null case establishes 0; the recursive case adds the current real node to the larger child result.
 
-That evaluation is depth-first: one branch finishes before the other starts. Visiting every node on one level before the next wants a queue, which is level order and breadth-first search. \`buildTree\` already uses that queue on a level-order list, with null for a missing child. A leaf has no children. “Binary” only caps the child count; it does not order the values.
+That evaluation is depth-first: one branch finishes before the other starts. Visiting every node on one level before the next wants a queue, which is level order and breadth-first search. A leaf has no children. “Binary” only caps the child count; it does not order the values.
+
+## Level-order null encoding
+
+A level-order array describes child slots from left to right. The first entry is the root. Then, for each real node removed from a queue, consume one entry for its left-child slot and one for its right-child slot. A number creates a node and queues it for later children. \`null\` fills a slot without creating or queueing a node.
+
+For \`[1, 2, null, 3]\`, 1 is the root, 2 is its left child, the first \`null\` says that 1 has no right child, and 3 is the left child of 2. The resulting maximum depth is 3 nodes. Null entries are holes, not vertices or levels. Trailing nulls may be omitted because no later real entry depends on them: \`[1, 2]\` and \`[1, 2, null, null, null]\` encode the same tree. An empty array encodes an empty tree; an initial \`null\`, if the input type permits it, also means there is no root.
+
+\`\`\`mermaid
+flowchart LR
+  values["[1, 2, null, 3]"] --> rootSlot["root slot: 1"]
+  rootSlot --> childSlots["children of 1: 2, null"]
+  childSlots --> nextSlots["children of 2: 3, omitted"]
+  nextSlots --> result["left spine 1 → 2 → 3"]
+\`\`\`
 
 \`\`\`mermaid
 flowchart LR
@@ -249,6 +265,8 @@ console.log(contains(root, 3), contains(root, 7));
 
 The example prints \`true false\`. The repeated 2 is ignored, so each distinct value has one node. During insertion, the returned subtree contains the old values plus the new value while preserving the ordering invariant. During search, if the target exists, it remains inside the subtree passed to \`contains\`; ordering proves that the discarded subtree cannot contain it.
 
+The TypeScript types make every missing child explicit as \`TreeNode | null\`. Insertion mutates child links, but it also returns the subtree root, which is why the caller must write \`root = insert(root, value)\`: the first insertion replaces a null root. Search is read-only and returns as soon as it finds equality or null. Neither function uses array indexes; its progress measure is the number of nodes remaining on the chosen downward path.
+
 A scan of the original array misses the point. The links help only when lookup follows them. Without the order rule you still have a root, leaves, and a maximum depth, but you cannot safely discard a side.
 
 ## A numeric example
@@ -351,7 +369,7 @@ Binary search throws away half of a sorted array. A balanced tree keeps this wal
     "AVL and red-black trees enforce different invariants with rotations and, for red-black trees, recoloring so height remains O(log n). A skewed BST is a list drawn vertically.",
     ["balanced tree", "AVL", "red-black"],
     `
-A balanced tree keeps its height near log n, so a walk from the root stays short as n grows. AVL and red-black trees rotate after an insert or a delete would leave one side too tall. The drawing is 7 nodes with a longest path of 3, close to log2(7). A tree that never rotates can keep the search rule and still become a line.
+A balanced tree keeps its height near log n, so a walk from the root stays short as n grows. In this course, tree height is counted in nodes: empty is 0 and a leaf is 1. AVL and red-black trees rotate after an insert or a delete would leave one side too tall. The drawing is 7 nodes with a longest path of 3 nodes, close to log2(7). A tree that never rotates can keep the search rule and still become a line.
 
 \`\`\`mermaid
 flowchart TD
@@ -573,7 +591,7 @@ console.log(leftChild(0), rightChild(0));
 
 The example prints \`0\` and then \`1 2\`. Call \`parentIndex\` only for a non-root index; index 0 has no parent. A min-heap keeps the smallest value at the root. A max-heap keeps the largest. Siblings need not be ordered against each other, and neither subtree has the BST ordering rule, so searching for an arbitrary value is O(n).
 
-Insert writes at the next open index, then swaps upward while the value belongs above its parent: smaller, in a min-heap, or larger, in a max-heap. Removing the root moves the last value into the hole and swaps downward, with the smaller child or the larger child. Both walks are one path. Height is about log n, so both are O(log n). Reading the root is O(1).
+Insert writes at the next open index, then **bubbles up** while the value belongs above its parent: smaller, in a min-heap, or larger, in a max-heap. Removing the root moves the last value into the hole and **bubbles down** (also called sifting down), swapping with the smaller child in a min-heap or the larger child in a max-heap. Choosing the better child is necessary: swapping with the wrong child can leave the other child above a smaller parent. Both walks follow one root-to-leaf path. Under the course's node-count convention, a non-empty complete heap has height \`floor(log2(n)) + 1\`, so both updates are O(log n). Reading the root is O(1).
 
 For the kth largest, keep a min-heap of size k. Push each value, and if the size passes k, pop the smallest. Anything removed cannot be one of the k largest values seen so far. The root is the smallest survivor, which is the kth largest after the final input. Duplicates count separately.
 
@@ -688,6 +706,8 @@ console.log(kthLargest([], 1));
 \`\`\`
 
 Expected output is \`4\`, \`2\`, and \`undefined\`. After each input, the invariant is: the heap contains the largest \`min(itemsSeen, k)\` values seen so far, and its root is their minimum. The bounds check gives invalid \`k\` values an explicit result instead of reading a missing root.
+
+With \`noUncheckedIndexedAccess\`, TypeScript treats an array lookup as possibly \`undefined\`; the guards in \`push\` and \`popMinimum\` make that possibility explicit. The numeric indexes are still valid under the heap invariants, but checking them keeps the snippet safe if it is reused independently. \`popMinimum\` returns \`undefined\` only for an empty heap, while \`kthLargest\` rejects \`k = 0\`, negative \`k\`, and \`k > numbers.length\` before building anything.
 
 ## A numeric example
 

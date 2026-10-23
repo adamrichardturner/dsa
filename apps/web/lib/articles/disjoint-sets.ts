@@ -5,9 +5,11 @@ export const disjointSetArticles: readonly Article[] = [
     "disjoint-set-union",
     "What Is Disjoint-Set Union? Tracking Connected Components",
     "Trees and graphs",
-    "Disjoint-set union maintains non-overlapping groups under repeated merges. Path compression and union by size make connectivity checks effectively constant-time across a long operation sequence.",
+    "Enrichment: disjoint-set union maintains groups under repeated merges. Path compression and union by size make connectivity checks effectively constant-time across a long sequence.",
     ["disjoint set", "union-find", "path compression", "union by size"],
     `
+## Enrichment: beyond the current exercises
+
 A **disjoint-set union** structure, also called **union-find**, maintains a
 collection of non-overlapping groups. It answers two questions:
 
@@ -17,7 +19,9 @@ collection of non-overlapping groups. It answers two questions:
 This is useful when edges arrive over time and the repeated question is whether
 two vertices are already connected. A graph traversal can answer one
 connectivity question. Disjoint-set union preprocesses the growing groups so
-many later questions are cheap.
+many later questions are cheap. The current exercises use BFS or DFS; this
+structure is an extension for repeated connectivity queries and is not required
+there.
 
 \`\`\`mermaid
 flowchart TD
@@ -149,6 +153,13 @@ Expected output is \`true\`, \`true\`, \`true\`, \`false\`, \`false\`, and
 representative. Five singleton components minus two successful merges leaves
 three components.
 
+The arrays use dense integer ids from 0 through \`count - 1\`. Validation makes
+an invalid id a \`RangeError\` instead of allowing an undefined array lookup to
+corrupt a parent chain. \`find\` is intentionally iterative: the first loop
+discovers the root, and the second loop compresses the path. The nullish
+fallbacks keep every indexed read typed, although a valid structure always has
+an entry at each validated index.
+
 ## Trace the parent links
 
 Start with parents \`[0, 1, 2, 3, 4]\`. After \`union(0, 1)\`, root 1 points
@@ -162,6 +173,12 @@ finds a shorter path.
 Representatives are implementation details. After unions, the representative
 might be 0 or another value depending on tie choices. Client code should compare
 representatives, not require a particular one.
+
+The component-count invariant is exact: it starts at the number of singleton
+sets and decreases once, and only once, for every successful merge. A repeated
+union, a self-union such as \`union(3, 3)\`, and a connectivity query leave the
+count unchanged. A zero-element structure is valid and reports zero components,
+but every \`find\` call is out of range.
 
 ## Cost
 

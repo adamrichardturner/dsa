@@ -8,7 +8,9 @@ export const treeTraversalArticles: readonly Article[] = [
     "Depth-first tree traversals differ only in when they visit the current node: preorder before both children, inorder between them, and postorder after them. Inorder lists a binary search tree in sorted order.",
     ["tree traversal", "preorder", "inorder", "postorder"],
     `
-A traversal visits every node exactly once in a deliberate order. For a binary node, depth-first traversal has three moments available: before the left subtree, between the two subtrees, and after the right subtree. Visiting at those moments gives preorder, inorder, and postorder. Level order is the breadth-first alternative: it visits by distance from the root.
+A traversal visits every node exactly once in a deliberate order. For a binary node, depth-first traversal has three moments available: before the left subtree, between the two subtrees, and after the right subtree. Visiting at those moments gives preorder, inorder, and postorder. Level order is the breadth-first alternative: it visits by increasing edge-counted node depth from the root.
+
+The course measures a tree's height/depth in nodes: empty is 0 and a leaf is 1. Traversal names do not change that convention. When this article says a node is at distance \`d\`, however, it means \`d\` edges from the root; the root's node depth is 0 and its course level is 1.
 
 \`\`\`mermaid
 flowchart TD
@@ -72,6 +74,34 @@ const postorder = (node: TreeNode | null, output: string[]): void => {
   output.push(node.value);
 };
 
+const levelOrder = (root: TreeNode | null): string[] => {
+  if (root === null) {
+    return [];
+  }
+
+  const queue: TreeNode[] = [root];
+  const output: string[] = [];
+  let front = 0;
+
+  while (front < queue.length) {
+    const node = queue[front];
+    front += 1;
+    if (node === undefined) {
+      continue;
+    }
+
+    output.push(node.value);
+    if (node.left !== null) {
+      queue.push(node.left);
+    }
+    if (node.right !== null) {
+      queue.push(node.right);
+    }
+  }
+
+  return output;
+};
+
 const tree: TreeNode = {
   value: "A",
   left: {
@@ -92,6 +122,7 @@ postorder(tree, post);
 console.log(pre.join(" "));
 console.log(inside.join(" "));
 console.log(post.join(" "));
+console.log(levelOrder(tree).join(" "));
 \`\`\`
 
 Expected output:
@@ -100,9 +131,12 @@ Expected output:
 A B D E C
 D B E A C
 D E B C A
+A B C D E
 \`\`\`
 
 The invariant for each function is: after it returns, \`output\` has gained exactly the nodes in that subtree, in the named order. Null adds nothing. A real node combines one visit with two smaller traversals, which proves that every node appears once.
+
+For level order, the loop invariant is different: entries before \`front\` have been processed, and entries from \`front\` onward are discovered but not processed, in nondecreasing node depth. Children are appended after all vertices already waiting, so one level cannot jump ahead of an earlier one. The moving front index avoids the O(n) element shifting caused by repeated \`Array.shift()\`.
 
 ## Why each order exists
 
@@ -130,7 +164,7 @@ All four traversals take O(n) time because every node is processed once. Recursi
 | Postorder | O(n) | O(h) | combine or delete children first |
 | Level order | O(n) | O(w) | levels and unweighted depth |
 
-An iterative depth-first traversal replaces call frames with an explicit stack. It avoids call-stack overflow but does not improve the worst-case O(h) memory bound. Iterative postorder needs extra state—such as a last-visited node or a pair containing a node and an “expanded” flag—because the parent must wait for both children.
+An iterative depth-first traversal replaces call frames with an explicit stack. It avoids call-stack overflow but does not improve the worst-case O(h) memory bound. Here \`h\` is the course's node-counted height; changing to edge-counted height shifts non-empty values by one but does not change the asymptotic bound. Iterative postorder needs extra state—such as a last-visited node or a pair containing a node and an “expanded” flag—because the parent must wait for both children.
 
 ## Edge cases and pitfalls
 

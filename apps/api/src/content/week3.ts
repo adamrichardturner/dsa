@@ -1,5 +1,6 @@
 import type { SeedModule } from "./types.js";
 import { bitesize } from "./bitesize.js";
+import { reading } from "./reading.js";
 
 const treeStarter = `class TreeNode {
   value: number;
@@ -91,24 +92,7 @@ export const week3: SeedModule = {
       summary: "A root, children, and a depth you can compute by recursion.",
       estimatedMinutes: 40,
       bitesizeMd: bitesize.trees,
-      contentMd: `
-A tree is a set of nodes with one **root** and no cycles. Each node has zero or more children. A node with no children is a leaf. A **binary** tree gives each node at most two children, usually called left and right.
-
-Depth of a node is how many edges it sits below the root. The depth of the tree is the depth of its deepest leaf. An empty tree has depth 0. A single node has depth 1. People also say "height" for a closely related count; in this course, depth means the number of nodes on the longest path from the root down.
-
-The recursive definition is the algorithm:
-
-- an empty tree has depth 0
-- otherwise the depth is 1 plus the larger of the two children's depths
-
-That is a depth-first walk. The call stack visits a whole branch before the other branch.
-
-Level order, visiting every node at depth 1, then depth 2, and so on, is a queue. The starter's \`buildTree\` already does that. The input is written level by level, with \`null\` where a child is missing.
-
-\`[3, 9, 20, null, null, 15, 7]\` is a root 3, a left child 9, a right child 20, and 20's children 15 and 7. The depth is 3.
-
-You do not need to rewrite the builder. Use the tree it returns.
-      `.trim(),
+      contentMd: reading.trees,
       problems: [
         {
           id: "max-depth",
@@ -196,17 +180,7 @@ Visit each node once: \`O(n)\` time and \`O(h)\` call-stack space, where \`h\` i
       summary: "Left is smaller, right is larger, and search becomes a walk.",
       estimatedMinutes: 35,
       bitesizeMd: bitesize.binarySearchTrees,
-      contentMd: `
-A binary search tree adds one rule to a binary tree. Every value in the left subtree is smaller than the node, and every value in the right subtree is larger. Duplicates are a policy decision. This lesson does not insert them.
-
-Search starts at the root. If the target is smaller, go left. If it is larger, go right. If you hit \`null\`, it is absent. The walk is O(h), where h is the height. A balanced tree has height about log n. Inserting sorted values in order produces a straight line, and search falls back to O(n). The tree did not save you.
-
-Balanced trees (AVL, red-black) rotate nodes to keep the height small. JavaScript engines and databases use them. You do not need to implement a rotation this month. You do need to notice when a tree has degenerated into a list.
-
-Insert uses the same walk. Empty spot on the correct side is where the new node goes.
-
-The exercise inserts every value, in order, then searches. Building the tree is part of the work. Scanning the original array with \`.includes\` misses the point, and the runner rejects it.
-      `.trim(),
+      contentMd: reading["binary-search-trees"],
       problems: [
         {
           id: "bst-contains",
@@ -309,21 +283,7 @@ Do not answer by scanning \`values\` directly or by using \`.includes\`, \`.inde
         "A complete tree in an array, useful when you only need the extreme value.",
       estimatedMinutes: 40,
       bitesizeMd: bitesize.heaps,
-      contentMd: `
-A heap is a complete binary tree that keeps the smallest value (a min-heap) or the largest (a max-heap) at the root. **Complete** means every level is full except possibly the last, which is filled from the left. That shape lets you store the tree in an array with no pointers.
-
-For a node at index \`i\`:
-
-- the parent is \`Math.floor((i - 1) / 2)\`
-- the left child is \`2 * i + 1\`
-- the right child is \`2 * i + 2\`
-
-Insert writes the new value at the end, then swaps it upward while it is smaller than its parent. Remove-min saves the root, moves the last value to the root, and swaps it downward with the smaller child until the order is restored. Both are O(log n).
-
-You reach for a heap when you repeatedly need the current minimum or maximum, not the fully sorted list. "The kth largest element" is the textbook case. Keep a min-heap of size k. For each number, push it, and if the heap now holds more than k values, pop the smallest. The root is the kth largest, because k values are at least that large and you threw away the smaller ones.
-
-Sorting the whole array and indexing from the end is correct in general, but it is O(n log n) and bypasses this heap exercise. A binary heap of numbers in an array is about thirty lines.
-      `.trim(),
+      contentMd: reading.heaps,
       problems: [
         {
           id: "kth-largest",
@@ -421,19 +381,7 @@ Do not remove duplicates with a \`Set\`, and do not sort the input or a copy. Th
         "Vertices, edges, and breadth-first search for the shortest path.",
       estimatedMinutes: 45,
       bitesizeMd: bitesize.graphs,
-      contentMd: `
-A graph is a set of vertices and a set of edges between them. This lesson uses undirected edges: if you can walk from 0 to 1, you can walk from 1 to 0. A tree is a graph with no cycles. A general graph may have cycles, so a search has to remember where it has already been or it will loop forever.
-
-Store an **adjacency list**: an object whose keys are vertex ids and whose values are the neighbouring ids. Building it is one pass over the edge list.
-
-**Breadth-first search** uses the queue from week two. Start at the source, then visit neighbours, then neighbours of neighbours. The first time you reach the target, you got there in the fewest edges. That is only true when every edge has the same cost. Weighted shortest paths need Dijkstra, which is a heap plus this same walk. One step further than this course goes.
-
-Keep a distance for each vertex, or carry the distance in the queue alongside the vertex. Mark a vertex when you first enqueue it, not when you dequeue it, or the same neighbour gets queued many times.
-
-**Depth-first search** uses a stack, or recursion, and dives down one branch. It answers "can I get there?" and "which vertices are in this component?" It does not answer "what is the shortest path?" Use BFS for this exercise.
-
-If the target is never reached, return \`-1\`. The distance from a vertex to itself is 0.
-      `.trim(),
+      contentMd: reading.graphs,
       problems: [
         {
           id: "shortest-path",

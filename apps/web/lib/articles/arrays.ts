@@ -34,6 +34,8 @@ TypeScript's \`Array<T>\` provides the same indexed abstraction, but JavaScript 
 
 This function inserts into a copy so the input is not mutated. The first loop copies the prefix, the new value fills the gap, and the second loop copies the suffix.
 
+Its construction invariant is: before each copy iteration, \`result\` contains exactly the values that belong before the next unread input index. After inserting the new value, the same statement applies to the suffix. No original value changes relative order.
+
 \`\`\`ts
 function insertAt(
   values: readonly number[],
@@ -48,18 +50,22 @@ function insertAt(
 
   for (let i = 0; i < index; i += 1) {
     const current = values[i];
-    if (current !== undefined) {
-      result.push(current);
+    if (current === undefined) {
+      throw new Error("insertAt expects a dense array");
     }
+
+    result.push(current);
   }
 
   result.push(value);
 
   for (let i = index; i < values.length; i += 1) {
     const current = values[i];
-    if (current !== undefined) {
-      result.push(current);
+    if (current === undefined) {
+      throw new Error("insertAt expects a dense array");
     }
+
+    result.push(current);
   }
 
   return result;
@@ -77,7 +83,7 @@ Expected output is \`[4, 7, 8, 15, 16]\`, followed by the unchanged input \`[4, 
 
 ## Dense and sparse arrays
 
-\`[10, 20, 30]\` is dense: every index below its length has a value. Setting \`values[1_000_000] = 5\` creates a sparse array with a large gap. Its \`length\` becomes 1,000,001 even though almost all positions are empty. Sparse arrays can have surprising iteration behavior and different engine representations. For DSA work, prefer dense arrays and represent a genuinely sparse relationship with a more suitable structure.
+\`[10, 20, 30]\` is dense: every index below its length has a value. Setting \`values[1_000_000] = 5\` creates a sparse array with a large gap. Its \`length\` becomes 1,000,001 even though almost all positions are empty. Sparse arrays can have surprising iteration behaviour and different engine representations. For DSA work, prefer dense arrays and represent a genuinely sparse relationship with a more suitable structure.
 
 ## Cost
 
@@ -101,9 +107,15 @@ Do not use \`delete values[i]\` to remove an element. It leaves a hole and does 
 
 Do not read outside 0 through \`length - 1\`. JavaScript returns \`undefined\`; it does not report an index error.
 
+\`readonly number[]\` prevents writes through that TypeScript reference, but it does not freeze the array at runtime. Another mutable reference can still change it. Use \`Object.freeze\` only when runtime immutability is actually required; freezing does not change traversal complexity.
+
 ## When arrays fit
 
 Use an array for indexed access, left-to-right traversal, compact ordered data, and end insertion. Consider a linked structure when repeated insertions or deletions occur at nodes you already hold. Consider a queue implementation with a moving head index instead of repeatedly calling \`shift\`.
+
+## In the course
+
+Fast indexed access, linear traversal, amortised end insertion, and suffix shifting are core. Physical engine layouts and optimisation strategies are enrichment; use the standard dense-array cost model unless a problem explicitly asks about JavaScript internals.
 
 ## FAQ
 
@@ -121,7 +133,9 @@ The language specification does not promise that physical layout. Contiguous sto
 
 ## Related
 
-[How Do You Rotate an Array Left? Remainder and Cost](/articles/rotating-an-array) and [What Is a Linked List? Pointers Instead of Indexes](/articles/linked-lists)
+- [How Do You Rotate an Array Left?](/articles/rotating-an-array)
+- [What Is a Linked List? Pointers Instead of Indexes](/articles/linked-lists)
+- [What Does O(1) Mean? Constant-Time Work That Stays Flat](/articles/constant-time)
     `,
   ),
   defineArticle(
@@ -150,6 +164,8 @@ A full turn of n steps restores an n-element array. Therefore only \`steps % n\`
 Handle the empty array before taking a remainder: remainder by zero produces \`NaN\`. A rotation count must be an integer because “half an array position” has no meaning. The implementation below also accepts negative steps. A negative left rotation is a right rotation, and the normalization \`((steps % n) + n) % n\` always produces an offset from 0 through \`n - 1\`.
 
 The suffix from the offset becomes the front, and the prefix before the offset becomes the back.
+
+The invariant is cyclic order: if value A immediately preceded value B before rotation, A still immediately precedes B afterward, except that the old last-to-first boundary moves. Rotation changes where the sequence starts; it does not reverse or sort any part.
 
 \`\`\`ts
 function rotateLeft(values: readonly number[], steps: number): number[] {
@@ -195,6 +211,8 @@ The implementation takes O(n) time and O(n) extra space. It leaves the input unc
 
 An in-place three-reversal algorithm can rotate in O(n) time and O(1) extra space, but it mutates the input and is less direct. Repeatedly calling \`shift\` and \`push\` k times can take O(nk) time because each \`shift\` moves the remaining elements.
 
+For an in-place left rotation by normalized offset k, reverse \`[0, k)\`, reverse \`[k, n)\`, then reverse the whole array. Every element participates in only a constant number of swaps. The slice version is usually clearer when returning a new array is acceptable.
+
 ## Common mistakes
 
 Do not perform one shift per requested step. Reduce large step counts with remainder first.
@@ -208,6 +226,10 @@ Do not claim a function is non-mutating if it returns and modifies the original 
 ## When to use it
 
 Rotation fits cyclic schedules, ring-like orderings, and problems where a prefix wraps to the back. It is not sorting, reversal, or arbitrary permutation: all elements retain the same cyclic order.
+
+## In the course
+
+Modulo normalization, empty-input handling, and the difference between repeated shifting and one O(n) rearrangement are core. The three-reversal proof and logical offset views are enrichment.
 
 ## FAQ
 
@@ -225,7 +247,9 @@ Not when an ordinary returned array must contain n values in their new positions
 
 ## Related
 
-[How Arrays Support Fast Indexing](/articles/contiguous-arrays) and [What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers)
+- [How Arrays Support Fast Indexing](/articles/contiguous-arrays)
+- [What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers)
+- [What Is Linear Time O(n)? One Pass and Linear Search](/articles/linear-time)
     `,
   ),
   defineArticle(
@@ -266,7 +290,7 @@ function sortedSquares(values: readonly number[]): number[] {
     const leftValue = values[left];
     const rightValue = values[right];
     if (leftValue === undefined || rightValue === undefined) {
-      break;
+      throw new Error("sortedSquares expects a dense array");
     }
 
     const leftSquare = leftValue * leftValue;
@@ -324,9 +348,15 @@ Do not compare signed values. Compare their squares or absolute values.
 
 Do not apply the proof to unsorted input. Two indexes alone do not summarize an arbitrary middle.
 
+In JavaScript, \`number\` arithmetic can overflow to \`Infinity\`, and large integer squares can lose exactness beyond \`Number.MAX_SAFE_INTEGER\`. Use \`bigint\` throughout when exact integer squares can exceed the safe range; do not mix \`number\` and \`bigint\` arithmetic.
+
 ## When to use it
 
 Use inward pointers when sorted order or end structure lets one comparison discard an end safely. Use same-direction pointers for tasks such as removing duplicates in place. In every case, state what each pointer means and why moving it cannot remove a needed candidate.
+
+## In the course
+
+The core skill is not “use two variables”; it is stating the invariant that makes a pointer move safe. Sorted squares teaches inward pointers. Same-direction compaction and linked-list fast/slow pointers are related enrichment with different invariants.
 
 ## FAQ
 
@@ -344,7 +374,9 @@ Yes. If the required output has n values, it occupies O(n) space. Sometimes anal
 
 ## Related
 
-[What Is a Sliding Window? Fixed and Variable Subarrays](/articles/sliding-windows) and [What Is Binary Search? Throw Away Half of a Sorted Array](/articles/binary-search)
+- [What Is a Sliding Window?](/articles/sliding-windows)
+- [What Is Binary Search? Throw Away Half of a Sorted Array](/articles/binary-search)
+- [What Is O(n log n)? Linearithmic Time and Sorting](/articles/linearithmic-time)
     `,
   ),
   defineArticle(
@@ -367,6 +399,8 @@ flowchart LR
 
 For the maximum sum of k consecutive values, sum the first k values once. Each later window differs by exactly two values. This makes each slide O(1).
 
+The invariant is: before comparing \`sum\` with \`best\`, \`sum\` equals the total of exactly the current width-k range. Subtracting the leaving value and adding the entering value preserves that statement.
+
 \`\`\`ts
 function maxWindowSum(values: readonly number[], width: number): number | null {
   if (!Number.isInteger(width) || width < 1 || width > values.length) {
@@ -375,14 +409,23 @@ function maxWindowSum(values: readonly number[], width: number): number | null {
 
   let sum = 0;
   for (let index = 0; index < width; index += 1) {
-    sum += values[index] ?? 0;
+    const value = values[index];
+    if (value === undefined) {
+      throw new Error("maxWindowSum expects a dense array");
+    }
+
+    sum += value;
   }
 
   let best = sum;
 
   for (let right = width; right < values.length; right += 1) {
-    const entering = values[right] ?? 0;
-    const leaving = values[right - width] ?? 0;
+    const entering = values[right];
+    const leaving = values[right - width];
+    if (entering === undefined || leaving === undefined) {
+      throw new Error("maxWindowSum expects a dense array");
+    }
+
     sum += entering - leaving;
 
     if (sum > best) {
@@ -404,7 +447,9 @@ Expected output is \`9\` and \`null\`. Returning \`null\` distinguishes “no va
 
 ## Variable-width windows
 
-A variable window can solve “find the shortest subarray with sum at least a target” in O(n) **when all values are non-negative**. Adding a value cannot decrease the sum, and removing a value cannot increase it. That monotonic behavior tells us when to grow and when to shrink.
+A variable window can solve “find the shortest subarray with sum at least a target” in O(n) **when all values are non-negative**. Adding a value cannot decrease the sum, and removing a value cannot increase it. That monotonic behaviour tells us when to grow and when to shrink.
+
+Its invariant is: \`sum\` equals the values from \`left\` through \`right\`, inclusive. While that sum reaches the target, record the current valid length and remove the leftmost value. Once the loop stops, no window ending at this \`right\` and beginning at or after \`left\` has already been skipped.
 
 \`\`\`ts
 function shortestAtLeast(
@@ -420,7 +465,11 @@ function shortestAtLeast(
   let best = Number.POSITIVE_INFINITY;
 
   for (let right = 0; right < values.length; right += 1) {
-    const entering = values[right] ?? 0;
+    const entering = values[right];
+    if (entering === undefined) {
+      throw new Error("shortestAtLeast expects a dense array");
+    }
+
     if (entering < 0) {
       throw new RangeError("values must be non-negative");
     }
@@ -429,7 +478,12 @@ function shortestAtLeast(
 
     while (sum >= target) {
       best = Math.min(best, right - left + 1);
-      sum -= values[left] ?? 0;
+      const leaving = values[left];
+      if (leaving === undefined) {
+        throw new Error("shortestAtLeast expects a dense array");
+      }
+
+      sum -= leaving;
       left += 1;
     }
   }
@@ -464,7 +518,7 @@ For \`[5, -10, 6]\`, growing a window can lower its sum and shrinking it can rai
 
 Do not re-sum all k values at every starting index. That takes O(nk) time.
 
-Do not initialize a maximum to 0 when valid window sums may all be negative. Initialize it from the first valid window.
+Do not initialise a maximum to 0 when valid window sums may all be negative. Initialise it from the first valid window.
 
 Do not confuse a subarray with a subsequence. A subarray is contiguous; a subsequence may contain gaps.
 
@@ -473,6 +527,10 @@ Do not claim every variable-window problem is linear. The boundary rule must be 
 ## When to use it
 
 Use a fixed window when the width is known and adjacent ranges overlap. Use a variable window when extending and shrinking changes the condition predictably. If values can be negative, prove monotonicity or choose another method.
+
+## In the course
+
+Fixed-width reuse, variable-width invariants, and the monotonic-boundary proof of O(n) are core. Prefix sums with a monotonic deque for negative values are enrichment; the simple non-negative window must not be generalized beyond its precondition.
 
 ## FAQ
 
@@ -490,7 +548,9 @@ Common choices include a sum, a count, or a frequency record. The update must be
 
 ## Related
 
-[What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers), [How Prefix Sums Answer Range Queries](/articles/prefix-sums), and [What Is a Queue? FIFO Order, Enqueue, and Dequeue](/articles/queues)
+- [What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers)
+- [How Prefix Sums Answer Range Queries](/articles/prefix-sums)
+- [What Is a Queue? FIFO Order, Enqueue, and Dequeue](/articles/queues)
     `,
   ),
   defineArticle(
@@ -521,8 +581,13 @@ The initial zero is deliberate. It makes ranges beginning at index 0 use the sam
 function buildPrefixSums(values: readonly number[]): number[] {
   const prefix = [0];
 
-  for (const value of values) {
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
     const previous = prefix[prefix.length - 1] ?? 0;
+    if (value === undefined) {
+      throw new Error("buildPrefixSums expects a dense array");
+    }
+
     prefix.push(previous + value);
   }
 
@@ -546,7 +611,13 @@ function rangeSum(
     throw new RangeError("expected 0 <= start <= end <= values.length");
   }
 
-  return (prefix[end] ?? 0) - (prefix[start] ?? 0);
+  const endTotal = prefix[end];
+  const startTotal = prefix[start];
+  if (endTotal === undefined || startTotal === undefined) {
+    throw new Error("rangeSum expects a valid prefix array");
+  }
+
+  return endTotal - startTotal;
 }
 
 const values = [3, 1, 4, 2];
@@ -578,6 +649,8 @@ For \`[1, 4)\`, subtract the total before index 1 from the total before index 4:
 
 Half-open ranges match \`slice(start, end)\`: start is included and end is excluded. The empty range \`[2, 2)\` correctly has sum 0.
 
+The construction invariant is: after processing \`i\` input values, \`prefix\` has length \`i + 1\`, and its last value is the sum of \`values[0]\` through \`values[i - 1]\`. The query formula then cancels two totals measured from the same origin.
+
 ## Cost and trade-off
 
 Building the prefix array takes O(n) time and O(n) extra space. Each range query then takes O(1) time and O(1) extra space.
@@ -600,6 +673,10 @@ Do not use prefix sums blindly when totals can exceed JavaScript's safe integer 
 
 Use prefix sums for many aggregate queries over mostly immutable data. Besides sums, the same cancellation idea supports counts, such as “how many even values occur in this range?” by prefixing 1 for even and 0 for odd.
 
+## In the course
+
+The leading zero, half-open range convention, cancellation formula, and O(n + q) analysis are core. Fenwick trees, segment trees, and two-dimensional prefix sums are enrichment for workloads with updates or grid queries.
+
 ## FAQ
 
 ### Why is the prefix array one element longer?
@@ -616,7 +693,9 @@ Usually when multiple range queries reuse the same data. For one query, a direct
 
 ## Related
 
-[What Is a Sliding Window?](/articles/sliding-windows) and [How Arrays Support Fast Indexing](/articles/contiguous-arrays)
+- [What Is a Sliding Window?](/articles/sliding-windows)
+- [How Arrays Support Fast Indexing](/articles/contiguous-arrays)
+- [What Is the Space-for-Time Tradeoff in Algorithms?](/articles/space-for-time)
     `,
   ),
 ];

@@ -53,6 +53,57 @@ The multiplications happen on the way back. factorial(1) returns 1. factorial(2)
 
 A nested sum uses the same shape. [1, [2, [3], 4], 5] is a list, so you sum the pieces. 1 contributes 1. The smaller list [2, [3], 4] is 2, plus the list [3], plus 4. The call on [3] sees a number, returns 3, and stops. The inner list is 2 + 3 + 4 = 9. The outer list is 1 + 9 + 5 = 15.
 
+## Fibonacci: define the indexes before the recurrence
+
+Fibonacci examples are a common source of two separate mistakes. First, state
+the convention. Here \`F(0) = 0\` and \`F(1) = 1\`, so indexes 0 through 6
+hold \`0, 1, 1, 2, 3, 5, 8\`. A source that starts with
+\`F(1) = 1, F(2) = 1\` uses shifted indexes; neither convention is useful
+until it is explicit.
+
+Second, the direct recursive translation branches twice and recomputes the
+same subproblems. Its depth is O(n), but its number of calls is exponential.
+That distinction matters: stack space follows the deepest active branch, while
+time counts every repeated branch. Memoisation gives O(n) time and O(n) stored
+answers. The iterative version below gives O(n) time and O(1) extra space.
+
+\`\`\`mermaid
+flowchart TD
+  f5["F(5)"] --> f4["F(4)"]
+  f5 --> f3a["F(3)"]
+  f4 --> f3b["F(3) repeated"]
+  f4 --> f2["F(2)"]
+  f3a --> more["Repeated descendants"]
+  f3b --> more
+\`\`\`
+
+\`\`\`ts
+function fibonacci(n: number): number {
+  if (!Number.isInteger(n) || n < 0) {
+    throw new RangeError("n must be a non-negative integer");
+  }
+  if (n < 2) {
+    return n;
+  }
+
+  let previous = 0;
+  let current = 1;
+  for (let index = 2; index <= n; index += 1) {
+    const next = previous + current;
+    previous = current;
+    current = next;
+  }
+  return current;
+}
+
+console.log(fibonacci(0)); // 0
+console.log(fibonacci(6)); // 8
+\`\`\`
+
+Expected output: \`0\`, then \`8\`. JavaScript \`number\` stops representing
+every integer exactly beyond its safe-integer range, so use \`bigint\` when
+large exact Fibonacci values are part of the contract.
+
 ## Why it is correct
 
 Use induction on \`n\`. The base cases \`n = 0\` and \`n = 1\` return 1, which is the definition of factorial at those values. For \`n > 1\`, assume \`factorial(n - 1)\` correctly returns \`(n - 1)!\`. The function returns \`n * factorial(n - 1)\`, so it returns \`n * (n - 1)! = n!\`. The argument decreases by 1 and the input is a non-negative integer, so every call eventually reaches a base case.
@@ -108,6 +159,7 @@ Write 1 sentence that names the base case. factorial(0) or factorial(1) is 1. A 
 
 - [What Is the Call Stack? Frames, Returns, and Recursion](/articles/call-stack)
 - [What Is a Tree? Roots, Leaves, and Depth in Nodes](/articles/trees)
+- [What Is Memoisation? Caching an Overlapping Answer](/articles/memoisation)
     `,
   ),
   defineArticle(
@@ -115,7 +167,7 @@ Write 1 sentence that names the base case. factorial(0) or factorial(1) is 1. A 
     "What Is Binary Search? Throw Away Half of a Sorted Array",
     "Search and sort",
     "Binary search compares the target with the middle of a sorted array and throws away half. Keep an invariant for where the target can still sit, and return -1 when that range is empty.",
-    ["binary search", "invariant"],
+    ["binary search", "binary-search invariant"],
     `
 Binary search finds a target in a sorted array by comparing it with the middle and throwing away half of what remains. Keep an invariant you can say out loud: if the target is present, its index is between lo and hi inclusive. When that range is empty, the target is absent, and you return -1. The array must be sorted, or the half you discard can hold the value you needed.
 
@@ -174,6 +226,88 @@ console.log(binarySearch([], 4)); // -1
 
 Expected output: \`3\`, then \`-1\`, then \`-1\`.
 
+## Half-open ranges, lower bound, and upper bound
+
+An inclusive interval \`[lo, hi]\` is natural for exact search. A half-open
+interval \`[lo, hi)\` is often clearer for insertion points: \`lo\` is included,
+\`hi\` is excluded, and its length is always \`hi - lo\`. The empty interval
+is simply \`lo === hi\`; no \`-1\` sentinel is needed inside the loop.
+
+For a **lower bound**, find the first index whose value is greater than or equal
+to the target. Maintain these partition invariants:
+
+- every index before \`lo\` has a value less than the target;
+- every index at or after \`hi\` has a value greater than or equal to the
+  target.
+
+For an **upper bound**, change the partition to values less than or equal to
+the target on the left and values greater than the target on the right. At
+termination, lower bound is the first possible duplicate and upper bound is
+one past the last duplicate. Their difference is the target's frequency.
+
+\`\`\`mermaid
+flowchart LR
+  lower["values less than target"] --> lo["lo"]
+  lo --> unknown["unclassified interval [lo, hi)"]
+  unknown --> hi["hi"]
+  hi --> upper["values at least target"]
+\`\`\`
+
+\`\`\`ts
+function lowerBound(values: readonly number[], target: number): number {
+  let lo = 0;
+  let hi = values.length;
+
+  while (lo < hi) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    const value = values[mid];
+    if (value === undefined) {
+      throw new Error("values must be a dense sorted number array");
+    }
+    if (value < target) {
+      lo = mid + 1;
+      continue;
+    }
+    hi = mid;
+  }
+
+  return lo;
+}
+
+function upperBound(values: readonly number[], target: number): number {
+  let lo = 0;
+  let hi = values.length;
+
+  while (lo < hi) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    const value = values[mid];
+    if (value === undefined) {
+      throw new Error("values must be a dense sorted number array");
+    }
+    if (value <= target) {
+      lo = mid + 1;
+      continue;
+    }
+    hi = mid;
+  }
+
+  return lo;
+}
+
+const duplicates = [1, 2, 2, 2, 4];
+const first = lowerBound(duplicates, 2);
+const afterLast = upperBound(duplicates, 2);
+
+console.log(first, afterLast); // 1 4
+console.log(afterLast - first); // 3
+console.log(lowerBound(duplicates, 3)); // 4 (insertion point)
+\`\`\`
+
+Expected output is \`1 4\`, then \`3\`, then \`4\`. Returning
+\`values.length\` is valid when every value is too small. To turn a lower bound
+into an exact first-occurrence search, verify that the returned index is inside
+the array and actually holds the target.
+
 ## A numeric example
 
 Search for 7 in [1, 3, 5, 7, 9].
@@ -214,6 +348,11 @@ Use binary search when the array is sorted, you can read every index in O(1) tim
 
 If duplicates are allowed, this version returns whichever matching middle it encounters first, not necessarily the first or last duplicate. To find the first occurrence, record a match and continue searching to its left; to find the last, continue to its right. The course exercise avoids that extra contract by using distinct values.
 
+Lower and upper bounds are usually easier to express with a half-open range.
+Do not mix the update rules: inclusive exact search uses \`hi = mid - 1\`,
+while half-open boundary search uses \`hi = mid\`. Each is correct only with
+its matching invariant and loop condition.
+
 ## When not to
 
 Do not use it on unsorted data. Do not sort a large array only to answer 1 membership question, because the sort costs more than 1 linear scan. A linked list is a poor fit, because reaching the middle is not O(1). If the array holds only a handful of values, a scan is easier to get right.
@@ -237,6 +376,7 @@ Return -1 once lo has moved past hi and the inclusive range is empty. Do not ret
 
 - [What Is O(log n)? Logarithmic Time and Binary Search](/articles/logarithmic-time)
 - [What Is a Binary Search Tree? Left Smaller, Right Larger](/articles/binary-search-trees)
+- [Why Do Half-Open Intervals Prevent Off-by-One Errors?](/articles/half-open-intervals)
     `,
   ),
   defineArticle(
@@ -269,6 +409,13 @@ One pass is not the whole sort. The largest value in the region you scanned has 
 
 \`\`\`ts
 const bubbleSort = (input: readonly number[]): number[] => {
+  for (let index = 0; index < input.length; index += 1) {
+    const value = input[index];
+    if (value === undefined || Number.isNaN(value)) {
+      throw new Error("The input must contain dense, non-NaN numbers");
+    }
+  }
+
   const values = [...input];
   let unsortedEnd = values.length - 1;
 
@@ -301,6 +448,21 @@ console.log(input); // [4, 2, 7, 1]
 \`\`\`
 
 Expected output: \`[1, 2, 4, 7]\`, then \`[4, 2, 7, 1]\`.
+
+## TypeScript and comparison edge cases
+
+The type \`readonly number[]\` prevents this function from mutating through its
+parameter, but it does not make the array immutable at runtime. Copying with
+\`[...input]\` gives the returned array independent storage. The up-front check
+also matters because sparse arrays can produce \`undefined\`, and \`NaN\`
+obeys neither an ordinary less-than nor greater-than order. Infinities do have
+a consistent numeric order and need no special case.
+
+Empty and one-element arrays skip the sorting loop and return copies.
+Duplicates remain, and swapping only when \`left > right\` preserves the
+relative order of equal keys. For objects, accept a comparator instead of
+subtracting fields blindly; a comparator must describe a consistent total
+order.
 
 ## A numeric example
 
@@ -438,13 +600,24 @@ const merge = (
 };
 
 const mergeSort = (values: readonly number[]): number[] => {
-  if (values.length < 2) {
-    return [...values];
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (value === undefined || Number.isNaN(value)) {
+      throw new Error("values must contain dense, non-NaN numbers");
+    }
   }
-  const middle = Math.floor(values.length / 2);
-  const left = mergeSort(values.slice(0, middle));
-  const right = mergeSort(values.slice(middle));
-  return merge(left, right);
+
+  const sortRun = (run: readonly number[]): number[] => {
+    if (run.length < 2) {
+      return [...run];
+    }
+    const middle = Math.floor(run.length / 2);
+    const left = sortRun(run.slice(0, middle));
+    const right = sortRun(run.slice(middle));
+    return merge(left, right);
+  };
+
+  return sortRun(values);
 };
 
 const numbers = [5, 1, 4, 2, 2, -3];
@@ -453,6 +626,21 @@ console.log(numbers); // [5, 1, 4, 2, 2, -3]
 \`\`\`
 
 Expected output: \`[-3, 1, 2, 2, 4, 5]\`, then \`[5, 1, 4, 2, 2, -3]\`.
+
+## TypeScript API and boundary choices
+
+\`readonly number[]\` communicates that the input will not be changed, and the
+base case still returns a copy so even a one-element result does not alias the
+input. Validation happens once at the public boundary; the recursive helper
+can then rely on dense, non-\`NaN\` runs. Empty arrays, one value, negatives,
+duplicates, and infinities all follow the same merge rules.
+
+For records, generalise \`merge\` and \`mergeSort\` with a comparator whose
+negative, zero, and positive results mean before, tied, and after. Take the
+left record when the comparator returns zero to retain stability. TypeScript
+generics can enforce that both runs contain the same element type, but no type
+system can prove that a caller's comparator is transitive; that remains an API
+precondition.
 
 ## A numeric example
 

@@ -129,6 +129,120 @@ Current has run out, so previous is the new head. 1 -> 2 -> 3 has become 3 -> 2 
 
 Point 1 at nothing before you save 2 and the rest of the list is gone. 2 and 3 are unreachable, and there is no index to get them back.
 
+## Pointer movement: slow, fast, and a fixed gap
+
+Linked-list algorithms often replace indexes with a relationship between
+pointers. State that relationship before moving either pointer.
+
+- To find a middle, move \`slow\` one edge and \`fast\` two edges. When \`fast\`
+  reaches the end, \`slow\` has covered half as many edges. For an even-length
+  list, decide whether your contract returns the first or second middle.
+- To find the nth node from the end, advance \`fast\` by \`n\` nodes first. Then
+  move \`slow\` and \`fast\` together. Their gap stays exactly \`n\`, so when
+  \`fast\` reaches the end, \`slow\` is immediately before the node to remove.
+- To detect a cycle, move one pointer one edge and another two edges. In a
+  finite cycle the faster pointer eventually laps the slower one. Reaching
+  \`null\` proves there is no cycle.
+
+\`\`\`mermaid
+flowchart LR
+  gap["Create a gap of n nodes"] --> together["Move both pointers one step"]
+  together --> finished{"Has fast reached the end?"}
+  finished -->|no| together
+  finished -->|yes| located["slow is before the nth node from the end"]
+\`\`\`
+
+The dummy node below makes deleting the head obey the same rule as deleting any
+other node. \`n\` is one-based: \`n = 1\` means the last node. Invalid values
+leave the list unchanged.
+
+\`\`\`ts
+interface ListNode {
+  value: number;
+  next: ListNode | null;
+}
+
+function middleValue(head: ListNode | null): number | undefined {
+  let slow = head;
+  let fast = head;
+
+  while (fast !== null && fast.next !== null) {
+    slow = slow?.next ?? null;
+    fast = fast.next.next;
+  }
+
+  return slow?.value;
+}
+
+function removeNthFromEnd(
+  head: ListNode | null,
+  n: number,
+): ListNode | null {
+  if (!Number.isInteger(n) || n < 1) {
+    return head;
+  }
+
+  const dummy: ListNode = { value: 0, next: head };
+  let fast: ListNode = dummy;
+
+  for (let steps = 0; steps < n; steps += 1) {
+    if (fast.next === null) {
+      return head;
+    }
+    fast = fast.next;
+  }
+
+  let slow: ListNode = dummy;
+  while (fast.next !== null) {
+    const nextSlow = slow.next;
+    if (nextSlow === null) {
+      return head;
+    }
+    slow = nextSlow;
+    fast = fast.next;
+  }
+
+  const removed = slow.next;
+  if (removed === null) {
+    return head;
+  }
+  slow.next = removed.next;
+  removed.next = null;
+  return dummy.next;
+}
+
+function toArray(head: ListNode | null): number[] {
+  const values: number[] = [];
+  let current = head;
+  while (current !== null) {
+    values.push(current.value);
+    current = current.next;
+  }
+  return values;
+}
+
+const head: ListNode = {
+  value: 1,
+  next: { value: 2, next: { value: 3, next: { value: 4, next: null } } },
+};
+
+console.log(middleValue(head)); // 3 (the second middle)
+console.log(toArray(removeNthFromEnd(head, 2))); // [1, 2, 4]
+\`\`\`
+
+The output is:
+
+\`\`\`text
+3
+[ 1, 2, 4 ]
+\`\`\`
+
+For \`removeNthFromEnd\`, the invariant during the joint walk is that \`fast\`
+stays exactly \`n\` nodes ahead of \`slow\`. The dummy node is part of the
+pointer mechanism, not part of the returned data. Empty lists, \`n\` larger
+than the length, and non-positive \`n\` are explicit boundaries rather than
+accidental null dereferences.
+
 ## Cost
 
 Time and space split once you separate the walk from the pointer writes.
@@ -139,6 +253,7 @@ Time and space split once you separate the walk from the pointer writes.
 | Walk to the 10th node or the last node | O(n) | O(1) |
 | Rewire next on a node you already hold | O(1) | O(1) |
 | Reverse the whole list with 3 pointers | O(n) | O(1) |
+| Find a middle or nth-from-end node | O(n) | O(1) |
 
 The nodes themselves are O(n) space. Extra space for the reverse is O(1): previous, current, and the saved next. Time is O(n) because every next changes. The splice is O(1) only after you hold the node. From the head, inserting after the 10th node is the O(n) walk plus those writes.
 
@@ -181,6 +296,11 @@ A new tail that points at the new head is a cycle, and a later walk never finish
 
 A middle insert is O(1) only at a node you already hold. From the head, the search is O(n).
 
+Moving \`fast\` before checking that another node exists dereferences \`null\`.
+Changing the gap while both pointers move breaks nth-from-end reasoning. For an
+even-length list, silently switching between the first and second middle is an
+API bug; document which one you return.
+
 ## When to use it
 
 Use a linked list when you rewire a node you already hold: splice, delete a successor, or reverse. O(1) insert at the head is the same move, and it is how a stack of nodes pushes.
@@ -207,6 +327,7 @@ On 1 -> 2 -> 3, pointing 1 at nothing before you save 2 drops 2 and 3. The rest 
 
 - [What Is a Stack? Last-In First-Out and Bracket Matching](/articles/stacks)
 - [What Is a Contiguous Array? Index Jumps and Shifts](/articles/contiguous-arrays)
+- [What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers)
     `,
   ),
   defineArticle(
@@ -325,6 +446,65 @@ Read ). Pop. The opener on top is [, and the closer is ). They do not match. "([
 
 "([])" and "([)]" each contain one of each bracket. A counter accepts both. The stack accepts only "([])". "(((" ends as ["(", "(", "("], so those openers were never closed. A lone ")" pops an empty stack.
 
+## Monotonic stacks and next-greater values
+
+A stack can encode unresolved questions, not just nested syntax. To find the
+next greater value to the right, keep indices whose answers are still unknown.
+Their values decrease from bottom to top. When a larger value arrives, it
+answers every smaller index on top before the new index is pushed.
+
+\`\`\`mermaid
+flowchart LR
+  value["Read values[i]"] --> compare{"Greater than the stack top?"}
+  compare -->|yes| resolve["Pop its index and record this answer"]
+  resolve --> compare
+  compare -->|no| push["Push i as unresolved"]
+  push --> next["Read the next value"]
+\`\`\`
+
+\`\`\`ts
+function nextGreaterValues(values: readonly number[]): Array<number | null> {
+  const answers: Array<number | null> = Array(values.length).fill(null);
+  const unresolved: number[] = [];
+
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (value === undefined) {
+      throw new Error("values must be a dense number array");
+    }
+
+    while (unresolved.length > 0) {
+      const previousIndex = unresolved[unresolved.length - 1];
+      if (previousIndex === undefined) {
+        break;
+      }
+      const previousValue = values[previousIndex];
+      if (previousValue === undefined) {
+        throw new Error("values must be a dense number array");
+      }
+      if (previousValue >= value) {
+        break;
+      }
+      unresolved.pop();
+      answers[previousIndex] = value;
+    }
+
+    unresolved.push(index);
+  }
+
+  return answers;
+}
+
+console.log(nextGreaterValues([2, 1, 2, 4, 3]));
+// [4, 2, 4, null, null]
+\`\`\`
+
+The output is \`[ 4, 2, 4, null, null ]\`. The word *greater* is strict, so an
+equal value does not resolve an index. Use \`>\` or \`>=\` deliberately when a
+problem asks for next greater versus next greater-or-equal. Each index is
+pushed once and popped at most once, so the nested-looking \`while\` loop still
+does O(n) total work and uses O(n) space.
+
 ## Cost
 
 Time and space for a stack used this way stay easy to say if you keep the top at the end of the array.
@@ -334,12 +514,13 @@ Time and space for a stack used this way stay easy to say if you keep the top at
 | Push at the end | O(1) | O(1) per stored item |
 | Pop at the end | O(1) | O(1) |
 | Scan n brackets | O(n) | O(n) in the worst case |
+| Next greater for n values | O(n) | O(n) |
 | Shift or unshift at the front | O(n) | O(1) beyond the array |
 
 Time for the scan is O(n). Extra space is the unmatched openers: O(n) when every character is an opener. push and pop stay O(1) at the end if you leave the middle alone. shift on every pop makes the scan O(n²).
 
 The empty string and a string without brackets both return \`true\`: there is no
-unmatched opener or closer. That behavior is deliberate because this version
+unmatched opener or closer. That behaviour is deliberate because this version
 validates brackets inside general text. A parser that rejects other characters
 would need a different input policy, not a different stack algorithm.
 
@@ -360,6 +541,10 @@ pop on an empty array returns nothing. Test that case and call the string unbala
 Push the opener you read. On a closer, pop and compare. Mixing in the expected closer makes [ look like a match for ).
 
 unshift and shift slide the array. The end is the top. Leave the middle alone, or push and pop stop being O(1).
+
+In a monotonic stack, storing values alone can lose the positions whose answers
+must be written. Store indices when the output is indexed. Popping equal values
+also changes a strict next-greater question into a greater-or-equal question.
 
 ## When to use it
 
@@ -387,6 +572,7 @@ An empty pop means a closer arrived with no opener waiting. Items left at the en
 
 - [What Is the Call Stack? Frames, Returns, and Recursion](/articles/call-stack)
 - [What Is a Queue? FIFO Order, Enqueue, and Dequeue](/articles/queues)
+- [What Is a Sliding Window? Fixed and Variable Subarrays](/articles/sliding-windows)
     `,
   ),
   defineArticle(
@@ -491,6 +677,31 @@ lose integer precision and then overflow to \`Infinity\`. Use \`bigint\` when
 exact large results are part of the requirement; that changes arithmetic cost,
 not the recursion pattern.
 
+## Fibonacci is a convention and a recursion warning
+
+State the indexing convention before tracing Fibonacci. This course uses
+\`F(0) = 0\`, \`F(1) = 1\`, so the values from index 0 are
+\`0, 1, 1, 2, 3, 5, ...\`. Some books label the first two terms \`F(1) = 1\`
+and \`F(2) = 1\`. The numbers agree after an index shift, but test cases do
+not.
+
+The direct recurrence \`F(n) = F(n - 1) + F(n - 2)\` has depth O(n), yet it
+recomputes the same calls. \`F(5)\` asks for \`F(3)\` once through \`F(4)\` and
+again directly. Its time is exponential (O(2^n) is a convenient upper bound),
+while its maximum live call stack remains O(n). Memoisation or bottom-up
+tabulation reduces the time to O(n). Recursion depth and total calls are
+different measurements.
+
+\`\`\`mermaid
+flowchart TD
+  f5["F(5)"] --> f4["F(4)"]
+  f5 --> f3a["F(3)"]
+  f4 --> f3b["F(3) again"]
+  f4 --> f2["F(2)"]
+  f3a --> repeated["More repeated subproblems"]
+  f3b --> repeated
+\`\`\`
+
 ## In the course
 
 Name the smaller copy and the base case before you write the call. A missing base case overflows. A base case you cannot reach overflows too. Each push has to be a smaller problem, and one call has to return without pushing.
@@ -535,6 +746,7 @@ Yes. Push an object for the arguments and the other frame data, then loop and po
 
 - [What Is Recursion? Smaller Copies and a Base Case](/articles/recursion)
 - [What Is a Stack? Last-In First-Out and Bracket Matching](/articles/stacks)
+- [What Is Memoisation? Caching an Overlapping Answer](/articles/memoisation)
     `,
   ),
   defineArticle(
@@ -671,6 +883,11 @@ prefer a head index or a deque so an innocent-looking loop does not become
 quadratic.
 
 A graph asks for the shortest unweighted path and you use the queue unchanged. The payload changes from a number to a vertex and a distance. Neighbours join the back with distance plus 1. The first time the target leaves the front, that distance is the fewest edges. Reach for a deque when shift shows up in that hot loop.
+
+A queue promises FIFO order; a deque is the more general interface with both
+ends exposed. A monotonic deque adds an ordering invariant for sliding-window
+extrema. These are behavioural contracts, not synonyms for a particular array
+method.
 
 ## Common mistakes
 
@@ -910,6 +1127,103 @@ breadth-first search, where zero-cost edges go to the front and one-cost edges
 go to the back. Ordinary unweighted breadth-first search needs only the queue
 subset.
 
+## Monotonic deque: one candidate per useful value
+
+For a sliding-window maximum, store indices in decreasing value order. Before
+reporting a window, remove expired indices from the front. Before adding a new
+index, remove smaller or equal values from the back: the newer value dominates
+them because it is at least as large and expires later.
+
+\`\`\`mermaid
+flowchart TD
+  read["Read the next index"] --> expire["Remove expired front indices"]
+  expire --> dominate["Remove dominated back indices"]
+  dominate --> add["Add the new index at the back"]
+  add --> ready{"Is the first window complete?"}
+  ready -->|yes| maximum["Front index holds the maximum"]
+  ready -->|no| read
+  maximum --> read
+\`\`\`
+
+\`\`\`ts
+function slidingWindowMaximum(
+  values: readonly number[],
+  windowSize: number,
+): number[] {
+  if (
+    !Number.isInteger(windowSize) ||
+    windowSize < 1 ||
+    windowSize > values.length
+  ) {
+    return [];
+  }
+
+  const candidates: number[] = [];
+  const maxima: number[] = [];
+  let front = 0;
+
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (value === undefined) {
+      throw new Error("values must be a dense number array");
+    }
+
+    const oldestAllowed = index - windowSize + 1;
+    const frontIndex = candidates[front];
+    if (frontIndex !== undefined && frontIndex < oldestAllowed) {
+      front += 1;
+    }
+    if (front > 32 && front * 2 >= candidates.length) {
+      candidates.splice(0, front);
+      front = 0;
+    }
+
+    while (candidates.length > front) {
+      const backIndex = candidates[candidates.length - 1];
+      if (backIndex === undefined) {
+        break;
+      }
+      const backValue = values[backIndex];
+      if (backValue === undefined) {
+        throw new Error("values must be a dense number array");
+      }
+      if (backValue > value) {
+        break;
+      }
+      candidates.pop();
+    }
+
+    candidates.push(index);
+    if (oldestAllowed < 0) {
+      continue;
+    }
+
+    const maximumIndex = candidates[front];
+    if (maximumIndex === undefined) {
+      throw new Error("the candidate deque cannot be empty");
+    }
+    const maximum = values[maximumIndex];
+    if (maximum === undefined) {
+      throw new Error("values must be a dense number array");
+    }
+    maxima.push(maximum);
+  }
+
+  return maxima;
+}
+
+console.log(slidingWindowMaximum([1, 3, -1, -3, 5, 3, 6, 7], 3));
+// [3, 3, 5, 5, 6, 7]
+\`\`\`
+
+The output is \`[ 3, 3, 5, 5, 6, 7 ]\`. The deque stores indices because expiry
+depends on position. Its front is always the maximum for the current window;
+its values decrease from front to back; and every stored index is still inside
+the window. Each index enters once and leaves at most once, so all back-removal
+loops together cost O(n). Occasional compaction discards the consumed prefix;
+because it happens only after that prefix occupies at least half the backing
+array, its total cost is amortized O(n), with O(k) space for window size \`k\`.
+
 ## Common mistakes
 
 Calling \`shift\` and \`unshift\` constant-time because each is one method call.
@@ -924,6 +1238,11 @@ is \`front === null\` and \`back === null\`.
 
 Using a deque when random indexing is the repeated operation. A linked deque
 must walk to an index.
+
+For a monotonic deque, storing only values makes duplicate expiry ambiguous.
+Failing to remove expired indices can report a value outside the window.
+Failing to remove dominated back entries preserves correctness but can waste
+space and obscures the linear-time proof.
 
 ## When to use it
 
@@ -960,6 +1279,7 @@ O(n), so end operations are O(1) amortized.
 - [What Is a Queue? FIFO Order, Enqueue, and Dequeue](/articles/queues)
 - [What Is a Stack? Last-In First-Out and Bracket Matching](/articles/stacks)
 - [What Is a Linked List? Pointers Instead of Indexes](/articles/linked-lists)
+- [What Is a Sliding Window? Fixed and Variable Subarrays](/articles/sliding-windows)
     `,
   ),
 ];

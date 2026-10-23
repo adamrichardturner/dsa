@@ -96,6 +96,8 @@ The exercise asks you to count values strictly below a limit. Equality does not 
 
 One pass visits each index once, compares the value with the limit, and adds one to a counter when the value is smaller. That is O(n) time and O(1) extra space. A nested loop can return 2 as well. The inner loop repeats work the outer loop already made available, and that shape is the habit to retire. One loop is linear. A loop inside it is quadratic, even when the tests pass.
 
+The core course goal is to derive a bound from the code and state time and extra space separately. Formal proofs with constants, limits, \`Ω\`, and \`Θ\` are enrichment: useful for precision, but not required before you can compare one pass with pair-shaped work.
+
 ## Common mistakes
 
 A faster laptop does not improve the Big O label. It shortens seconds. The growth stays what the loops already imply.
@@ -166,13 +168,13 @@ You should know how to read an array by index and how \`push\` adds an element a
 
 ## How it works
 
-In the standard array model, reading \`nums[0]\` is a jump, not a walk from the head. It does not visit later elements on the way, and a longer array does not add steps to that read. JavaScript engines choose their own internal array representations, but indexed access on an ordinary dense array still has the O(1) behavior the model describes.
+In the standard array model, reading \`nums[0]\` is a jump, not a walk from the head. It does not visit later elements on the way, and a longer array does not add steps to that read. JavaScript engines choose their own internal array representations, but indexed access on an ordinary dense array still has the O(1) behaviour the model describes.
 
 Flat is the whole claim. A constant-time step can still be heavy: a hash, a bounds check, a write. Constant does not mean instant, and it does not mean tiny. It means the step count holds still while n changes. If doubling the array doubles the steps, you have left O(1).
 
 In the standard dynamic-array model, pushing at the end is O(1) **amortized**. The new value is usually written after the last used index, and nothing in front of it slides. When storage is full, one push may copy the elements into a larger block and cost O(n). Amortized analysis spreads those occasional resize costs across the whole sequence of pushes. It is a guarantee about a sequence of operations, not a probability about an average input.
 
-A hash map get is O(1) expected time under the usual assumptions about hashing and resizing. The key is hashed, the map jumps toward a bucket, and a typical lookup does work that does not track n. Many colliding keys can make a lookup O(n) in the worst case. “Expected” depends on the hash behavior; “amortized” describes cost across an operation sequence. They are different ideas.
+A hash map get is O(1) expected time under the usual assumptions about hashing and resizing. The key is hashed, the map jumps towards a bucket, and a typical lookup does work that does not track n. Many colliding keys can make a lookup O(n) in the worst case. “Expected” depends on the hash behaviour; “amortised” describes cost across an operation sequence. They are different ideas.
 
 A helper that looks like one step can still scan. If the body walks from the first index to the last, the cost is the walk. A loop over the input is not constant time, however short the call looks.
 
@@ -230,6 +232,8 @@ Amortized and worst case split for push; expected and worst case split for a has
 Counting values strictly below a limit is not constant-time work. Each value can change the count. On 1, 4, 2, 8 with limit 4, \`nums[0]\` is 1, which is below 4, and that jump says nothing about 4, 2, or 8. The count is 2 only after those later values are seen.
 
 Inside a one-pass count, reading the current slot, comparing it with the limit, and adding one to a counter are each O(1). You do that bundle once per element, so the function is linear. A helper that looks like one step and scans the array is not constant. Calling that O(n) helper from each of n loop iterations makes the total O(n²). That repeated scan is the habit to retire.
+
+For TypeScript code, remember that a type signature does not make a runtime operation constant. A getter, callback, or library call can hide a traversal. Complexity follows the implementation that executes, not the number of source lines or the apparent simplicity of its type.
 
 ## Common mistakes
 
@@ -305,6 +309,8 @@ Linear search is that pass pointed at a target. You check index 0. If it matches
 
 If the value is missing, the early stop never comes. You look at every element. That full scan is the worst case. The best case is a match at index 0, one check.
 
+The useful loop invariant is: before checking index \`i\`, the target does not occur at any earlier index. A mismatch preserves that statement; a match returns the first occurrence. If the loop ends, every valid index has been ruled out. This mental model explains why \`return -1\` belongs after the loop.
+
 You leave linear time when each element starts another scan of the rest of the array. The inner loop multiplies the outer pass into quadratic work. Two scans in sequence still add up to O(n). Sequence adds. Nesting multiplies.
 
 \`\`\`ts
@@ -327,6 +333,8 @@ console.log(linearSearch(nums, 8));
 \`\`\`
 
 The early \`return\` fires only on a hit. If the target never appears, the loop reaches the end and returns \`-1\`. The function is self-contained, so you can run it and change either target.
+
+With \`noUncheckedIndexedAccess\`, TypeScript may type \`values[index]\` as \`number | undefined\` even though the loop bounds prove the index is valid. Equality with a numeric target is still safe: \`undefined === target\` is false. When \`undefined\` is a valid stored value, use an explicit presence test instead of this shortcut.
 
 ## Best, average, and worst cases
 
@@ -440,6 +448,8 @@ Quadratic time appears when the work for one element grows with the number of el
 
 Often the inner loop only walks the rest of the array. The inner index starts one past the outer index and runs to the last element. You then count each unordered pair once, and you skip comparing an element with itself. The exact number of those pairs is n(n-1)/2. Big O drops the factor of one half and drops the lower-order term, so this tighter loop is still O(n²). A shorter inner trip changes the constant. It does not change the class.
 
+A full \`for i\` / \`for j\` grid visits n² ordered index pairs, including self-pairs. Starting \`j\` at \`i + 1\` visits each unordered pair exactly once. Starting \`j\` at \`i\` includes self-pairs once. These loops answer different questions even though all three can have the same O(n²) growth label.
+
 The triangle is that same count drawn as columns. The first element is compared with n - 1 others, the next with n - 2, down to one last comparison. Those heights sum to n(n-1)/2. Ten elements are a small triangle. A thousand elements are not.
 
 A quadratic pass plus a later linear pass is still quadratic, because Big O keeps the dominant term. Two separate scans add. They do not square.
@@ -494,6 +504,8 @@ One scan of those 1,000 elements is about 1,000 steps. The pair version does hun
 
 Looking at every pair is O(n²) time. The inner loop that starts partway through the array is also O(n²) time. Average and worst case match for these loops, because you walk the pairs either way. The values do not cancel iterations. Extra space is O(1) when you keep a counter. Extra space becomes O(n²) if you store every pair you visit.
 
+An early return can improve the best case without changing the O(n²) worst case. For example, a duplicate search may stop on its first equal pair, but an all-distinct input still forces it to examine every candidate pair.
+
 Nested loops are not automatically quadratic. Multiply their actual bounds. If an outer loop runs n times and an inner loop always runs 10 times, the total is O(10n) = O(n). If one loop covers n values and the other covers an independent input of length m, the total is O(nm).
 
 | Operation | Time | Extra space |
@@ -508,6 +520,8 @@ Nested loops are not automatically quadratic. Multiply their actual bounds. If a
 Counting values strictly below a limit with two loops can return the right number. You can walk other indexes for each index and still add one only when a value qualifies. On 1, 4, 2, 8 with limit 4, a careful nested version can still land on 2, and the tests can pass. The inner loop was never required. One comparison per element answers the question. Paying pair-shaped work for a one-pass question is the habit to retire.
 
 Read the cost off the indentation. Two nested loops over the array are O(n²) time. One loop and a counter are O(n) time and O(1) extra space. A right count is not permission to keep the inner loop.
+
+The core course requirement is to recognize and count pair-shaped work. Deriving \`n(n - 1) / 2\` is the useful bridge from code to algebra; proving asymptotic bounds from first principles is enrichment.
 
 ## Common mistakes
 
@@ -553,6 +567,213 @@ No. Multiply the number of iterations of each loop. An n-iteration outer loop wi
 
 - [What Is Big O? How Algorithm Cost Grows as Input Grows](/articles/big-o)
 - [Hash maps](/articles/hash-maps)
+- [What Is the Space-for-Time Tradeoff in Algorithms?](/articles/space-for-time)
+    `,
+  ),
+  defineArticle(
+    "loop-invariants",
+    "What Is a Loop Invariant? Proving Each Iteration Is Correct",
+    "Cost",
+    "A loop invariant is a statement that is true before or after every iteration. Establish it before the loop, preserve it through each update, and use it at termination to explain why the result is correct.",
+    ["loop invariant"],
+    `
+A **loop invariant** is a precise statement that remains true at a chosen point in every loop iteration. It connects the variables in the code to the meaning the algorithm is meant to preserve.
+
+For a counting loop, the invariant can say that \`count\` equals the number of qualifying values in the prefix already processed. For binary search, it can say that if the target exists, it remains inside the current candidate interval. For two pointers, it can describe which values have already reached their final positions.
+
+\`\`\`mermaid
+flowchart LR
+  establish["Establish before the loop"] --> check["Invariant is true"]
+  check --> step["Run one iteration"]
+  step --> preserve["Show the update preserves it"]
+  preserve --> check
+  check -->|loop ends| conclude["Combine invariant with termination"]
+\`\`\`
+
+## The three proof steps
+
+First, **establish** the invariant. Show that it is true before the first iteration. A processed prefix is often empty at that point, so a counter initialised to zero has the required meaning.
+
+Second, **preserve** the invariant. Assume it is true at the start of one iteration, then explain why the loop body makes it true for the next iteration. This step is where an off-by-one error or an update in the wrong order usually appears.
+
+Third, use **termination**. When the loop condition becomes false, combine that fact with the invariant. If the processed prefix is now the whole array, the prefix count is the full answer. If a binary-search interval is empty, no candidate remains.
+
+These steps prove correctness; they do not by themselves prove that the loop ends. Also identify a quantity that moves toward termination, such as an index that increases, a range that shrinks, or a pointer that never moves backward.
+
+## A counting example
+
+The function below counts values strictly below a limit. At the start of iteration \`index\`, the invariant is:
+
+> \`count\` equals the number of values below \`limit\` at indexes from 0 through \`index - 1\`.
+
+\`\`\`ts
+function countBelow(values: readonly number[], limit: number): number {
+  let count = 0;
+
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (value !== undefined && value < limit) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+console.log(countBelow([1, 4, 2, 8], 4));
+// Expected output: 2
+\`\`\`
+
+Before the first iteration, no indexes have been processed and \`count\` is zero, so the invariant is established. During an iteration, the current value either qualifies and increases the count once, or does not qualify and leaves it unchanged. The statement is therefore preserved for the longer prefix.
+
+When the loop ends, \`index === values.length\`. The processed prefix is the whole array, so the invariant says that \`count\` is the required total.
+
+## Invariants for ranges and data structures
+
+An invariant should name the exact region or structure it describes. “The answer is correct so far” is too vague to test.
+
+For binary search, say: if the target exists, an occurrence remains in the candidate interval. Every comparison must discard only indexes that cannot contain it.
+
+For merge sort, say: the output contains the smallest consumed values in sorted order, and each pointer identifies the smallest unconsumed value on its side.
+
+For a monotonic stack, say which indexes are unresolved and how their values are ordered from bottom to top. A later value can then pop exactly the entries it resolves.
+
+## Cost
+
+Writing an invariant does not add runtime work. It is a reasoning tool for the loop already present. The loop's time still follows its iteration count, and its auxiliary space still follows the state it stores.
+
+The invariant can make that cost easier to justify. If two pointers only move forward and each moves at most \`n\` times, the total is O(n), even when one pointer moves inside a nested \`while\` loop.
+
+## In the course
+
+The course uses loop invariants in counting, binary search, sliding windows, merging, heaps, graph traversal, greedy scans, and dynamic programming. You do not need formal symbolic logic. State what the variables mean before an iteration, show that one update preserves that meaning, and explain what the statement gives you when the loop ends.
+
+## Common mistakes
+
+An invariant is not a description of the next line. It must remain true across every iteration.
+
+Do not omit the region: “the values are sorted” is weaker than “the consumed prefix of the result is sorted and contains exactly the consumed input values.”
+
+Do not use the final answer as an assumption. The invariant should describe partial progress that the code can establish and preserve.
+
+Termination needs its own argument. A true invariant does not prevent a loop whose pointers never advance.
+
+## Related
+
+- [What Is Big O? How Algorithm Cost Grows as Input Grows](/articles/big-o)
+- [What Is Linear Time O(n)? One Pass and Linear Search](/articles/linear-time)
+- [What Is Binary Search? Throw Away Half of a Sorted Array](/articles/binary-search)
+    `,
+  ),
+  defineArticle(
+    "amortized-analysis",
+    "What Is Amortized Analysis? Cost Across a Sequence of Operations",
+    "Cost",
+    "Amortized analysis bounds the total cost of a sequence and divides that cost across its operations. It explains why an occasional O(n) dynamic-array resize can coexist with O(1) amortized append.",
+    ["amortized analysis", "amortized"],
+    `
+**Amortized analysis** studies the total cost of a sequence of operations. One operation may be expensive, but if expensive operations are rare and create room for many cheap operations, the cost per operation can still have a small guaranteed bound across the sequence.
+
+This is not average-case analysis. Average-case analysis depends on a distribution of possible inputs. An amortized bound covers every operation sequence allowed by the model, without assuming that inputs are random.
+
+\`\`\`mermaid
+flowchart LR
+  cheap1["Push: one write"] --> cheap2["Push: one write"]
+  cheap2 --> resize["Resize: copy existing values"]
+  resize --> spare["Larger capacity"]
+  spare --> cheap3["Many cheap pushes"]
+  cheap3 --> total["Total work remains linear"]
+\`\`\`
+
+## Dynamic-array append
+
+Imagine an array whose capacity doubles whenever it becomes full. Most appends write one value into unused storage, which costs O(1). A resize append allocates a larger block and copies every existing value, so that individual operation costs O(n).
+
+The copies do not happen on every append. If capacities grow through 1, 2, 4, 8, and 16, the resize copies move 1, then 2, then 4, then 8 values. Before 16 values have been appended, fewer than 16 old values were copied in total.
+
+The geometric sum stays below a constant multiple of the number of appends. Therefore \`n\` appends take O(n) total time, and each append costs O(1) amortized time.
+
+## A runnable model
+
+The small class below counts writes while capacity doubles. It models the cost argument without depending on a JavaScript engine's internal array representation.
+
+\`\`\`ts
+class GrowingArray {
+  private storage: Array<number | undefined> = new Array(1);
+  private length = 0;
+  private writes = 0;
+
+  push(value: number): void {
+    if (this.length === this.storage.length) {
+      const grown = new Array<number | undefined>(this.storage.length * 2);
+
+      for (let index = 0; index < this.length; index += 1) {
+        grown[index] = this.storage[index];
+        this.writes += 1;
+      }
+
+      this.storage = grown;
+    }
+
+    this.storage[this.length] = value;
+    this.length += 1;
+    this.writes += 1;
+  }
+
+  writeCount(): number {
+    return this.writes;
+  }
+}
+
+const values = new GrowingArray();
+for (let value = 0; value < 16; value += 1) {
+  values.push(value);
+}
+console.log(values.writeCount());
+// Expected output: 31
+\`\`\`
+
+Sixteen appends perform sixteen writes for the new values and fifteen copy writes during growth. One append was expensive, but the complete sequence used fewer than two writes per append on average. The bound follows the growth policy, not luck.
+
+## Aggregate and charging views
+
+The **aggregate method** adds the costs of all operations, then divides by the number of operations. For doubling storage, total writes across \`n\` appends are O(n), so the amortized cost is O(1).
+
+The **accounting method** assigns a slightly larger constant charge to each cheap append. The unused part of that charge pays for copying the value during a future resize. This is a proof device; the program does not store actual credits.
+
+Both views establish the same sequence-wide guarantee.
+
+## Monotonic structures
+
+Amortized analysis also explains why a monotonic stack or deque can be linear. One incoming value may trigger many pops, so one iteration can look expensive. Across the whole run, however, each index is pushed once and popped at most once.
+
+The total number of stack or deque operations is O(n). The nested \`while\` loop does not make the complete algorithm O(n²).
+
+## Cost
+
+For dynamic-array append, one operation is O(n) in the resize worst case, while a sequence of \`n\` appends is O(n) total and O(1) amortized per append. The backing storage is O(n).
+
+For a monotonic stack, one iteration can pop O(n) entries, but all iterations together perform O(n) pushes and pops. Auxiliary space is O(n) in the worst case.
+
+Always state which guarantee you mean: worst-case per operation, expected, or amortized. They answer different questions.
+
+## In the course
+
+Arrays use amortized append. Monotonic stacks and deques use the “each item enters and leaves at most once” argument. These cases teach the same habit: count an operation across the whole sequence instead of multiplying the most expensive single iteration by the number of iterations.
+
+## Common mistakes
+
+Do not call amortized cost an average over random inputs. No probability is required.
+
+Do not claim that every append is O(1). A resize append can be linear even though the amortized cost is constant.
+
+Do not inspect only the most expensive iteration of a monotonic-stack loop. Count how many times each index can be pushed and popped over the complete run.
+
+## Related
+
+- [What Does O(1) Mean? Constant-Time Work That Stays Flat](/articles/constant-time)
+- [What Is Big O? How Algorithm Cost Grows as Input Grows](/articles/big-o)
+- [What Is a Sliding Window?](/articles/sliding-windows)
     `,
   ),
 ];

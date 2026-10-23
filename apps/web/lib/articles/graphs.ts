@@ -10,15 +10,15 @@ export const graphArticles: readonly Article[] = [
       "graph",
       "graphs",
       "vertices",
-      "edge",
-      "edges",
-      "undirected",
-      "directed",
-      "weighted",
-      "cycles",
+      "graph edge",
+      "graph edges",
+      "undirected graph",
+      "directed graph",
+      "weighted graph",
+      "graph cycle",
     ],
     `
-A graph is a set of vertices plus a set of edges that join them. A vertex is a place you can stand, and an edge is one step between two of those places. A tree is a connected graph with no cycles, so every pair of vertices has exactly one path between it. A graph can be disconnected or loop back on itself, and a search has to remember where it has been or it can walk a cycle forever.
+A graph is a set of vertices plus a set of edges that join them. A vertex is a place you can stand, and an edge is one step between two of those places. A tree is a connected graph with no cycles, so every pair of vertices has exactly one simple path between them. A graph can be disconnected or loop back on itself, and a search has to remember where it has been or it can walk a cycle forever.
 
 \`\`\`mermaid
 graph TD
@@ -34,7 +34,7 @@ You read an undirected edge in both directions. 0 joined to 1 means a step from 
 
 A tree is connected, has no cycles, and has one path between every pair of vertices. A graph with no cycles but several components is a forest, not one tree. A general graph may have cycles. The drawing is the cycle 0–1–2–0 plus the edge 1–3. A search that does not remember where it has been can loop on 0, 1, 2 forever. Nothing in the edge list tells it to stop.
 
-Three representations are worth distinguishing. An **edge list** stores pairs such as \`[0, 1]\`; it is compact input, but finding one vertex's neighbours requires scanning every edge. An **adjacency list** stores a neighbour array per vertex and is usually best for sparse graphs and traversal. An **adjacency matrix** stores one cell for every possible pair. It uses O(V²) space but answers “is this exact edge present?” in O(1). The representation changes storage and lookup costs, not the mathematical graph.
+Three representations are worth distinguishing. An **edge list** stores pairs such as \`[0, 1]\`; it takes O(E) space and is compact input, but finding one vertex's neighbours requires scanning every edge. An **adjacency list** stores a neighbour array per vertex, takes O(V + E) space for an undirected graph, and lists one vertex's neighbours in O(degree) time. It is usually best for sparse graphs and traversal. An **adjacency matrix** stores one cell for every possible pair. It uses O(V²) space, lists neighbours in O(V), but answers “is this exact edge present?” in O(1). The representation changes storage and lookup costs, not the mathematical graph.
 
 Mark a vertex when you first decide to visit it. That is the moment it goes on the queue or the stack, not the moment it comes off. If you wait, every incoming edge can enqueue another copy. You repeat work, and the queue can blow up. A set of ids is enough memory. You do not need a class.
 
@@ -115,6 +115,8 @@ console.log(reachableFrom(graph, 0));
 \`\`\`
 
 Expected output: the adjacency lists \`[[1, 2], [0, 2, 3], [1, 0], [1], []]\`, followed by a traversal containing \`0, 1, 2, 3\`. Vertex 4 remains isolated. The exact DFS order depends on the order in which neighbours are pushed.
+
+The builder's endpoint guard skips malformed edges. That is one explicit API policy, not a graph rule; a production boundary might throw a \`RangeError\` instead. The traversal uses an array of booleans because vertex ids are dense integers from 0 through \`vertexCount - 1\`. With arbitrary string labels, a plain object keyed by label can store the same marks.
 
 \`\`\`mermaid
 stateDiagram-v2
@@ -214,7 +216,7 @@ The neighbour store is what a search asks, and the layer walk is how you count e
     "An adjacency list stores, for each vertex, the vertices one edge away. One pass over the edge list builds it, and a search asks it for neighbours.",
     ["adjacency list"],
     `
-An adjacency list stores, for each vertex, the vertices that sit one edge away. You build it with one pass over the edge list, and after that a search never scans the pairs again. It asks a smaller question: given this vertex, who are the neighbours? That question is the whole interface breadth-first and depth-first search need.
+An adjacency list stores, for each vertex, the vertices that sit one edge away. You build it with one pass over the edge list, and after that a search never scans the pairs again. It asks a smaller question: given this vertex, who are the neighbours? That question is the whole interface breadth-first and depth-first search need. The representation invariant for this course is that every row exists, every endpoint is in range, and every undirected edge appears once in each endpoint's row.
 
 \`\`\`mermaid
 flowchart TD
@@ -294,6 +296,10 @@ console.log(neighbours[3]);
 \`\`\`
 
 Expected output is \`[[1, 2], [0, 2], [1, 0], []]\`, then \`[1, 2]\`, then \`[]\`.
+
+The tuple type \`readonly [number, number]\` fixes each edge at exactly two numeric endpoints and prevents the builder from rewriting caller-owned pairs. The outer \`readonly Edge[]\` prevents replacing or appending input edges inside the function. The returned \`number[][]\` is mutable because construction appends neighbours; callers that should only read it can expose it as \`readonly (readonly number[])[]\`.
+
+This snippet silently skips an out-of-range endpoint. If malformed input is a programming error, replace \`continue\` with a \`RangeError\`; whichever policy you choose, document and test it. Silently manufacturing a row for an invalid id would violate the fixed \`0..vertexCount - 1\` vertex model.
 
 ## Cost
 
@@ -390,7 +396,7 @@ flowchart LR
 
 Put the start on a queue at distance 0 and mark it in that moment. Then take the vertex that has waited longest. Mark each unmarked neighbour, store a distance one larger, and enqueue it. Skip a neighbour you have already marked. You already reached it in as few equal-cost edges as this walk will find.
 
-The fewest-edges claim is only true when every edge has the same cost. Each layer is one hop, so the first arrival is the smallest layer. A heavy edge in layer 1 can lose to several cheap edges discovered later. Weighted edges need Dijkstra. This course names that algorithm and does not ask you to build it.
+The fewest-edges claim is only true when every edge has the same cost. Each layer is one hop, so the first arrival is the smallest layer. A heavy edge in layer 1 can lose to several cheap edges discovered later. Weighted edges need Dijkstra, which is an enrichment topic beyond these exercises.
 
 Level order on a tree is the same walk: root, then children, then grandchildren. Marks are optional on a tree. On a graph they are required, or a cycle puts vertices back on the queue forever.
 
@@ -466,6 +472,10 @@ console.log(shortestDistance(neighbours, 0, 5));
 \`\`\`
 
 Expected output is \`3\`, \`0\`, and \`-1\`. To recover the actual path rather than only its length, store a predecessor when each neighbour is first discovered, then walk backward from the target and reverse that sequence.
+
+The key invariant is: whenever a vertex is first enqueued, its stored distance is the shortest number of edges from the start. The queue holds discovered vertices in nondecreasing distance order. Therefore checking for the target on dequeue is safe; checking immediately after first discovery would also be safe in an unweighted graph. An unreachable vertex keeps distance \`-1\`.
+
+Self-loops and parallel edges do not change a shortest distance because the visited test rejects rediscovery. They can add neighbour entries and therefore still count toward E. Invalid endpoint ids are a representation error and should be rejected or filtered before BFS rather than allowed to index outside the distance array.
 
 ## A numeric example
 
@@ -584,6 +594,8 @@ Mark the start and dive down the first unmarked neighbour, then the next, until 
 
 An explicit stack stores those waiting vertices as data. Push the start. While the stack is not empty, pop a vertex and push its unmarked neighbours. Push them last-to-first and the first neighbour sits on top, matching recursion. You do not need both mechanisms at once.
 
+For iterative DFS, mark when pushing so a vertex can be scheduled only once. For recursive DFS, mark immediately on function entry, before recursing into any neighbour. These are the same discovery moment expressed through different control flow. Marking only when a stack item is popped can preserve reachability if duplicates are skipped later, but it loses the useful “scheduled exactly once” invariant and may use much more memory.
+
 You can report reachability and membership. A marked target means you can get there. An unmarked target at the end means you cannot. The vertices you marked are this connected piece. You cannot report fewest edges. The first arrival is just the first branch that found the target. A one-edge neighbour of the start can still be waiting while you are many steps down another chain. Use breadth-first search when the question is distance and every edge costs the same.
 
 This iterative version pushes neighbours in reverse order so that the first neighbour in each list is popped next, matching a conventional recursive traversal. Marking on push prevents two vertices from scheduling the same neighbour.
@@ -642,6 +654,8 @@ console.log(depthFirstOrder(neighbours, 5));
 \`\`\`
 
 Expected output is \`[0, 1, 2, 3, 4]\`, then \`[5]\`. The second traversal shows that an isolated start vertex still belongs to its own connected component.
+
+The snippet accepts neighbour arrays as read-only and returns a fresh mutable result. Its reverse index loop is deliberate TypeScript code, not an algorithmic requirement: because an array stack is last-in, first-out, pushing the final neighbour first makes the first listed neighbour pop first. If only the reached set matters, neighbour order and output order are unspecified.
 
 On a tree, finishing one child before the other is depth-first too. There is no cycle, so marks are optional. The shape is still dive, finish, then the sibling. Backtracking is the same shape on choices you generate: choose, dive, undo, try the next. A graph search leaves the vertex marked. Backtracking clears the choice so a later branch can reuse it.
 
@@ -730,10 +744,12 @@ The same dive shows up when the neighbours are choices you can undo, and the lay
     "dijkstra",
     "What Is Dijkstra's Algorithm for Weighted Shortest Paths?",
     "Trees and graphs",
-    "Dijkstra finds shortest paths when edges have different costs. It is the breadth-first walk with a heap that always extends the cheapest path so far. This course names it without asking you to build it.",
+    "Enrichment: Dijkstra finds shortest paths when edges have different non-negative costs. A heap always extends the cheapest path so far. The current exercises do not require an implementation.",
     ["Dijkstra"],
     `
-Dijkstra finds shortest paths when edges have different non-negative costs. It is a greedy algorithm: repeatedly settle the unsettled vertex with the smallest known total, then try to improve its neighbours. A min-heap makes that choice efficient on sparse graphs. Several cheap edges can beat one expensive edge, so a hop count can choose the wrong route. This course names the algorithm without requiring you to implement it.
+## Enrichment: beyond the current exercises
+
+Dijkstra finds shortest paths when edges have different non-negative costs. It is a greedy algorithm: repeatedly settle the unsettled vertex with the smallest known total, then try to improve its neighbours. A min-heap makes that choice efficient on sparse graphs. Several cheap edges can beat one expensive edge, so a hop count can choose the wrong route. This article builds the conceptual bridge from BFS and heaps, but the current exercises do not require you to implement it.
 
 \`\`\`mermaid
 flowchart LR

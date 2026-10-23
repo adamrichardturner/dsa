@@ -5,10 +5,12 @@ export const directedGraphArticles: readonly Article[] = [
     "directed-acyclic-graphs",
     "How Do Directed Cycles and Topological Order Work?",
     "Trees and graphs",
-    "A directed acyclic graph has a topological order in which every edge points forward. Kahn's algorithm repeatedly removes zero-indegree vertices; leftover vertices prove that a directed cycle exists.",
+    "Enrichment: a directed acyclic graph has a topological order in which every edge points forward. Kahn's algorithm removes zero-indegree vertices; leftovers prove a directed cycle.",
     ["directed acyclic graph", "DAG", "topological sort", "indegree"],
     `
-A directed edge \`u → v\` permits travel from \`u\` to \`v\`, not automatically back again. Direction models prerequisites, build dependencies, and data pipelines. A **directed acyclic graph** (DAG) contains no directed cycle. Every DAG has at least one **topological order**: a sequence in which each edge's source appears before its destination.
+## Enrichment: beyond the current exercises
+
+A directed edge \`u → v\` permits travel from \`u\` to \`v\`, not automatically back again. Direction models prerequisites, build dependencies, and data pipelines. A **directed acyclic graph** (DAG) contains no directed cycle. Every DAG has at least one **topological order**: a sequence in which each edge's source appears before its destination. The current graph exercises use undirected edges and do not require topological sorting; this article extends the same adjacency-list and traversal ideas.
 
 \`\`\`mermaid
 flowchart LR
@@ -131,6 +133,8 @@ null
 
 The exact first order depends on how zero-indegree vertices are queued. Returning \`null\` is unambiguous here: it means no topological order exists, not that the graph has no vertices. An empty graph validly returns an empty order.
 
+The integer endpoints index the \`labels\`, \`outgoing\`, and \`indegree\` arrays, so the snippet validates both endpoints while building. The queue uses a moving \`front\` index to avoid the repeated shifting cost of \`Array.shift()\`. Parallel edges are allowed by the code: each copy increments indegree once and is later decremented once. A self-loop increments its own vertex's indegree and correctly prevents a complete order.
+
 ## Why the cycle test works
 
 The loop invariant is: \`indegree[v]\` counts incoming edges from vertices not yet output. Removing a vertex deletes exactly its outgoing edges from that remaining graph. Therefore a queued vertex really has no remaining prerequisite.
@@ -169,6 +173,8 @@ The central invariant is not “all prerequisites are globally complete.” It i
 Storing only indegrees without outgoing neighbours leaves no efficient way to perform decrements. Decrementing on discovery rather than removal can make a prerequisite disappear too early. Starting from one zero-indegree vertex misses disconnected DAG components; seed the queue with all of them. Returning the partial output when a cycle remains presents an invalid schedule as a complete answer.
 
 Topological sorting answers precedence, not shortest path. Multiple valid orders are expected, so tests should verify that every vertex appears once and every edge points forward rather than demanding one arbitrary sequence—unless the problem specifies a tie-breaker. A min-heap can impose the lexicographically smallest available label when such a tie-breaker is required.
+
+Disconnected directed graphs are not a special case. Seeding every zero-indegree vertex lets Kahn's algorithm process all acyclic components. An isolated vertex has indegree 0 and belongs in every complete result exactly once, even though no edge mentions it.
 
 ## Related
 

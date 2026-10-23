@@ -19,6 +19,10 @@ flowchart TD
   E --> F["A straight line has height n"]
 \`\`\`
 
+## Before you begin
+
+You should know that binary search requires sorted input and that a logarithm answers an exponent question. \`log₂ n = k\` means \`2ᵏ = n\`. Algorithm analysis usually omits the base because changing from base 2 to another fixed base changes only a constant factor.
+
 ## How it works
 
 You keep a range that is still allowed to hold the answer. On an array the range is \`lo\` and \`hi\`, and at the start they cover every index. You read the middle. When it is the target, you stop. When the target is smaller, it cannot sit at the middle or to the right, and \`hi\` becomes the index just before the middle. When the target is larger, \`lo\` becomes the index just after the middle.
@@ -96,6 +100,8 @@ A balanced-tree lookup is O(log n) on average and in the worst case the balance 
 
 Binary search is the exercise where you keep the range sentence and move \`lo\` and \`hi\`. Balanced trees are where the same logarithm is a height. You do not implement an AVL rotation. You do notice when a binary search tree has become a list, because the lookup is then a scan drawn vertically. Let \`lo\` and \`hi\` cross. That empty range means the target is absent. Two elements, one element, and the empty array are where an off-by-one shows up.
 
+Binary search and recognizing logarithmic height are core course skills. Implementing AVL or red-black rebalancing is enrichment; the required idea is that a balance rule prevents height from growing to n.
+
 ## Common mistakes
 
 Searching unsorted data with this method is wrong. The half you throw away might have held the value.
@@ -149,6 +155,10 @@ flowchart TD
   D --> E["Input already ordered"]
   E --> F["Two pointers can stay O(n)"]
 \`\`\`
+
+## Before you begin
+
+You should know how one linear pass becomes O(n), how repeated halving creates O(log n), and that calling a library function does not make its internal work free. Here, a **stable** sort preserves the original relative order of records whose keys compare equal.
 
 ## How it works
 
@@ -257,6 +267,8 @@ Sorting the squares is O(n log n) time. Two pointers are O(n) time, with O(n) fo
 
 Merge sort is the drawing of n times log n. Sorted squares are the linear method on an already ordered array. When a later exercise sorts first, write O(n log n) beside that call. Pass a numeric compare function for numbers, or 10 and 2 are ordered as strings.
 
+Deriving merge sort's level-by-level cost and recognizing when existing order enables two pointers are core course goals. Comparison-sort lower bounds and engine-specific sorting strategies are enrichment; do not assume a particular JavaScript engine algorithm when the language API does not promise one.
+
 ## Common mistakes
 
 Treating \`sort\` as O(1) because it is one line. The work is inside the call. On a million elements it dominates a later linear scan.
@@ -312,11 +324,17 @@ flowchart LR
   D --> E["Say time and space"]
 \`\`\`
 
+## Before you begin
+
+You should be able to state time and **auxiliary space** separately. Auxiliary space is memory used by the algorithm beyond its input; some courses report required output space separately, so state your convention. A tradeoff is worthwhile only when the saved work matters under the problem's input and memory limits.
+
 ## How it works
 
 A nested loop can use a few local variables, O(1) extra space, and still be slow because each element starts another pass. Storing a fact you would otherwise recompute is the trade. That store is part of the cost.
 
-A hash table makes a later lookup O(1) on average. In TypeScript, a \`Map\` or a plain object can provide that table. For Two Sum the key is a number you already passed and the value is its index. You ask whether \`target - number\` is stored. A hit is the pair. A miss means you store the index you just passed. The nested scan walked the rest of the array for that question. The table costs O(n) extra memory.
+A hash table makes a later lookup O(1) on average. For Two Sum the key is a number you already passed and the value is its index. You ask whether \`target - number\` is stored. A hit is the pair. A miss means you store the index you just passed. The nested scan walked the rest of the array for that question. The table costs O(n) extra memory.
+
+In TypeScript, \`Record<string, V>\` describes a plain object whose property values have type \`V\`; numeric property names are converted to strings at runtime. \`Map<K, V>\` is a runtime collection that preserves key types and accepts object keys. For this course's controlled number-derived keys, use a \`Record\` consistently. Prefer \`Map\` in application code only when its arbitrary-key semantics or API are genuinely required. Either representation still spends O(n) space for n stored facts and offers expected O(1) lookup under the hash-table model.
 
 Memoisation stores an answer so recursion does not recompute it. Before you recurse, look up this state. On a hit, return the stored answer. On a miss, compute it, store it, and return it. The key has to be the whole state. A partial key reuses the wrong answer.
 
@@ -386,6 +404,8 @@ A memo table is O(n) extra space when the states are 0 through n, and the time f
 
 A \`Map\`, an answer array, or an object keyed by state is extra space that grows with the input. A sum and two indices are O(1) extra space. Two Sum, memoisation, and the sliding window are the three places you will say the pair of costs out loud.
 
+The core course skill is choosing the smallest stored summary that removes repeated work and then reporting its memory. Implementing a production hash table or a sparse memo cache is enrichment.
+
 ## Common mistakes
 
 Reporting only the time. The complete sentence for the map is O(n) time and O(n) extra space.
@@ -418,6 +438,122 @@ When the extra memory does not grow with the input. A few indices, a sum, and a 
 
 - [How a Hash Map Remembers What You Have Already Seen](/articles/hash-maps)
 - [What Is Memoisation? Caching an Overlapping Answer](/articles/memoisation)
+- [What Is a Sliding Window?](/articles/sliding-windows)
 `,
+  ),
+  defineArticle(
+    "auxiliary-space",
+    "What Is Auxiliary Space? Measuring an Algorithm's Extra Memory",
+    "Cost",
+    "Auxiliary space is the memory an algorithm uses beyond its input. A few counters are O(1), a table that grows with the input is O(n), and recursive call-stack frames count too.",
+    ["auxiliary space", "space complexity"],
+    `
+**Auxiliary space** is the extra memory an algorithm needs while it runs, beyond the input it was given. **Space complexity** is the broader growth description; when a course asks for extra space, it usually wants the auxiliary-space bound.
+
+A few counters and indexes use O(1) auxiliary space because their number does not grow with the input. A hash table with one entry per value uses O(n). A recursive algorithm also uses memory for active call-stack frames, even when it allocates no explicit array.
+
+\`\`\`mermaid
+flowchart TD
+  algorithm["Algorithm memory"] --> input["Input storage"]
+  algorithm --> output["Required output"]
+  algorithm --> extra["Auxiliary space"]
+  extra --> locals["Counters and pointers"]
+  extra --> structures["Tables, stacks, and queues"]
+  extra --> calls["Call-stack frames"]
+\`\`\`
+
+## Choose and state a convention
+
+Some analyses report total space, including the input and required output. Others report auxiliary space and discuss output separately. Both conventions can be useful, but mixing them makes comparisons misleading.
+
+State the convention in the answer. For example:
+
+- sorted squares takes O(n) time, O(n) output space, and O(1) auxiliary space beyond the output;
+- merge sort takes O(n log n) time and O(n) auxiliary space for temporary arrays;
+- iterative binary search takes O(log n) time and O(1) auxiliary space;
+- recursive binary search also keeps O(log n) call-stack space.
+
+The input array already exists before the function runs, so merely reading it does not allocate O(n) auxiliary space.
+
+## A constant-space scan
+
+This function retains a count and one current value. Neither amount grows with the array length.
+
+\`\`\`ts
+function countNegative(values: readonly number[]): number {
+  let count = 0;
+
+  for (const value of values) {
+    if (value < 0) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+console.log(countNegative([-2, 4, -1, 0]));
+// Expected output: 2
+\`\`\`
+
+The time is O(n) because every value is inspected. The auxiliary space is O(1) because the loop stores a fixed number of variables. Time and space are separate measurements.
+
+## Output space versus working space
+
+Suppose a function returns a reversed copy of an array. The result necessarily contains \`n\` values, so output space is O(n). If the function fills that result using only an index and a temporary value, its auxiliary space beyond the required output is O(1).
+
+If the same function first creates another full copy and then creates the result, that temporary copy adds O(n) auxiliary space. Saying “the output already costs O(n)” does not make the extra copy free.
+
+This distinction matters when two correct implementations return the same required result. Their output cost is identical, while their working-memory costs can differ.
+
+## Recursion and the call stack
+
+Every active function call keeps a frame containing its parameters, local variables, and return location. A recursive traversal with maximum depth \`d\` therefore uses O(d) call-stack space.
+
+A balanced binary tree has O(log n) height, so a depth-first recursive walk uses O(log n) stack space. A one-sided tree has height O(n), so the same code uses O(n) stack space.
+
+Tail-recursive code is not automatically O(1) space in JavaScript. Do not assume tail-call optimisation unless the runtime and execution mode explicitly guarantee it.
+
+## Peak space, not total allocation
+
+Space complexity normally measures the maximum memory simultaneously live, not every allocation made over time. Merge sort may allocate arrays in many recursive calls, but arrays from completed branches can become unreachable.
+
+Analyze which allocations coexist at the peak. In the standard merge-sort implementation, temporary array storage is O(n) at peak, plus O(log n) call-stack frames for balanced splitting.
+
+## Common examples
+
+| Technique | Typical auxiliary space | Why |
+| --- | --- | --- |
+| Counter or two pointers | O(1) | Fixed number of variables |
+| Hash-based frequency count | O(u) | One entry per distinct value |
+| BFS on a graph | O(V) beyond adjacency storage | Queue and visited set |
+| Recursive tree traversal | O(h) | One frame per active level |
+| Dynamic-programming table | O(n) | One stored answer per state |
+| Rolling DP variables | O(1) | Only recent states remain live |
+
+Here \`u\` is the number of distinct values, \`V\` the number of vertices, and \`h\` the tree height. Naming the relevant dimension is more informative than writing O(n) for everything.
+
+## In the course
+
+The course asks for time and auxiliary space together. Two Sum spends O(n) extra memory to avoid a quadratic pair scan. Sliding-window sums keep O(1) state. Graph traversal stores an adjacency list, a visited set, and a frontier. Dynamic programming may keep a full bottom-up table or compress it to the few states the recurrence still needs.
+
+Report required output separately when that distinction clarifies the algorithm. Count recursive stack frames even when the code contains no explicit stack.
+
+## Common mistakes
+
+Do not count the input as auxiliary space merely because its length is n.
+
+Do not ignore the call stack in a recursive function.
+
+Do not call a second n-element array O(1) space because the function returns another n-element array.
+
+Do not add every allocation ever made. Measure the peak amount of memory that remains live at the same time.
+
+## Related
+
+- [What Is the Space-for-Time Tradeoff in Algorithms?](/articles/space-for-time)
+- [What Is Big O? How Algorithm Cost Grows as Input Grows](/articles/big-o)
+- [What Is Memoisation? Caching an Overlapping Answer](/articles/memoisation)
+    `,
   ),
 ];

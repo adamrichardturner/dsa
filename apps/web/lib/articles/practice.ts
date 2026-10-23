@@ -91,7 +91,7 @@ Do not build the map when you only need a sum or a single comparison. A counter 
 
 State what each key and value mean. Decide the empty-input result and tie rule before coding. Test one unique winner, one tie, one repeated value, and the empty array. Finally, check that no loop restarts a count from scratch.
 
-## Extension exercise
+## Optional enrichment
 
 Return both the winning value and its count without a second counting pass. Preserve the earliest value on a tie, and explain which state must be updated together.
   `,
@@ -177,7 +177,7 @@ Do not "fix" a wrong answer by adding or subtracting one until a single example 
 
 Write whether each boundary is inclusive or exclusive. Trace the empty and one-element cases on paper. For a shrinking search range, prove that every update removes at least one index. Test the first valid index, the last valid index, and the first invalid index.
 
-## Extension exercise
+## Optional enrichment
 
 Implement \`sliceInclusive(values, start, end)\` without mutating the input. Reject invalid bounds explicitly, and test the difference between an empty half-open range and a one-element inclusive range.
   `,
@@ -273,7 +273,7 @@ Do not use them to find a pair in an unsorted array of arbitrary numbers. The di
 
 Name the fact that makes a discard safe; here it is ascending order. Decide whether pointers may meet. Trace which candidate pairs disappear after each move. Test a match at the ends, a match inside, no match, and fewer than two values.
 
-## Extension exercise
+## Optional enrichment
 
 Return every unique value pair that reaches the target in a sorted array with duplicates. After a match, skip repeated values on both sides and explain why that cannot discard a new value pair.
   `,
@@ -373,7 +373,7 @@ Do not use it when the slice does not have to be contiguous. A subset of any ind
 
 Write the window invariant, including whether it is valid before or after shrinking. Confirm that every value is non-negative before relying on monotonic sums. Record the answer at the exact moment the invariant says it is valid. Test no solution, one-element success, and success at each end.
 
-## Extension exercise
+## Optional enrichment
 
 Write the longest-window variant for a sum at most a positive limit. State exactly when the window is valid, and test zeros because they can extend a valid window without changing its sum.
   `,
@@ -476,9 +476,9 @@ Do not reach for three pointers when a second pointer with a head start answers 
 
 Draw the reversed prefix and unreversed suffix separated by a bar. Save the suffix before changing a link. Test null, one node, and two nodes. Confirm that the old head ends with \`next: null\` and that you return \`previous\`, not \`current\`.
 
-## Extension exercise
+## Optional enrichment
 
-Reverse only the first \`k\` nodes and reconnect the untouched suffix. Define the behavior for \`k = 0\), \`k\` larger than the list, and an empty list before coding.
+Reverse only the first \`k\` nodes and reconnect the untouched suffix. Define the behaviour for \`k = 0\), \`k\` larger than the list, and an empty list before coding.
   `,
   ),
   defineArticle(
@@ -571,7 +571,7 @@ Do not merge unsorted slices and expect a sorted result. The smaller-head rule i
 
 Verify both inputs are already sorted. State what each pointer means and why everything before it is finished. Test one empty run, unequal lengths, duplicates, and values that all come from one side first. Check that the leftovers are copied.
 
-## Extension exercise
+## Optional enrichment
 
 Merge records with a typed comparison function. Preserve left-before-right order for equal keys, then demonstrate stability with two records that have the same score but different names.
   `,
@@ -666,7 +666,7 @@ Do not use heap indexes for a binary search tree that can be sparse. A missing l
 
 Separate an index from the value stored there. Handle the root's missing parent explicitly. Before reading a child, compare its index with \`heap.length\`. Test the root, a left child, a right child, and a leaf on an incomplete last level.
 
-## Extension exercise
+## Optional enrichment
 
 Given a min-heap array, verify the parent rule for every existing child. Return the first violating pair of indexes, or \`null\`; do not attempt to repair the heap.
   `,
@@ -769,7 +769,7 @@ Do not use a visited set to block a tree recursion that is supposed to see both 
 
 Decide what a vertex identifier is and use one representation consistently. Mark when scheduling work, not when finishing it. Include the start in the visited structure. Test a cycle, an isolated vertex, disconnected components, and two paths to the same neighbour.
 
-## Extension exercise
+## Optional enrichment
 
 Return all connected components of an undirected graph. Start a new search from each unvisited vertex and prove that every vertex appears in exactly one returned component.
   `,
@@ -863,7 +863,7 @@ Do not use a half-open overlap test on closed intervals that include both ends. 
 
 Write the interval convention before choosing a comparison. Build a counterexample for each proposed greedy sorting rule. Test touching intervals, nested intervals, equal finishes, and an empty list. Preserve the input if mutation is not part of the contract.
 
-## Extension exercise
+## Optional enrichment
 
 Write separate overlap predicates for half-open and closed intervals. Use the same endpoint-touching example to show why the two predicates must disagree.
   `,
@@ -966,7 +966,7 @@ Do not list permutations when you only need a count, or when order does not matt
 
 Define one search state in words: the path plus which indexes are used. Identify the completion condition. Pair every mutation with its undo. Test empty and one-value inputs, then verify that \`n\` distinct values produce \`n!\` rows without changing the input.
 
-## Extension exercise
+## Optional enrichment
 
 Support duplicate input values without returning duplicate permutations. Sort a copy, skip equal unused choices at the same depth, and explain why indexes still need separate used flags.
   `,
@@ -991,6 +991,14 @@ flowchart LR
 Write a sentence for the cell before you write the assignment. For Fibonacci, the cell is the sum of the two previous cells, with 0 and 1 as the base cases in the table-filling lesson. Two variables are enough if you never need the whole table again. That is O(n) time and O(1) extra memory.
 
 House robber is the same shape with a choice. At each house you skip it and keep the previous answer, or you take it and add it to the answer from two houses ago. The cell is the better of those two. Adjacent houses are never both taken. An empty street is 0.
+
+Use prefix lengths to keep indexes precise. Let \`best(i)\` mean the maximum loot among the first \`i\` houses:
+
+- \`best(0) = 0\`
+- \`best(1) = houses[0]\`
+- \`best(i) = max(best(i - 1), best(i - 2) + houses[i - 1])\`
+
+State \`i\` is a count, so the current array index is \`i - 1\`. The first recurrence branch skips that house. The second takes it, so the previous house must be excluded and the compatible prefix ends two states back.
 
 Climbing stairs used a close recurrence, with different base cases. Mixing those base cases is how a correct loop returns the wrong number.
 
@@ -1022,6 +1030,16 @@ Expected output: \`12\`, then \`0\`. The best choice takes houses worth 2, 9, an
 ## Worked example
 
 The best totals after each house are 2, 7, 11, 11, and 12. At the house worth 9, taking gives \`2 + 9 = 11\` and skipping gives 7. At the house worth 3, taking gives \`7 + 3 = 10\`, so skipping preserves 11.
+
+\`\`\`mermaid
+flowchart LR
+  B0["best(0) = 0"] --> B2["best(2) = max(2, 7) = 7"]
+  B1["best(1) = 2"] --> B2
+  B1 --> B3["best(3) = max(7, 2 + 9) = 11"]
+  B2 --> B3
+  B2 --> B4["best(4) = max(11, 7 + 3) = 11"]
+  B3 --> B4
+\`\`\`
 
 ## Why it is correct
 
@@ -1055,9 +1073,659 @@ Do not build a table for a problem whose subproblems do not overlap. A plain rec
 
 Write exactly what one state means before writing its recurrence. List base cases from that meaning, not from a similar problem. For each transition, name every legal choice and the smaller state it uses. Test empty, one-state, and two-state inputs before a longer example.
 
-## Extension exercise
+## Optional enrichment
 
 Return both the maximum loot and the chosen house indexes. A scalar recurrence is no longer enough for reconstruction, so decide what additional decision information each state must retain.
+  `,
+  ),
+  defineArticle(
+    "pair-enumeration",
+    "How Do You Enumerate Every Index Pair Exactly Once?",
+    "Cost",
+    "Pair enumeration uses i < j to exclude self-pairs and reversed duplicates. Its triangular iteration count explains the quadratic cost.",
+    ["pair enumeration", "ascending pairs", "equal pairs"],
+    `
+Two indexes form an unordered pair when \`i < j\`. That inequality does three jobs: it prevents pairing an index with itself, prevents counting both \`(i, j)\` and \`(j, i)\`, and gives the inner loop an exact starting point.
+
+\`\`\`mermaid
+flowchart TD
+  I["Choose i from 0 to n - 2"] --> J["Choose j from i + 1 to n - 1"]
+  J --> Test{"Does this pair satisfy the predicate?"}
+  Test -->|yes| Count["Increment the count"]
+  Test -->|no| Next["Try the next j"]
+  Count --> Next
+\`\`\`
+
+## Implementation
+
+\`\`\`ts
+function countEqualPairs(values: readonly number[]): number {
+  let count = 0;
+
+  for (let left = 0; left < values.length; left += 1) {
+    const leftValue = values[left];
+    if (leftValue === undefined) {
+      continue;
+    }
+
+    for (let right = left + 1; right < values.length; right += 1) {
+      if (leftValue === values[right]) {
+        count += 1;
+      }
+    }
+  }
+
+  return count;
+}
+
+console.log(countEqualPairs([1, 1, 1])); // 3
+console.log(countEqualPairs([])); // 0
+\`\`\`
+
+The invariant at the start of an outer-loop iteration is that \`count\` includes exactly the qualifying pairs whose left index is smaller than \`left\`. The inner loop then checks every legal right partner for this left index exactly once.
+
+## Worked example and cost
+
+For three values, the legal index pairs are \`(0, 1)\`, \`(0, 2)\`, and \`(1, 2)\`. In general the number of checks is
+\`(n - 1) + (n - 2) + ... + 1 = n(n - 1) / 2\`, so time is O(n²) and scalar extra space is O(1).
+
+TypeScript does not prove that a numeric array is dense. The explicit \`undefined\` check gives sparse-array behaviour a clear meaning. For ordinary dense inputs, it never triggers.
+
+## Edge cases and counterexamples
+
+- Empty and one-value arrays contain zero pairs.
+- Equal values at different indexes are a legal pair; one index used twice is not.
+- Starting \`right\` at 0 counts reversed pairs and self-pairs.
+- Starting \`right\` at \`left\` still counts self-pairs.
+- For ascending pairs, change only the predicate to \`leftValue < rightValue\`; do not change the index rule.
+
+Use a nested scan when the exercise is explicitly about all pairs. If the predicate is equality and only the count matters, a frequency table can often reduce the work.
+
+## Optional enrichment
+
+Derive the number of equal pairs from frequencies using \`count * (count - 1) / 2\` for each distinct value, and compare its O(n) expected-time tradeoff with the direct O(n²) enumeration.
+
+## Related
+
+- [What Does O(n²) Mean? Nested Loops and Pair Comparisons](/articles/quadratic-time)
+- [What Is a Frequency Count? Tallying Values in One Pass](/articles/frequency-counts)
+  `,
+  ),
+  defineArticle(
+    "shifting-array-elements",
+    "Why Does an Array Middle Edit Shift Elements?",
+    "Arrays",
+    "A contiguous array keeps indexes adjacent, so insertion or deletion in the middle must copy the tail while direct indexed access remains constant-time.",
+    ["array shift", "middle edit", "insert at an index"],
+    `
+An array stores values in index order with no gaps. Reading \`values[index]\` is O(1), but changing the middle while preserving that order moves every later value. A non-mutating implementation makes those writes visible.
+
+\`\`\`mermaid
+flowchart LR
+  A["[1, 2, 4]"] --> B["Copy indexes before 2"]
+  B --> C["Write 3 at index 2"]
+  C --> D["Copy old tail one slot right"]
+  D --> E["[1, 2, 3, 4]"]
+\`\`\`
+
+## Implementation and index convention
+
+\`\`\`ts
+function insertAt(
+  values: readonly number[],
+  index: number,
+  value: number,
+): number[] {
+  if (!Number.isInteger(index)) {
+    throw new RangeError("index must be an integer");
+  }
+
+  const insertionIndex = Math.min(Math.max(index, 0), values.length);
+  const result: number[] = [];
+
+  for (let source = 0; source < values.length; source += 1) {
+    if (source === insertionIndex) {
+      result.push(value);
+    }
+    const current = values[source];
+    if (current !== undefined) {
+      result.push(current);
+    }
+  }
+
+  if (insertionIndex === values.length) {
+    result.push(value);
+  }
+
+  return result;
+}
+
+console.log(insertAt([1, 2, 4], 2, 3));
+// [1, 2, 3, 4]
+\`\`\`
+
+Before source index \`s\`, \`result\` contains the new value if its insertion boundary has been reached, plus every original value before \`s\` in order. The loop preserves that invariant and the final branch handles the half-open boundary at \`values.length\`.
+
+For \`insertAt([1, 2, 4], 2, 3)\`, copy 1 and 2, write 3 when the source reaches 2, then copy 4. A negative index is clamped to 0; an index past the end is clamped to \`length\`.
+
+## Complexity and edge cases
+
+Insertion and deletion each copy O(n) values into O(n) result space. A middle mutation with \`splice\` also shifts O(n) values even though it is one method call.
+
+- Empty insertion produces a one-value array.
+- Removing an out-of-range index should return a copy when that is the contract.
+- Decide whether negative indexes are rejected, clamped, or interpreted from the end.
+- Preserve the input when the signature accepts a \`readonly\` array.
+- Do not confuse the O(1) index calculation with the O(n) data movement.
+
+## Optional enrichment
+
+Implement removal into a preallocated array of length \`n - 1\`. Explain why preallocation changes constants but not the O(n) bound.
+
+## Related
+
+- [What Is a Contiguous Array? Index Jumps and Shifts](/articles/contiguous-arrays)
+- [What Is an Off-by-One Error? Ranges, Remainders, and Indexes](/articles/off-by-one)
+  `,
+  ),
+  defineArticle(
+    "linked-list-runner-pointers",
+    "How Do Slow and Fast Pointers Measure a Linked List?",
+    "Linear structures",
+    "Runner pointers turn relative movement into distance: one-and-two-step speeds find a middle, while a fixed head start finds a node from the end.",
+    ["slow and fast pointers", "fast pointer", "nth from the end"],
+    `
+A linked list has no constant-time index jump. Two references can still encode distance by how they move. For the middle, \`slow\` moves one edge while \`fast\` moves two. For the nth node from the end, \`fast\` first opens a gap of exactly \`n\` edges.
+
+\`\`\`mermaid
+flowchart LR
+  H["1"] --> N2["2"] --> N3["3"] --> N4["4"] --> N5["5"]
+  S["slow: one edge"] -.-> N3
+  F["fast: two edges"] -.-> N5
+\`\`\`
+
+## Finding the second middle
+
+\`\`\`ts
+interface RunnerNode {
+  readonly value: number;
+  readonly next: RunnerNode | null;
+}
+
+function middleValue(head: RunnerNode | null): number | null {
+  if (head === null) {
+    return null;
+  }
+
+  let slow: RunnerNode = head;
+  let fast: RunnerNode | null = head;
+
+  while (fast !== null && fast.next !== null) {
+    slow = slow.next ?? slow;
+    fast = fast.next.next;
+  }
+
+  return slow.value;
+}
+
+const list: RunnerNode = {
+  value: 1,
+  next: {
+    value: 2,
+    next: { value: 3, next: { value: 4, next: null } },
+  },
+};
+
+console.log(middleValue(list));
+// 3
+\`\`\`
+
+After \`k\` iterations, slow has advanced \`k\` edges and fast has advanced \`2k\` edges. When fast reaches the end, slow is halfway through. The loop condition makes an even-length list return the second middle: \`[1, 2, 3, 4]\` returns 3.
+
+For nth from the end, reject \`n < 1\`, advance fast exactly \`n\` times, then move both references until fast is null. The invariant is that fast stays \`n\` edges ahead, so slow is the requested node when that gap reaches the end.
+
+## Complexity, TypeScript, and edges
+
+Both walks take O(n) time and O(1) extra space. The node references—not the input array used to construct a teaching list—must drive the answer.
+
+- Empty input has no middle.
+- One node is its own middle.
+- Define first or second middle for even lengths before coding.
+- If fast becomes null during the head start, \`n\` exceeds the length.
+- Optional chaining can hide an invalid transition; keep the loop guard explicit.
+
+## Optional enrichment
+
+Use slow and fast pointers for cycle detection. That problem needs a different proof: if a cycle exists, the faster pointer eventually gains one position per iteration modulo the cycle length.
+
+## Related
+
+- [What Is a Linked List? Nodes, Links, and the Head](/articles/linked-lists)
+- [What Are the Three Pointers in a Linked-List Reversal?](/articles/three-pointers)
+  `,
+  ),
+  defineArticle(
+    "next-greater-values",
+    "How Does a Monotonic Stack Find the Next Greater Value?",
+    "Linear structures",
+    "A monotonic stack keeps unresolved indexes in decreasing-value order. Each later value resolves every smaller value on top.",
+    ["next greater", "monotonic stack", "waiting indexes"],
+    `
+For each position, the **next greater** value is the first later value that is strictly larger. A stack stores indexes whose answers are still unresolved. Values at those indexes are non-increasing from bottom to top.
+
+\`\`\`mermaid
+flowchart TD
+  Read["Read nums[i]"] --> Compare{"Greater than value at stack top?"}
+  Compare -->|yes| Resolve["Pop index; write nums[i] as its answer"]
+  Resolve --> Compare
+  Compare -->|no or empty| Push["Push i"]
+\`\`\`
+
+## Implementation
+
+\`\`\`ts
+function nextGreater(values: readonly number[]): number[] {
+  const answers = values.map(() => -1);
+  const waiting: number[] = [];
+
+  for (let index = 0; index < values.length; index += 1) {
+    const current = values[index];
+    if (current === undefined) {
+      continue;
+    }
+
+    while (waiting.length > 0) {
+      const previousIndex = waiting[waiting.length - 1];
+      if (previousIndex === undefined) {
+        break;
+      }
+      const previous = values[previousIndex];
+      if (previous === undefined || previous >= current) {
+        break;
+      }
+      answers[previousIndex] = current;
+      waiting.pop();
+    }
+
+    waiting.push(index);
+  }
+
+  return answers;
+}
+
+console.log(nextGreater([2, 1, 2, 4, 3]));
+// [4, 2, 4, -1, -1]
+\`\`\`
+
+For \`[2, 1, 2, 4, 3]\`, index 1 resolves at the later 2. The first 2 does not resolve there because greater is strict; both 2s resolve at 4. The final stack indexes keep the initialised answer \`-1\`.
+
+## Correctness and cost
+
+Before each input index, the stack contains exactly unresolved earlier indexes, in increasing index order and non-increasing value order. When \`current\` pops an index, every value between that index and \`current\` was no larger, or the index would already have been popped. Therefore \`current\` is its first strictly greater value.
+
+Each index is pushed once and popped at most once. Total time is O(n), despite the inner \`while\`, and the answers plus stack use O(n) space.
+
+## Edge cases and mistakes
+
+- Equal values do not resolve one another; use \`<\`, not \`<=\`.
+- Store indexes, not only values, because answers belong to positions.
+- An empty input returns an empty output.
+- A decreasing input leaves every answer at \`-1\`.
+- \`pop()\` returns \`undefined\` on an empty TypeScript array, so guard the stack length.
+
+## Optional enrichment
+
+Change the comparison and traversal direction to derive next smaller, previous greater, and previous smaller variants. State the new monotonic invariant each time.
+
+## Related
+
+- [What Is a Stack? Last In, First Out](/articles/stacks)
+- [What Is Linear Time? One Pass Through the Input](/articles/linear-time)
+  `,
+  ),
+  defineArticle(
+    "recursive-branching",
+    "What Changes When Recursion Makes Two Calls?",
+    "Search and sort",
+    "Two recursive calls create a branching call tree. Correct indexing establishes the base values; overlapping branches explain exponential recomputation.",
+    ["two recursive calls", "recursive branching", "nested depth"],
+    `
+One recursive call usually forms a chain. Two calls form a tree. Fibonacci is the smallest example: each non-base state asks for the two preceding states.
+
+\`\`\`mermaid
+flowchart TD
+  F5["fib(5)"] --> F4["fib(4)"]
+  F5 --> F3a["fib(3)"]
+  F4 --> F3b["fib(3) again"]
+  F4 --> F2["fib(2)"]
+\`\`\`
+
+## State and indexing convention
+
+This version is one-based: \`fib(1) = 1\` and \`fib(2) = 1\`. That differs from a zero-based API where \`fib(0) = 0\`. State the convention before copying a recurrence.
+
+\`\`\`ts
+function fibonacciOneBased(n: number): number {
+  if (!Number.isInteger(n) || n < 1) {
+    throw new RangeError("n must be a positive integer");
+  }
+  if (n <= 2) {
+    return 1;
+  }
+  return fibonacciOneBased(n - 1) + fibonacciOneBased(n - 2);
+}
+
+console.log(fibonacciOneBased(5));
+// 5
+\`\`\`
+
+The correctness recurrence is \`F(n) = F(n - 1) + F(n - 2)\`, with both bases equal to 1. The termination measure is \`n\`: every branch lowers it and eventually reaches a base.
+
+## Branching cost and a second combine rule
+
+The running-time recurrence is \`T(n) = T(n - 1) + T(n - 2) + O(1)\`, which is exponential. The maximum live stack is only O(n), because depth—not the total number of calls—controls stack space.
+
+Nested depth has a different combine rule: a number returns 0; an array returns \`1 + max(child depths)\`; and an empty array returns 1. Two siblings cause two calls but do not add their depths. The parent keeps the larger branch.
+
+## Worked example and edges
+
+\`fib(5)\` returns 5, but it computes \`fib(3)\` in both major branches. That repetition is the signal for memoisation. For nesting, \`[1, [2, [3]]]\` has depth 3, while \`[[], [1]]\` has depth 2.
+
+- A base case must be correct and reachable on every branch.
+- Addition combines Fibonacci counts; maximum combines alternative nesting branches.
+- JavaScript engines do not guarantee tail-call optimisation, and two-call Fibonacci is not tail recursive.
+- Do not “fix” exponential work by changing the recurrence; cache states without changing their meaning.
+
+## Optional enrichment
+
+Memoise the one-based function and compare call counts for \`n = 10\`. Keep the cache key in the same one-based convention.
+
+## Related
+
+- [What Is Recursion? Smaller Copies and a Base Case](/articles/recursion)
+- [What Is Memoisation? Caching an Overlapping Answer](/articles/memoisation)
+  `,
+  ),
+  defineArticle(
+    "binary-search-boundaries",
+    "How Does Binary Search Find the First or Last Equal Index?",
+    "Search and sort",
+    "Boundary binary search records a match and continues on one side. Inclusive bounds must move past mid so the candidate range strictly shrinks.",
+    ["search boundary", "first equal", "last equal"],
+    `
+With duplicates, finding any match is not enough. Save a matching index, then continue left for the first match or right for the last. The invariant remains: if a better answer exists, it lies in the inclusive range \`[low, high]\`.
+
+\`\`\`mermaid
+flowchart TD
+  Mid["Compare nums[mid]"] --> Match{"Equal?"}
+  Match -->|no| Side["Discard the impossible half"]
+  Match -->|yes, first| Left["Save mid; high = mid - 1"]
+  Match -->|yes, last| Right["Save mid; low = mid + 1"]
+\`\`\`
+
+## First equal
+
+\`\`\`ts
+function firstEqual(values: readonly number[], target: number): number {
+  let low = 0;
+  let high = values.length - 1;
+  let answer = -1;
+
+  while (low <= high) {
+    const middle = low + Math.floor((high - low) / 2);
+    const value = values[middle];
+    if (value === undefined) {
+      return -1;
+    }
+    if (value < target) {
+      low = middle + 1;
+      continue;
+    }
+    if (value > target) {
+      high = middle - 1;
+      continue;
+    }
+    answer = middle;
+    high = middle - 1;
+  }
+
+  return answer;
+}
+
+console.log(firstEqual([1, 2, 2, 2, 3], 2));
+// 1
+\`\`\`
+
+For \`[1, 2, 2, 2, 3]\`, the first middle is index 2. Save it and search \`[0, 1]\`; index 1 also matches, so save 1 and search left once more. The final answer is 1.
+
+## Correctness, cost, and conventions
+
+After a match at \`middle\`, no index to its right can be a better first occurrence. Excluding the saved middle is safe because its index is retained in \`answer\`. Each update removes at least one index, proving termination. Time is O(log n) and extra space is O(1).
+
+- Empty input starts with \`high = -1\` and returns \`-1\`.
+- A last-equal search changes the match update to \`low = middle + 1\`.
+- Inclusive search stops at \`low > high\`; half-open lower-bound search uses different initial bounds and a different stop.
+- Leaving a bound at \`middle\` can repeat the same range forever.
+- Sorted order is the fact that makes half-discarding safe.
+
+## Optional enrichment
+
+Implement a half-open lower bound on \`[low, high)\` with \`high = values.length\`. It can return \`values.length\` as an insertion position; explain why that is not an out-of-bounds read.
+
+## Related
+
+- [How Does Binary Search Throw Away Half the Work?](/articles/binary-search)
+- [What Is an Off-by-One Error? Ranges, Remainders, and Indexes](/articles/off-by-one)
+  `,
+  ),
+  defineArticle(
+    "choosing-a-sort",
+    "How Do You Choose Between Checking, Bubble Sort, and Merge Sort?",
+    "Search and sort",
+    "Checking order is linear, bubble sort is quadratic, and merge sort is linearithmic. The task contract determines which operation is needed.",
+    ["sort selection", "non-decreasing order", "already sorted"],
+    `
+“Is this ordered?” and “put this in order” are different problems. A sortedness check stops at the first descent. Bubble sort demonstrates local swaps. Merge sort is the scalable general-purpose algorithm taught in this course.
+
+\`\`\`mermaid
+flowchart TD
+  Goal{"What is required?"}
+  Goal -->|check only| Scan["Neighbour scan: O(n)"]
+  Goal -->|practice swaps| Bubble["Bubble sort: O(n²)"]
+  Goal -->|scalable stable sort| Merge["Merge sort: O(n log n)"]
+\`\`\`
+
+## Three contracts
+
+A non-decreasing array permits equal neighbours. The invariant for a check is that the prefix through the current index is ordered; one descent proves the whole array is not.
+
+Bubble sort copies the input, repeatedly swaps adjacent inversions, and may stop after a pass with no swaps. After each full pass, the largest unsettled value is in its final suffix position. Its worst-case time is O(n²), with O(n) space here because the input is preserved.
+
+Merge sort recursively sorts two halves and linearly merges their sorted runs. Its recurrence is \`T(n) = 2T(n / 2) + O(n)\`, yielding O(n log n) time and O(n) auxiliary array space.
+
+## Worked choice
+
+For \`[1, 2, 2]\`, an order check performs two comparisons and returns true. Sorting it again does unnecessary work. For \`[3, 2, 1]\`, bubble sort exposes three inversions through swaps; merge sort reaches the same result with the stronger asymptotic guarantee.
+
+## TypeScript and edge cases
+
+- \`values.slice()\` makes a shallow copy before an in-place teaching sort.
+- JavaScript's default \`.sort()\` compares string forms; numeric sorting needs \`(a, b) => a - b\`.
+- Empty and one-value arrays are already sorted.
+- Stability means equal-key records retain input order. Merge from the left on equality to preserve it.
+- An early-exit bubble sort has O(n) best-case time but remains O(n²) worst-case.
+- Do not call the built-in sort when the exercise is assessing the algorithm.
+
+## Optional enrichment
+
+Compare merge sort with quicksort on stability, worst-case time, and auxiliary storage. No one comparison sort is best on every axis.
+
+## Related
+
+- [What Is Bubble Sort? Repeated Neighbour Swaps](/articles/bubble-sort)
+- [What Is Merge Sort? Split, Sort, and Merge](/articles/merge-sort)
+- [What Is a Sorted Run? The Merge Step Between Two Halves](/articles/sorted-runs)
+  `,
+  ),
+  defineArticle(
+    "bst-insertion-shape",
+    "How Does Insertion Order Determine BST Shape?",
+    "Trees and graphs",
+    "A binary search tree preserves key order but not balance. Insertion order can produce a short tree or a linear spine.",
+    ["bst insertion order", "tree that has become a line", "sorted inserts"],
+    `
+A binary search tree invariant says that every left-subtree key is smaller and every right-subtree key is larger. It does not promise a balanced shape. Shape depends on insertion order.
+
+\`\`\`mermaid
+flowchart LR
+  Balanced["Insert 2, 1, 3<br/>height 2"] --> Rule["Same BST ordering rule"]
+  Spine["Insert 1, 2, 3<br/>height 3"] --> Rule
+\`\`\`
+
+## Height recurrence
+
+Let \`height(node)\` count real nodes on the longest downward path:
+
+- \`height(null) = 0\`
+- \`height(node) = 1 + max(height(node.left), height(node.right))\`
+
+This is a structural recurrence, not a calculation on key values. A leaf has height 1. A three-node right spine has height 3.
+
+\`\`\`ts
+interface ShapeNode {
+  readonly value: number;
+  left: ShapeNode | null;
+  right: ShapeNode | null;
+}
+
+function height(node: ShapeNode | null): number {
+  if (node === null) {
+    return 0;
+  }
+  return 1 + Math.max(height(node.left), height(node.right));
+}
+
+const spine: ShapeNode = {
+  value: 1,
+  left: null,
+  right: {
+    value: 2,
+    left: null,
+    right: { value: 3, left: null, right: null },
+  },
+};
+
+console.log(height(spine));
+// 3
+\`\`\`
+
+The return invariant is that each call returns the height of exactly its subtree. The null base establishes zero; the recursive case adds the current node to the taller child path.
+
+## Search cost follows height
+
+Search compares once per visited level, so it takes O(h) time. A balanced n-node BST has \`h = O(log n)\`; sorted insertion into an ordinary BST can create \`h = n\`, making search O(n). Building by ordinary insertion can likewise range from O(n log n) to O(n²).
+
+## Edge cases and conventions
+
+- Empty height is 0 when height counts nodes; an edge-counting convention would use -1.
+- Do not sort the input before insertion: that changes the structure being measured.
+- Decide where duplicate keys go, or reject them. The rule must stay consistent.
+- Recursive height uses O(h) call-stack space and can overflow on a very long spine.
+- Searching the original array bypasses the data structure and its shape.
+
+## Optional enrichment
+
+Insert every permutation of \`[1, 2, 3]\` and group the resulting trees by height. Then compare with an AVL or red-black tree, which repairs height after updates.
+
+## Related
+
+- [What Is a Binary Search Tree? Ordered Left and Right Branches](/articles/binary-search-trees)
+- [Why Balance a Search Tree? Keeping Height Logarithmic](/articles/balanced-trees)
+  `,
+  ),
+  defineArticle(
+    "shared-prefix-counts",
+    "How Do Trie Node Counts Measure Shared Prefixes?",
+    "Patterns",
+    "A count on each trie node records how many inserted words pass through it. Prefix queries and longest common prefixes then become path walks.",
+    ["shared prefix counts", "longest common prefix", "prefix counts"],
+    `
+Words share a trie path until their characters differ. Store on each node the number of inserted words that pass through it. The root count is the total number of words; after one character, the child count is the number sharing that one-character prefix.
+
+\`\`\`mermaid
+flowchart TD
+  Root["root: 3 words"] --> C["c: 3"]
+  C --> A["a: 3"]
+  A --> T["t: 1"]
+  A --> R["r: 2"]
+  R --> P["p: 1"]
+\`\`\`
+
+## Node meaning and insertion
+
+\`\`\`ts
+interface CountedTrieNode {
+  readonly children: Record<string, CountedTrieNode | undefined>;
+  prefixCount: number;
+  isWord: boolean;
+}
+
+function countedNode(): CountedTrieNode {
+  return { children: {}, prefixCount: 0, isWord: false };
+}
+
+function insertWord(root: CountedTrieNode, word: string): void {
+  let node = root;
+  node.prefixCount += 1;
+
+  for (const character of word) {
+    let child = node.children[character];
+    if (child === undefined) {
+      child = countedNode();
+      node.children[character] = child;
+    }
+    child.prefixCount += 1;
+    node = child;
+  }
+
+  node.isWord = true;
+}
+
+const root = countedNode();
+insertWord(root, "cat");
+insertWord(root, "car");
+insertWord(root, "carp");
+
+console.log(root.children.c?.children.a?.prefixCount);
+// 3
+\`\`\`
+
+The invariant after inserting any number of words is that a node's \`prefixCount\` equals the number of insertions whose spelling includes the root-to-node path as a prefix. \`isWord\` answers a different question: whether a word ends exactly there.
+
+## Two queries
+
+To count a queried prefix, walk its characters. A missing edge returns 0; otherwise return the final node's count. The empty query ends at the root and therefore counts every inserted word.
+
+For the longest common prefix of \`W\` words, continue from the root while there is exactly one next character whose node count is \`W\`. Stop at a branch or a lower count. For \`flower\`, \`flow\`, and \`flight\`, counts remain 3 through \`f\` and \`l\`, then split, so the answer is \`"fl"\`.
+
+Building takes O(C) time and space for C inserted characters before sharing. A query of length L takes O(L) time. Finding the common prefix takes O(P · A) with plain object child scans, where P is the returned prefix length and A is the number of outgoing edges inspected per node.
+
+## Edge cases and TypeScript details
+
+- Every node must receive a fresh \`children\` object.
+- An empty word marks the root's \`isWord\`; it also contributes to the root count.
+- Duplicate insertions increase counts repeatedly unless the contract deduplicates words first.
+- \`Record<string, Node | undefined>\` makes a missing edge explicit without a type assertion.
+- Normalize Unicode first if canonically equivalent spellings should share a path.
+
+## Optional enrichment
+
+Add deletion by decrementing each node on the exact word path. An end counter is needed if duplicate insertions must be deleted independently.
+
+## Related
+
+- [What Is a Trie? A Prefix Tree for Shared Word Paths](/articles/tries)
+- [How Does Depth-First Search Explore One Branch First?](/articles/depth-first-search)
   `,
   ),
 ];

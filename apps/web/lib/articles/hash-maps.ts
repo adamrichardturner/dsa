@@ -27,6 +27,10 @@ flowchart TD
   F -->|no| G["Return null"]
 \`\`\`
 
+## Before you begin
+
+You should know linear scans, index-based arrays, and the difference between a key and a stored value. A hash map is an abstract key-to-value interface; a \`Record\`, JavaScript \`Map\`, or custom hash table is one possible implementation choice with its own key semantics.
+
 \`\`\`ts
 function twoSum(
   values: readonly number[],
@@ -37,16 +41,18 @@ function twoSum(
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index];
     if (value === undefined) {
-      continue;
+      throw new Error("twoSum expects a dense array");
     }
 
     const complement = target - value;
-    const earlierIndex = firstIndexByValue[complement];
+    const complementKey = String(complement);
+    const earlierIndex = firstIndexByValue[complementKey];
     if (earlierIndex !== undefined) {
       return [earlierIndex, index];
     }
 
-    firstIndexByValue[value] ??= index;
+    const valueKey = String(value);
+    firstIndexByValue[valueKey] ??= index;
   }
 
   return null;
@@ -57,7 +63,15 @@ console.log(twoSum([2, 2], 4)); // [0, 1]
 console.log(twoSum([1, 2, 3], 10)); // null
 \`\`\`
 
-This version intentionally uses a plain object. JavaScript converts numeric property keys to strings, so key \`2\` is stored as \`"2"\`. That conversion is harmless here because every key originates from a number and the values are only looked up the same way.
+This version intentionally uses a plain object and makes the conversion visible with \`String\`. Key \`2\` is stored as \`"2"\`. That conversion is harmless here because every key originates from a number and the values are only looked up by the same conversion.
+
+## Record versus Map
+
+\`Record<string, V>\` is a TypeScript description of an ordinary object; it does not create a special runtime container. Object property keys are strings or symbols, so numeric keys are coerced. A JavaScript \`Map<K, V>\` is a runtime collection that retains key identity, supports arbitrary key types, and exposes methods such as \`get\`, \`set\`, and \`has\`.
+
+For this course's controlled string keys and number-derived keys, use a \`Record\` so examples share one convention. Use \`Map\` in broader application code when keys are objects, key coercion would be incorrect, or its API materially improves the design. This representation choice does not make hashing worst-case O(1): both are discussed with expected lookup under the standard hash-table model.
+
+\`Record<string, V>\` also does not prove that every possible string is present at runtime. Under strict indexed-access settings, model absence explicitly as \`V | undefined\` and test against \`undefined\`. If stored \`undefined\` must be distinguishable from a missing key, use an explicit presence operation or store a tagged value.
 
 ## Why lookup comes before insertion
 
@@ -91,10 +105,16 @@ The loop performs at most one expected-O(1) lookup and one expected-O(1) inserti
 - Plain object keys are strings or symbols and can have prototype concerns. For controlled numeric keys, the object above is sufficient; \`Object.create(null)\` is another option when prototype-free storage is required.
 - If the input is already sorted, two pointers can solve the value-pair version in O(n) time and O(1) auxiliary space.
 
+## In the course
+
+Choosing what a key means, checking before insertion, handling index 0, and reporting expected O(n) time with O(n) auxiliary space are core. Implementing hashing and resizing is enrichment; collision resolution is included so “expected O(1)” has an honest model.
+
 ## Related
 
 - [What Is a Hash Collision? Why O(1) Is Only Expected](/articles/collisions)
 - [What Is the Space-for-Time Tradeoff in Algorithms?](/articles/space-for-time)
+- [What Is O(n²) Quadratic Time? Nested Loops and Pairs](/articles/quadratic-time)
+- [What Is the Two-Pointer Technique on a Sorted Array?](/articles/two-pointers)
   `,
   ),
   defineArticle(
@@ -115,6 +135,10 @@ flowchart LR
   S --> C["ab -> 10"]
   C --> D["ba -> 20"]
 \`\`\`
+
+## Before you begin
+
+You should understand key equality and remainder. A **bucket** is one table position, the **load factor** is entries divided by buckets, and a **probe sequence** is the order of alternative slots examined by open addressing.
 
 Two common resolution strategies are:
 
@@ -173,7 +197,12 @@ class ChainedHashTable {
       hash += character.codePointAt(0) ?? 0;
     }
 
-    return this.buckets[hash % this.buckets.length] ?? [];
+    const bucket = this.buckets[hash % this.buckets.length];
+    if (bucket === undefined) {
+      throw new Error("validated bucket count produced no bucket");
+    }
+
+    return bucket;
   }
 }
 
@@ -195,7 +224,9 @@ The bucket invariant is:
 
 > Each logical key appears at most once, in the bucket selected by its hash.
 
-The implementation's fallback empty array is unreachable after constructor validation, but it keeps indexed access safe under strict TypeScript settings. Production tables also resize to control their **load factor**, usually defined as entries divided by buckets.
+The explicit missing-bucket check satisfies strict indexed-access settings without a type assertion. Constructor validation and remainder arithmetic make the error unreachable for a correctly constructed table.
+
+Production tables resize to control their load factor. When the table grows, entries must be rehashed because the bucket count changed; copying an entry to the same numeric index would generally be wrong. One resize can cost O(n), while growth across a long insertion sequence can still be O(1) amortized per insertion under the usual geometric-resizing strategy.
 
 ## Complexity
 
@@ -214,10 +245,15 @@ If all \`n\` keys collide, one chain has length \`n\). Lookup and update become 
 
 Use a hash table for fast expected lookup when extra memory is acceptable. Use a balanced search tree when sorted traversal or O(log n) worst-case operations matter.
 
+## In the course
+
+The core goal is to explain why equal bucket indexes still require full key comparison and why long chains produce a linear worst case. Designing secure hash functions, deletion rules for open addressing, and production resize thresholds is enrichment.
+
 ## Related
 
 - [How a Hash Map Remembers What You Have Already Seen](/articles/hash-maps)
 - [What Does O(1) Mean? Constant-Time Work That Stays Flat](/articles/constant-time)
+- [What Is a Balanced Tree? AVL, Red-Black, and Height](/articles/balanced-trees)
   `,
   ),
 ];

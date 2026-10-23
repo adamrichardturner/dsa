@@ -1,14 +1,12 @@
 "use client";
 
-import {
-  isValidElement,
-  type ReactNode,
-} from "react";
+import { isValidElement, type ReactNode } from "react";
 import ReactMarkdown, { type ExtraProps } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CodeRunner } from "@/components/code-runner";
 import { KeywordTooltip } from "@/components/keyword-tooltip";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
+import { VisualizationFence } from "@/components/visualizations/visualization";
 
 const nodeText = (node: ReactNode): string => {
   if (typeof node === "string" || typeof node === "number") {
@@ -98,7 +96,11 @@ function MarkdownAnchor({
 function MarkdownPre({ children }: { readonly children?: ReactNode }) {
   const only = onlyChild(children);
   const language = languageOf(codeClassName(only) ?? undefined);
-  if (language === "mermaid" || runnableLanguage(language)) {
+  if (
+    language === "mermaid" ||
+    language === "visualization" ||
+    runnableLanguage(language)
+  ) {
     return only;
   }
   return <pre>{children}</pre>;
@@ -115,6 +117,11 @@ function MarkdownCode({
   const language = languageOf(className);
   if (runnableLanguage(language)) {
     return <CodeRunner code={nodeText(children).replace(/\n$/, "")} />;
+  }
+  if (language === "visualization") {
+    return (
+      <VisualizationFence source={nodeText(children).replace(/\n$/, "")} />
+    );
   }
   if (language !== "mermaid") {
     return <code className={className}>{children}</code>;
