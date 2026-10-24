@@ -54,7 +54,10 @@ export function LegalSection({
 }) {
   return (
     <section className="space-y-4 text-sm leading-relaxed text-muted-foreground" aria-labelledby={id}>
-      <h2 id={id} className="font-serif text-2xl tracking-tight text-foreground">
+      <h2
+        id={id}
+        className="font-serif text-2xl tracking-tight text-foreground max-md:scroll-mt-20"
+      >
         {title}
       </h2>
       {children}

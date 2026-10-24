@@ -315,7 +315,7 @@ export default function HomePage() {
           <Reveal className="max-w-2xl space-y-3">
             <h2
               id="features"
-              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-20"
             >
               What you get
             </h2>
@@ -355,7 +355,7 @@ export default function HomePage() {
           <Reveal className="max-w-2xl space-y-3">
             <h2
               id="syllabus"
-              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-20"
             >
               Four weeks of course material
             </h2>
@@ -398,7 +398,7 @@ export default function HomePage() {
           <Reveal className="max-w-2xl space-y-3">
             <h2
               id="articles"
-              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-20"
             >
               Articles beside the course
             </h2>
@@ -448,7 +448,7 @@ export default function HomePage() {
           <Reveal className="max-w-2xl space-y-3">
             <h2
               id="desk"
-              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-20"
             >
               How a lesson goes
             </h2>
@@ -482,7 +482,7 @@ export default function HomePage() {
           <Reveal className="max-w-2xl space-y-3">
             <h2
               id="faq"
-              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-20"
             >
               Questions about data structures and algorithms
             </h2>

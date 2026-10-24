@@ -41,7 +41,7 @@ export default function ArticlesPage() {
         >
           <h2
             id={articleTopicId(group.topic)}
-            className="font-serif text-2xl tracking-tight"
+            className="font-serif text-2xl tracking-tight max-md:scroll-mt-20"
           >
             {group.topic}
           </h2>

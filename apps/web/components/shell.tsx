@@ -10,7 +10,7 @@ import { ArticleFooter } from "@/components/article-footer";
 import { InfinityIcon } from "@/components/infinity-icon";
 import { Onboarding } from "@/components/onboarding";
 import { LandingFooter } from "@/components/landing-footer";
-import { LandingMenu } from "@/components/landing-menu";
+import { MobileMenu } from "@/components/landing-menu";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
@@ -65,7 +65,6 @@ export function Shell({ children }: { readonly children: ReactNode }) {
   const { ready, user } = useAuth();
   const workspace = pathname.startsWith("/course/");
   const coursePage = pathname === "/course" || workspace;
-  const landing = pathname === "/";
   const visibleLinks = navLinks.filter((link) => {
     if (!link.signedInOnly) {
       return true;
@@ -80,14 +79,7 @@ export function Shell({ children }: { readonly children: ReactNode }) {
         workspace && "min-[1024px]:h-screen min-[1024px]:overflow-hidden",
       )}
     >
-      <header
-        className={cn(
-          "flex shrink-0 items-center justify-between gap-x-3 gap-y-2 border-b bg-background",
-          landing
-            ? "sticky top-0 z-40 h-14 flex-nowrap px-3 py-0 md:static md:z-auto md:px-4 md:py-2"
-            : "flex-wrap px-3 py-2 sm:h-14 sm:flex-nowrap sm:px-4",
-        )}
-      >
+      <header className="sticky top-0 z-40 flex h-14 shrink-0 flex-nowrap items-center justify-between gap-x-3 border-b bg-background px-3 md:static md:z-auto md:px-4">
         <div className="flex min-w-0 items-center gap-2">
           <Link
             href="/"
@@ -99,7 +91,7 @@ export function Shell({ children }: { readonly children: ReactNode }) {
             <InfinityIcon animate />
           </Link>
           {ready ? (
-            <nav className={cn("flex items-center", landing && "max-md:hidden")}>
+            <nav className="hidden items-center md:flex">
               {visibleLinks.map((link) => {
                 const active =
                   pathname === link.href ||
@@ -123,16 +115,11 @@ export function Shell({ children }: { readonly children: ReactNode }) {
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <div
-            className={cn(
-              "flex items-center gap-2",
-              landing && "max-md:hidden",
-            )}
-          >
+          <div className="hidden items-center gap-2 md:flex">
             <ThemeSwitch />
             <AccountMenu />
           </div>
-          {landing ? <LandingMenu /> : null}
+          <MobileMenu />
         </div>
       </header>
       {coursePage ? <DesktopNotice /> : null}

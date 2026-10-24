@@ -10,12 +10,20 @@ import {
   ChartColumn,
   CircleQuestionMark,
   Columns2,
+  Gauge,
   GraduationCap,
+  Hash,
+  House,
   Layers,
   Library,
+  List,
   LogOut,
   Menu,
+  Network,
+  Rows3,
+  Search,
   Settings,
+  Shapes,
   Shield,
   X,
   type LucideIcon,
@@ -37,6 +45,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
+import { articleTopicId, type ArticleTopic } from "@/lib/articles/types";
 import { SIGN_OUT } from "@/lib/operations";
 import { siteName } from "@/lib/site";
 
@@ -80,6 +89,13 @@ const pageLinks: readonly MenuLink[] = [
   },
 ];
 
+const homeLink: MenuLink = {
+  href: "/",
+  label: "Home",
+  detail: "The course, in four weeks",
+  icon: House,
+};
+
 const articlesLink: MenuLink = {
   href: "/articles",
   label: "Articles",
@@ -87,8 +103,7 @@ const articlesLink: MenuLink = {
   icon: Library,
 };
 
-const signedInLinks: readonly MenuLink[] = [
-  articlesLink,
+const accountLinks: readonly MenuLink[] = [
   {
     href: "/course",
     label: "Course",
@@ -140,17 +155,55 @@ const itemClass = (current: boolean): string => {
   );
 };
 
+const articleSectionMeta: readonly {
+  readonly topic: ArticleTopic;
+  readonly detail: string;
+  readonly icon: LucideIcon;
+}[] = [
+  { topic: "Cost", detail: "Time, space, and Big O", icon: Gauge },
+  { topic: "Arrays", detail: "Indexed sequences", icon: Rows3 },
+  { topic: "Hash maps", detail: "Keys and the buckets behind them", icon: Hash },
+  { topic: "Linear structures", detail: "Lists, stacks, and queues", icon: List },
+  {
+    topic: "Search and sort",
+    detail: "Finding a value, and ordering them",
+    icon: Search,
+  },
+  { topic: "Trees and graphs", detail: "Nodes, edges, and walks", icon: Network },
+  { topic: "Patterns", detail: "Greedy, search, and memory", icon: Shapes },
+];
+
+const articleSections: readonly MenuLink[] = articleSectionMeta.map((item) => ({
+  href: `#${articleTopicId(item.topic)}`,
+  label: item.topic,
+  detail: item.detail,
+  icon: item.icon,
+}));
+
+const sectionsForPath = (pathname: string): readonly MenuLink[] => {
+  if (pathname === "/") {
+    return pageLinks;
+  }
+  if (pathname === "/articles") {
+    return articleSections;
+  }
+  return [];
+};
+
 const exploreLinks = (
+  onHome: boolean,
   signedIn: boolean,
   isAdmin: boolean,
 ): readonly MenuLink[] => {
+  const start = onHome ? [articlesLink] : [homeLink, articlesLink];
   if (!signedIn) {
-    return [articlesLink];
+    return start;
   }
+  const withAccount = [...start, ...accountLinks];
   if (!isAdmin) {
-    return signedInLinks;
+    return withAccount;
   }
-  return [...signedInLinks, adminLink];
+  return [...withAccount, adminLink];
 };
 
 const routeCurrent = (href: string, pathname: string): boolean => {
@@ -172,9 +225,12 @@ const scrollToSection = (id: string): void => {
     return;
   }
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  target.scrollIntoView({
+  const header = document.querySelector("header");
+  const offset = header === null ? 0 : header.getBoundingClientRect().height + 16;
+  const top = target.getBoundingClientRect().top + window.scrollY - offset;
+  window.scrollTo({
+    top: Math.max(0, top),
     behavior: reduce ? "auto" : "smooth",
-    block: "start",
   });
 };
 
@@ -354,7 +410,7 @@ function MenuAccount({ onDone }: { readonly onDone: () => void }) {
   );
 }
 
-export function LandingMenu() {
+export function MobileMenu() {
   const pathname = usePathname();
   const { ready, user } = useAuth();
   const hash = useSyncExternalStore(subscribeHash, readHash, readServerHash);
@@ -392,7 +448,9 @@ export function LandingMenu() {
   };
 
   const signedIn = ready && user !== null;
-  const links = exploreLinks(signedIn, user !== null && user.isAdmin);
+  const onHome = pathname === "/";
+  const sections = sectionsForPath(pathname);
+  const links = exploreLinks(onHome, signedIn, user !== null && user.isAdmin);
 
   return (
     <Sheet
@@ -419,7 +477,7 @@ export function LandingMenu() {
           return true;
         }}
         className={cn(
-          "grid h-dvh max-h-dvh w-[min(88vw,22.5rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden bg-background p-0 text-foreground shadow-2xl duration-300 ease-out sm:max-w-none",
+          "grid h-full max-h-dvh min-h-0 w-[min(88vw,22.5rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden bg-background p-0 text-foreground shadow-2xl duration-300 ease-out sm:max-w-none",
           "data-[side=left]:data-ending-style:translate-x-[-100%]! data-[side=left]:data-starting-style:translate-x-[-100%]!",
         )}
       >
@@ -447,22 +505,24 @@ export function LandingMenu() {
           </SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-col gap-6 overflow-y-auto overscroll-contain px-3 py-4">
-          <nav aria-labelledby="landing-menu-page">
-            <MenuLabel id="landing-menu-page">On this page</MenuLabel>
-            <ul className="mt-2 space-y-1">
-              {pageLinks.map((link, index) => (
-                <PageLinkButton
-                  key={link.href}
-                  link={link}
-                  index={index}
-                  current={hash === link.href.slice(1)}
-                  onSelect={selectSection}
-                />
-              ))}
-            </ul>
-          </nav>
-          <nav aria-labelledby="landing-menu-explore">
-            <MenuLabel id="landing-menu-explore">Explore</MenuLabel>
+          {sections.length > 0 ? (
+            <nav aria-labelledby="mobile-menu-page">
+              <MenuLabel id="mobile-menu-page">On this page</MenuLabel>
+              <ul className="mt-2 space-y-1">
+                {sections.map((link, index) => (
+                  <PageLinkButton
+                    key={link.href}
+                    link={link}
+                    index={index}
+                    current={hash === link.href.slice(1)}
+                    onSelect={selectSection}
+                  />
+                ))}
+              </ul>
+            </nav>
+          ) : null}
+          <nav aria-labelledby="mobile-menu-explore">
+            <MenuLabel id="mobile-menu-explore">Explore</MenuLabel>
             <ul className="mt-2 space-y-1">
               {links.map((link) => (
                 <ExploreLinkItem
@@ -475,7 +535,7 @@ export function LandingMenu() {
             </ul>
           </nav>
         </div>
-        <SheetFooter className="mt-0 gap-3 border-t p-4 pb-5">
+        <SheetFooter className="mt-0 gap-3 border-t p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div className="flex items-center justify-between gap-3 px-1">
             <p className="text-sm text-muted-foreground">Appearance</p>
             <ThemeSwitch />
