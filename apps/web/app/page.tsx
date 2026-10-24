@@ -15,7 +15,12 @@ import {
   RevealGroup,
   RevealItem,
 } from "@/components/reveal";
-import { articleGroups, articleTopicId } from "@/lib/articles";
+import { articleGroups } from "@/lib/articles";
+import {
+  articleCategoryPath,
+  articleCountLabel,
+  categoryByTopic,
+} from "@/lib/articles/categories";
 import {
   creatorName,
   siteDescription,
@@ -27,16 +32,9 @@ import {
 const courseDescription =
   "A 100% free, four-week TypeScript course in data structures and algorithms. Short lessons, an editor, tests, and progress saved on your account.";
 
-const articleCountLabel = (count: number): string => {
-  if (count === 1) {
-    return "1 article";
-  }
-  return `${count} articles`;
-};
-
 const readingGroups = articleGroups().map((group) => ({
   topic: group.topic,
-  href: `/articles#${articleTopicId(group.topic)}`,
+  href: articleCategoryPath(categoryByTopic(group.topic)),
   count: group.articles.length,
 }));
 

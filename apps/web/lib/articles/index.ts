@@ -12,6 +12,7 @@ import { quicksortArticles } from "./quicksort";
 import { searchSortArticles } from "./search-sort";
 import { treeTraversalArticles } from "./tree-traversals";
 import { treeArticles } from "./trees";
+import type { ArticleCategory } from "./categories";
 import type { Article, ArticleTopic } from "./types";
 
 export type { Article, ArticleTopic };
@@ -77,6 +78,41 @@ export interface ArticleGroup {
   readonly topic: ArticleTopic;
   readonly articles: readonly Article[];
 }
+
+export const articlesForTopic = (topic: ArticleTopic): readonly Article[] => {
+  const items: Article[] = [];
+  for (const item of articles) {
+    if (item.topic !== topic) {
+      continue;
+    }
+    items.push(item);
+  }
+  return items;
+};
+
+export const categoryKeywords = (
+  category: ArticleCategory,
+  items: readonly Article[],
+): readonly string[] => {
+  const seen: Record<string, true> = {};
+  const keywords: string[] = [];
+  const add = (keyword: string): void => {
+    const key = keyword.toLowerCase();
+    if (seen[key] === true) {
+      return;
+    }
+    seen[key] = true;
+    keywords.push(keyword);
+  };
+  add(category.title);
+  add("data structures and algorithms");
+  for (const item of items) {
+    for (const keyword of item.keywords) {
+      add(keyword);
+    }
+  }
+  return keywords;
+};
 
 export const articleGroups = (): readonly ArticleGroup[] => {
   const groups: ArticleGroup[] = [];

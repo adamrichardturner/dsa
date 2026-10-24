@@ -2,10 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { JsonLd } from "@/components/json-ld";
 import { LessonMarkdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { articleBySlug, articles } from "@/lib/articles";
+import {
+  articleCategoryPath,
+  categoryByTopic,
+} from "@/lib/articles/categories";
+import { articleJsonLd } from "@/lib/articles/structured-data";
 import { lessonReturnPath } from "@/lib/lesson-return";
 import { socialImage } from "@/lib/site";
 import { cn } from "cn";
@@ -34,14 +40,23 @@ export async function generateMetadata({
     return { title: "Article" };
   }
 
+  const path = `/articles/${entry.slug}`;
   return {
     title: entry.title,
     description: entry.summary,
-    alternates: { canonical: `/articles/${entry.slug}` },
+    keywords: [...entry.keywords],
+    alternates: { canonical: path },
     openGraph: {
+      type: "article",
       title: entry.title,
       description: entry.summary,
-      url: `/articles/${entry.slug}`,
+      url: path,
+      images: [socialImage],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: entry.title,
+      description: entry.summary,
       images: [socialImage],
     },
   };
@@ -67,9 +82,12 @@ export default async function ArticlePage({
     notFound();
   }
   const backHref = lessonReturnPath(fromParam(query.from));
+  const category = categoryByTopic(entry.topic);
+  const categoryPath = articleCategoryPath(category);
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
+      <JsonLd data={articleJsonLd(entry, category)} />
       {backHref !== null ? (
         <Link
           href={backHref}
@@ -82,18 +100,35 @@ export default async function ArticlePage({
           Back to lesson
         </Link>
       ) : null}
-      <p className="text-sm text-muted-foreground">
-        <Link
-          href="/articles"
-          className="underline-offset-4 hover:text-foreground hover:underline"
-        >
-          Articles
-        </Link>
-        <span aria-hidden="true"> · </span>
-        {entry.topic}
-      </p>
+      <nav aria-label="Breadcrumb">
+        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+          <li>
+            <Link
+              href="/articles"
+              className="underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Articles
+            </Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li>
+            <Link
+              href={categoryPath}
+              className="underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {category.title}
+            </Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" className="text-foreground">
+            {entry.title}
+          </li>
+        </ol>
+      </nav>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Badge variant="secondary">{entry.topic}</Badge>
+        <Badge variant="secondary" render={<Link href={categoryPath} />}>
+          {category.title}
+        </Badge>
       </div>
       <h1 className="mt-3 font-serif text-4xl tracking-tight">{entry.title}</h1>
       <p className="mt-4 max-w-xl text-muted-foreground">{entry.summary}</p>

@@ -7,14 +7,17 @@ import {
   type FooterColumn,
   type FooterLink,
 } from "@/components/site-footer";
-import { articleTopicId, articleTopics } from "@/lib/articles/types";
+import {
+  articleCategories,
+  articleCategoryPath,
+} from "@/lib/articles/categories";
 import { useAuth } from "@/lib/auth";
 
 const topicLinks: readonly FooterLink[] = [
   { href: "/articles", label: "All articles" },
-  ...articleTopics.map((topic) => ({
-    href: `/articles#${articleTopicId(topic)}`,
-    label: topic,
+  ...articleCategories.map((category) => ({
+    href: articleCategoryPath(category),
+    label: category.title,
   })),
 ];
 
@@ -27,7 +30,7 @@ export function ArticleFooter() {
       pending: !ready,
     },
     {
-      title: "Topics",
+      title: "Categories",
       links: topicLinks,
     },
     legalColumn,

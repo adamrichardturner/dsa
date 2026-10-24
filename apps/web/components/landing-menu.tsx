@@ -45,7 +45,11 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth";
-import { articleTopicId, type ArticleTopic } from "@/lib/articles/types";
+import {
+  articleCategoryPath,
+  categoryByTopic,
+} from "@/lib/articles/categories";
+import type { ArticleTopic } from "@/lib/articles/types";
 import { SIGN_OUT } from "@/lib/operations";
 import { siteName } from "@/lib/site";
 
@@ -162,32 +166,61 @@ const articleSectionMeta: readonly {
 }[] = [
   { topic: "Cost", detail: "Time, space, and Big O", icon: Gauge },
   { topic: "Arrays", detail: "Indexed sequences", icon: Rows3 },
-  { topic: "Hash maps", detail: "Keys and the buckets behind them", icon: Hash },
-  { topic: "Linear structures", detail: "Lists, stacks, and queues", icon: List },
+  {
+    topic: "Hash maps",
+    detail: "Keys and the buckets behind them",
+    icon: Hash,
+  },
+  {
+    topic: "Linear structures",
+    detail: "Lists, stacks, and queues",
+    icon: List,
+  },
   {
     topic: "Search and sort",
     detail: "Finding a value, and ordering them",
     icon: Search,
   },
-  { topic: "Trees and graphs", detail: "Nodes, edges, and walks", icon: Network },
+  {
+    topic: "Trees and graphs",
+    detail: "Nodes, edges, and walks",
+    icon: Network,
+  },
   { topic: "Patterns", detail: "Greedy, search, and memory", icon: Shapes },
 ];
 
 const articleSections: readonly MenuLink[] = articleSectionMeta.map((item) => ({
-  href: `#${articleTopicId(item.topic)}`,
+  href: articleCategoryPath(categoryByTopic(item.topic)),
   label: item.topic,
   detail: item.detail,
   icon: item.icon,
 }));
 
-const sectionsForPath = (pathname: string): readonly MenuLink[] => {
+interface MenuSection {
+  readonly id: string;
+  readonly label: string;
+  readonly links: readonly MenuLink[];
+  readonly kind: "hash" | "route";
+}
+
+const menuSection = (pathname: string): MenuSection | null => {
   if (pathname === "/") {
-    return pageLinks;
+    return {
+      id: "mobile-menu-page",
+      label: "On this page",
+      links: pageLinks,
+      kind: "hash",
+    };
   }
-  if (pathname === "/articles") {
-    return articleSections;
+  if (pathname === "/articles" || pathname.startsWith("/articles/")) {
+    return {
+      id: "mobile-menu-categories",
+      label: "Categories",
+      links: articleSections,
+      kind: "route",
+    };
   }
-  return [];
+  return null;
 };
 
 const exploreLinks = (
@@ -226,7 +259,8 @@ const scrollToSection = (id: string): void => {
   }
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const header = document.querySelector("header");
-  const offset = header === null ? 0 : header.getBoundingClientRect().height + 16;
+  const offset =
+    header === null ? 0 : header.getBoundingClientRect().height + 16;
   const top = target.getBoundingClientRect().top + window.scrollY - offset;
   window.scrollTo({
     top: Math.max(0, top),
@@ -449,7 +483,7 @@ export function MobileMenu() {
 
   const signedIn = ready && user !== null;
   const onHome = pathname === "/";
-  const sections = sectionsForPath(pathname);
+  const section = menuSection(pathname);
   const links = exploreLinks(onHome, signedIn, user !== null && user.isAdmin);
 
   return (
@@ -505,19 +539,28 @@ export function MobileMenu() {
           </SheetDescription>
         </SheetHeader>
         <div className="flex min-h-0 flex-col gap-6 overflow-y-auto overscroll-contain px-3 py-4">
-          {sections.length > 0 ? (
-            <nav aria-labelledby="mobile-menu-page">
-              <MenuLabel id="mobile-menu-page">On this page</MenuLabel>
+          {section !== null ? (
+            <nav aria-labelledby={section.id}>
+              <MenuLabel id={section.id}>{section.label}</MenuLabel>
               <ul className="mt-2 space-y-1">
-                {sections.map((link, index) => (
-                  <PageLinkButton
-                    key={link.href}
-                    link={link}
-                    index={index}
-                    current={hash === link.href.slice(1)}
-                    onSelect={selectSection}
-                  />
-                ))}
+                {section.kind === "hash"
+                  ? section.links.map((link, index) => (
+                      <PageLinkButton
+                        key={link.href}
+                        link={link}
+                        index={index}
+                        current={hash === link.href.slice(1)}
+                        onSelect={selectSection}
+                      />
+                    ))
+                  : section.links.map((link) => (
+                      <ExploreLinkItem
+                        key={link.href}
+                        link={link}
+                        current={routeCurrent(link.href, pathname)}
+                        onSelect={closeMenu}
+                      />
+                    ))}
               </ul>
             </nav>
           ) : null}
