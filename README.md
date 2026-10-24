@@ -187,12 +187,13 @@ Suggested reading at the foot of a lesson points at the articles for that lesson
 | Path | Role |
 | --- | --- |
 | [`apps/web`](apps/web/README.md) | Next.js app: the course desk, articles, account pages, and progress. Deployed on Vercel. |
+| [`apps/mobile`](apps/mobile/README.md) | Expo app: the same course on a phone, with gap exercises instead of the desktop editor. |
 | [`apps/api`](apps/api/README.md) | Express and GraphQL. Domain code is Effect. Deployed on a VPS with Postgres. |
 | `deploy/` | The API workflow's remote script, and the Nginx site for the API host. |
 
 The root `package.json` is a thin runner. It starts each app with `npm --prefix`.
 
-It is a pair of packages, with shared environment at the repository root.
+The apps share the environment at the repository root. The phone is a third package and talks to the same API.
 
 ## Local development
 
@@ -215,6 +216,7 @@ npm run dev:db
 ```bash
 npm run dev:api
 npm run dev:web
+npm run dev:mobile
 ```
 
 | Command | What it does |
@@ -223,6 +225,7 @@ npm run dev:web
 | `npm run dev:docker:detach` | Same, in the background |
 | `npm run dev:logs` | Follows the container logs |
 | `npm run dev:down` | Stops the stack |
+| `npm run dev:mobile` | Starts the Expo app in `apps/mobile` |
 
 The app is at [http://localhost:3000](http://localhost:3000).
 

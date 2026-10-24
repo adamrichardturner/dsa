@@ -63,6 +63,8 @@ Profile mutations are `completeOnboarding`, `setAuditMode`, `updateProfile`, `ch
 
 Desk mutations are `saveProgress`, `runCode`, `submitSolution`, and `skipLesson`. `runSnippet` is the public snippet runner. `adminDeleteAccount` is limited to the maintainer.
 
+The phone adds `submitGap` and `solutionGuide`. A problem's `gap` field is the template and the unlabelled snippets. The answers stay on the server. `submitGap` assembles the function, runs the same tests as `submitSolution`, and reports which blanks matched. `solutionGuide` returns the written explanation after two failed submissions, or after the exercise has been solved. `signInWithApple` accepts an Apple identity token. Google and GitHub also accept `client=mobile` on `/auth/:provider`, which redirects to the `dsa://` scheme instead of the website.
+
 ## Accounts
 
 Passwords are stored with scrypt. A password is at least 8 characters.

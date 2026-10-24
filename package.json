@@ -5,10 +5,11 @@
     "dev:db": "docker compose up db -d --wait",
     "dev:api": "npm run dev --prefix apps/api",
     "dev:web": "npm run dev --prefix apps/web",
+    "dev:mobile": "npm run start --prefix apps/mobile",
     "dev:docker": "docker compose up --build",
     "dev:docker:detach": "docker compose up -d --build --wait",
     "dev:logs": "docker compose logs -f",
     "dev:down": "docker compose down",
-    "typecheck": "npm run typecheck --prefix apps/api && npm run typecheck --prefix apps/web"
+    "typecheck": "npm run typecheck --prefix apps/api && npm run typecheck --prefix apps/web && npm run typecheck --prefix apps/mobile"
   }
 }
