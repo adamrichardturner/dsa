@@ -4,6 +4,9 @@ import Animated, { FadeIn, SlideInDown } from "react-native-reanimated";
 import { ApiError, request } from "@/api/client";
 import { SKIP_LESSON, SOLUTION_GUIDE } from "@/api/operations";
 import type { SkipResult, SolutionGuide } from "@/api/types";
+import { CodeWindow, PlainCodeLines } from "@/lesson/code-window";
+import { exerciseHighlightLanguage } from "@/lesson/highlight";
+import { HighlightedCode } from "@/lesson/highlighted-code";
 import { MermaidBlock } from "@/lesson/visuals";
 import { useTheme } from "@/theme/theme";
 import { Button } from "@/ui/primitives";
@@ -98,11 +101,13 @@ export function GuideSheet({
                       return <MermaidBlock key={`d-${index}`} chart={block.chart} />;
                     }
                     if (block.kind === "code") {
+                      const language = exerciseHighlightLanguage(guide.code);
+                      const label = language === "javascript" ? "JavaScript" : "TypeScript";
                       return (
                         <Animated.View entering={FadeIn.duration(240)} key={`c-${index}`}>
-                          <Text style={[styles.code, { color: colors.foreground, backgroundColor: colors.code }]}>
-                            {guide.code}
-                          </Text>
+                          <CodeWindow languageLabel={label}>
+                            <PlainCodeLines code={guide.code} language={language} />
+                          </CodeWindow>
                         </Animated.View>
                       );
                     }
@@ -116,9 +121,16 @@ export function GuideSheet({
                 <View style={styles.reveals}>
                   <Text style={[styles.heading, { color: colors.foreground }]}>The gaps</Text>
                   {guide.reveals.map((reveal, index) => (
-                    <Text key={reveal.gapId} style={[styles.codeLine, { color: colors.foreground }]}>
-                      {index + 1}. {reveal.text}
-                    </Text>
+                    <View key={reveal.gapId} style={styles.reveal}>
+                      <Text style={[styles.codeLine, { color: colors.foreground }]}>{index + 1}.</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.revealScroll}
+                      >
+                        <HighlightedCode code={reveal.text} language="typescript" />
+                      </ScrollView>
+                    </View>
                   ))}
                 </View>
               )}
@@ -180,20 +192,23 @@ const styles = StyleSheet.create({
   list: {
     gap: 6,
   },
-  code: {
-    borderRadius: 12,
-    fontFamily: "JetBrainsMono_400Regular",
-    fontSize: 12,
-    lineHeight: 18,
-    padding: 12,
-  },
   reveals: {
     gap: 8,
+  },
+  reveal: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  revealScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
   codeLine: {
     fontFamily: "JetBrainsMono_400Regular",
     fontSize: 13,
     lineHeight: 20,
+    minWidth: 22,
   },
   actions: {
     gap: 10,

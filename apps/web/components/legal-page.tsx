@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { SiteLink } from "@/components/embed-links";
 import { PageMain } from "@/components/page-frame";
 
 export interface LegalContentsItem {
@@ -89,19 +89,9 @@ export function LegalLink({
   readonly href: string;
   readonly children: ReactNode;
 }) {
-  const className = "text-foreground underline underline-offset-4";
-  if (href.startsWith("/")) {
-    return (
-      <Link href={href} className={className}>
-        {children}
-      </Link>
-    );
-  }
-
-  const external = href.startsWith("http");
   return (
-    <a href={href} className={className} rel={external ? "noreferrer" : undefined}>
+    <SiteLink className="text-foreground underline underline-offset-4" href={href}>
       {children}
-    </a>
+    </SiteLink>
   );
 }

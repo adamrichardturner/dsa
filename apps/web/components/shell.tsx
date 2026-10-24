@@ -15,6 +15,7 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { pageFrameClassName } from "@/components/page-frame";
 import { buttonVariants } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
+import { isEmbedPath } from "@/lib/embed";
 import { siteName, siteShortName } from "@/lib/site";
 
 interface NavLink {
@@ -102,6 +103,13 @@ function PageFooter({ pathname }: { readonly pathname: string }) {
 export function Shell({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
   const { ready, user } = useAuth();
+  if (isEmbedPath(pathname)) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background text-foreground" data-chrome="none">
+        {children}
+      </div>
+    );
+  }
   const lessonPage = pathname.startsWith("/course/");
   const coursePage = pathname === "/course" || lessonPage;
   const authPage = isAuthRoute(pathname);

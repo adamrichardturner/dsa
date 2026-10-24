@@ -1,8 +1,10 @@
 import { Fraunces_500Medium } from "@expo-google-fonts/fraunces/500Medium";
 import { Geist_400Regular } from "@expo-google-fonts/geist/400Regular";
+import { Geist_400Regular_Italic } from "@expo-google-fonts/geist/400Regular_Italic";
 import { Geist_500Medium } from "@expo-google-fonts/geist/500Medium";
 import { Geist_600SemiBold } from "@expo-google-fonts/geist/600SemiBold";
 import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono/400Regular";
+import { JetBrainsMono_400Regular_Italic } from "@expo-google-fonts/jetbrains-mono/400Regular_Italic";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -11,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SessionProvider, useSession } from "@/auth/session";
+import { CodeThemeProvider } from "@/lesson/code-theme";
 import { BrandSplash } from "@/splash/brand-splash";
 import { ThemeProvider, useTheme } from "@/theme/theme";
 
@@ -22,9 +25,11 @@ function RootStack() {
   const [fontsLoaded] = useFonts({
     Fraunces_500Medium,
     Geist_400Regular,
+    Geist_400Regular_Italic,
     Geist_500Medium,
     Geist_600SemiBold,
     JetBrainsMono_400Regular,
+    JetBrainsMono_400Regular_Italic,
   });
   const [splashVisible, setSplashVisible] = useState(true);
   const hideSplash = useCallback(() => {
@@ -62,9 +67,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <ThemeProvider>
-        <SessionProvider>
-          <RootStack />
-        </SessionProvider>
+        <CodeThemeProvider>
+          <SessionProvider>
+            <RootStack />
+          </SessionProvider>
+        </CodeThemeProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

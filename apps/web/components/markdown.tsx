@@ -4,9 +4,11 @@ import { isValidElement, type ReactNode } from "react";
 import ReactMarkdown, { type ExtraProps } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CodeRunner } from "@/components/code-runner";
+import { useEmbedLinks } from "@/components/embed-links";
 import { KeywordTooltip } from "@/components/keyword-tooltip";
 import { MermaidDiagram } from "@/components/mermaid-diagram";
 import { VisualizationFence } from "@/components/visualizations/visualization";
+import { toEmbedHref } from "@/lib/embed";
 
 const nodeText = (node: ReactNode): string => {
   if (typeof node === "string" || typeof node === "number") {
@@ -80,17 +82,19 @@ function MarkdownAnchor({
   readonly articleFrom?: string;
   readonly node?: ExtraProps["node"];
 }) {
-  if (title === "article" && typeof href === "string") {
+  const embed = useEmbedLinks();
+  const resolved = embed && typeof href === "string" ? toEmbedHref(href) : href;
+  if (title === "article" && typeof resolved === "string") {
     return (
-      <KeywordTooltip href={href} from={articleFrom}>
+      <KeywordTooltip from={articleFrom} href={resolved}>
         {children}
       </KeywordTooltip>
     );
   }
-  if (typeof href !== "string") {
+  if (typeof resolved !== "string") {
     return <span>{children}</span>;
   }
-  return <a href={href}>{children}</a>;
+  return <a href={resolved}>{children}</a>;
 }
 
 function MarkdownPre({ children }: { readonly children?: ReactNode }) {

@@ -2,9 +2,9 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { WebView } from "react-native-webview";
 import { ApiError, request } from "@/api/client";
 import { webUrl } from "@/api/config";
+import { ContentWebView } from "@/content/content-webview";
 import { CHANGE_PASSWORD, SET_AUDIT_MODE, UPDATE_PROFILE } from "@/api/operations";
 import { readUser, useSession } from "@/auth/session";
 import { useTheme } from "@/theme/theme";
@@ -35,7 +35,7 @@ export default function SettingsScreen() {
         <Pressable accessibilityRole="button" onPress={() => setLegal(null)} style={styles.legalBack}>
           <Text style={[styles.back, { color: colors.mutedForeground }]}>Settings</Text>
         </Pressable>
-        <WebView source={{ uri: legal }} />
+        <ContentWebView uri={legal} />
       </View>
     );
   }
@@ -149,10 +149,10 @@ export default function SettingsScreen() {
       ) : null}
       {message === null ? null : <Notice>{message}</Notice>}
       {error === null ? null : <Notice>{error}</Notice>}
-      <Pressable accessibilityRole="button" onPress={() => setLegal(`${webUrl}/privacy`)}>
+      <Pressable accessibilityRole="button" onPress={() => setLegal(`${webUrl}/embed/privacy`)}>
         <Text style={[styles.link, { color: colors.foreground }]}>Privacy</Text>
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => setLegal(`${webUrl}/terms`)}>
+      <Pressable accessibilityRole="button" onPress={() => setLegal(`${webUrl}/embed/terms`)}>
         <Text style={[styles.link, { color: colors.foreground }]}>Terms</Text>
       </Pressable>
       <Button

@@ -25,6 +25,10 @@
     "expo-symbols": "~58.0.4",
     "expo-system-ui": "~58.0.6",
     "expo-web-browser": "~58.0.6",
+    "mdast-util-from-markdown": "^2.1.0",
+    "mdast-util-gfm": "^3.1.0",
+    "micromark-extension-gfm": "^3.0.0",
+    "prismjs": "^1.30.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.0",
@@ -39,6 +43,7 @@
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
+    "@types/prismjs": "^1.26.6",
     "@types/react": "~19.3.0",
     "typescript": "~6.0.3"
   },
