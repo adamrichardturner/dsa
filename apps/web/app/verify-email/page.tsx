@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useMutation } from "urql";
+import { FormFrame } from "@/components/page-frame";
 import { PageSpinner } from "@/components/page-spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
@@ -50,7 +51,7 @@ function VerifyEmail() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md items-center px-6 py-16">
+    <FormFrame>
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-serif text-3xl">That link does not work</CardTitle>
@@ -65,7 +66,7 @@ function VerifyEmail() {
           </Link>
         </CardContent>
       </Card>
-    </main>
+    </FormFrame>
   );
 }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useMutation } from "urql";
+import { FormFrame } from "@/components/page-frame";
 import { PageSpinner } from "@/components/page-spinner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,7 @@ export function AuthForm({
   };
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md items-center px-6 py-16">
+    <FormFrame>
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-serif text-3xl">{title}</CardTitle>
@@ -198,6 +199,6 @@ export function AuthForm({
           </p>
         </CardContent>
       </Card>
-    </main>
+    </FormFrame>
   );
 }

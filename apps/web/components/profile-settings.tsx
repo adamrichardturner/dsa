@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation } from "urql";
 import { cn } from "cn";
+import { PageMain } from "@/components/page-frame";
 import { UserAvatar } from "@/components/user-avatar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -382,7 +383,7 @@ export function ProfileSettings({
   readonly signOut: () => void;
 }) {
   return (
-    <main className="mx-auto max-w-3xl space-y-8 px-6 py-12">
+    <PageMain className="space-y-8 py-12">
       <div className="space-y-3">
         <Badge variant="secondary">Profile</Badge>
         <h1 className="font-serif text-4xl tracking-tight">Your account.</h1>
@@ -412,6 +413,6 @@ export function ProfileSettings({
       </Card>
       <PasswordForm user={user} updateUser={updateUser} />
       <DeleteAccount user={user} signOut={signOut} />
-    </main>
+    </PageMain>
   );
 }

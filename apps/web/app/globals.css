@@ -875,6 +875,12 @@
   pointer-events: auto;
 }
 
+@media (min-width: 1024px) {
+  .lesson-shell:has([data-slot="sidebar"][data-state="expanded"]) .lesson-header-row {
+    padding-left: calc(16rem + 0.75rem);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html.theme-transition,
   html.theme-transition *,

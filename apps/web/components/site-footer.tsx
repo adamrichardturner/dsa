@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "cn";
+import { pageFrameClassName } from "@/components/page-frame";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   contactEmail,
@@ -144,7 +145,7 @@ export function SiteFooter({
 
   return (
     <footer className="mt-auto border-t">
-      <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+      <div className={cn(pageFrameClassName, "py-16 sm:py-20")}>
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
           <div className="space-y-5 lg:col-span-5">
             <p className="font-serif text-3xl tracking-tight">{siteName}</p>

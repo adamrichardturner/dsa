@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { LandingActions, LandingCloseCopy } from "@/components/landing-actions";
+import { PageMain } from "@/components/page-frame";
 import {
   LandingMotion,
   Reveal,
@@ -261,7 +262,7 @@ const structuredData = {
 
 export default function HomePage() {
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16">
+    <PageMain className="py-16">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -523,6 +524,6 @@ export default function HomePage() {
           </section>
         </Reveal>
       </LandingMotion>
-    </main>
+    </PageMain>
   );
 }

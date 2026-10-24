@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArticleList, CategoryCard } from "@/components/article-catalog";
+import { PageMain } from "@/components/page-frame";
 import { JsonLd } from "@/components/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -48,7 +49,7 @@ export const metadata: Metadata = {
 
 export default function ArticlesPage() {
   return (
-    <main className="mx-auto max-w-5xl space-y-12 px-6 py-12">
+    <PageMain className="space-y-12 py-12">
       <JsonLd data={articlesIndexJsonLd(sections, description)} />
       <header className="max-w-2xl space-y-3">
         <Badge variant="secondary">Reference</Badge>
@@ -109,6 +110,6 @@ export default function ArticlesPage() {
           </section>
         ))}
       </section>
-    </main>
+    </PageMain>
   );
 }

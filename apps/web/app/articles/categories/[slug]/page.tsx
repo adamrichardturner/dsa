@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArticleList } from "@/components/article-catalog";
+import { PageMain } from "@/components/page-frame";
 import { JsonLd } from "@/components/json-ld";
 import { Badge } from "@/components/ui/badge";
 import { articlesForTopic, categoryKeywords } from "@/lib/articles";
@@ -64,7 +65,7 @@ export default async function ArticleCategoryPage({
   const items = articlesForTopic(category.topic);
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 px-6 py-12">
+    <PageMain className="space-y-8 py-12">
       <JsonLd data={categoryJsonLd(category, items)} />
       <nav aria-label="Breadcrumb">
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
@@ -90,6 +91,6 @@ export default async function ArticleCategoryPage({
         </p>
       </header>
       <ArticleList articles={items} />
-    </main>
+    </PageMain>
   );
 }

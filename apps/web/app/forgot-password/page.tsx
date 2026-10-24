@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useMutation } from "urql";
+import { FormFrame } from "@/components/page-frame";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +26,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <main className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md items-center px-6 py-16">
+      <FormFrame>
         <Card className="w-full">
           <CardHeader>
             <CardTitle className="font-serif text-3xl">Reset your password</CardTitle>
@@ -44,12 +45,12 @@ export default function ForgotPasswordPage() {
             </p>
           </CardContent>
         </Card>
-      </main>
+      </FormFrame>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md items-center px-6 py-16">
+    <FormFrame>
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-serif text-3xl">Reset your password</CardTitle>
@@ -88,6 +89,6 @@ export default function ForgotPasswordPage() {
           </p>
         </CardContent>
       </Card>
-    </main>
+    </FormFrame>
   );
 }

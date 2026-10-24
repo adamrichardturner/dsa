@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { Lock } from "lucide-react";
 import { useQuery } from "urql";
 import { AuditModeToggle } from "@/components/audit-mode-toggle";
+import { PageMain } from "@/components/page-frame";
 import { PageSpinner } from "@/components/page-spinner";
 import { VerifyEmailScreen } from "@/components/verify-email-hold";
 import { CompletionTick } from "@/components/completion-tick";
@@ -215,13 +216,13 @@ export default function CoursePage() {
 
   if (result.error !== undefined) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-12">
+      <PageMain className="py-12">
         <Alert variant="destructive">
           <AlertDescription>
             {graphqlErrorMessage(result.error, "Could not load the course.")}
           </AlertDescription>
         </Alert>
-      </main>
+      </PageMain>
     );
   }
 
@@ -232,7 +233,7 @@ export default function CoursePage() {
   const modules = result.data.modules ?? [];
 
   return (
-    <main className="mx-auto max-w-3xl space-y-10 px-6 py-12">
+    <PageMain className="space-y-10 py-12">
       <div className="space-y-3">
         <Badge variant="secondary">The path</Badge>
         <h1 className="font-serif text-4xl tracking-tight">
@@ -253,6 +254,6 @@ export default function CoursePage() {
       {modules.map((module) => (
         <WeekSection key={module.id} module={module} />
       ))}
-    </main>
+    </PageMain>
   );
 }

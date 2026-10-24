@@ -7,6 +7,7 @@ import { AdminUsers } from "@/components/admin-users";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageMain } from "@/components/page-frame";
 import { PageSpinner } from "@/components/page-spinner";
 import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { ADMIN_OVERVIEW } from "@/lib/operations";
@@ -43,13 +44,13 @@ export function AdminPanel() {
 
   if (result.error !== undefined || result.data === undefined) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <PageMain className="py-12">
         <Alert variant="destructive">
           <AlertDescription>
             {graphqlErrorMessage(result.error, "Could not load the admin panel.")}
           </AlertDescription>
         </Alert>
-      </main>
+      </PageMain>
     );
   }
 
@@ -59,7 +60,7 @@ export function AdminPanel() {
   };
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 px-6 py-12">
+    <PageMain className="space-y-8 py-12">
       <div className="space-y-3">
         <Badge variant="secondary">Admin</Badge>
         <h1 className="font-serif text-4xl tracking-tight">Who is using the course.</h1>
@@ -95,6 +96,6 @@ export function AdminPanel() {
 
       <AdminCharts overview={overview} />
       <AdminUsers users={overview.users} onDeleted={refresh} />
-    </main>
+    </PageMain>
   );
 }

@@ -3,6 +3,7 @@
 import { useQuery } from "urql";
 import { PageSpinner } from "@/components/page-spinner";
 import { VerifyEmailScreen } from "@/components/verify-email-hold";
+import { PageMain } from "@/components/page-frame";
 import { ProgressBoard } from "@/components/progress-board";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRequireUser } from "@/lib/auth";
@@ -33,11 +34,11 @@ export default function ProgressPage() {
 
   if (result.error !== undefined || result.data === undefined) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-12">
+      <PageMain className="py-12">
         <Alert variant="destructive">
           <AlertDescription>{graphqlErrorMessage(result.error, "Could not load progress.")}</AlertDescription>
         </Alert>
-      </main>
+      </PageMain>
     );
   }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "cn";
 import { CompletionTick } from "@/components/completion-tick";
+import { PageMain } from "@/components/page-frame";
 import { ProgressCharts } from "@/components/progress-charts";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -250,7 +251,7 @@ export function ProgressBoard({
       : `${analytics.attempts} submissions`;
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 px-6 py-12">
+    <PageMain className="space-y-8 py-12">
       <div className="space-y-3">
         <Badge variant="secondary">Progress</Badge>
         <h1 className="font-serif text-4xl tracking-tight">
@@ -292,6 +293,6 @@ export function ProgressBoard({
       >
         Back to the course
       </Link>
-    </main>
+    </PageMain>
   );
 }

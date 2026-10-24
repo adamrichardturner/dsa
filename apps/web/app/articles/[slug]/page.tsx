@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { JsonLd } from "@/components/json-ld";
+import { PageMain } from "@/components/page-frame";
 import { LessonMarkdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -86,7 +87,7 @@ export default async function ArticlePage({
   const categoryPath = articleCategoryPath(category);
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-12">
+    <PageMain className="py-12">
       <JsonLd data={articleJsonLd(entry, category)} />
       {backHref !== null ? (
         <Link
@@ -135,6 +136,6 @@ export default async function ArticlePage({
       <div className="mt-8">
         <LessonMarkdown content={entry.body} />
       </div>
-    </main>
+    </PageMain>
   );
 }
