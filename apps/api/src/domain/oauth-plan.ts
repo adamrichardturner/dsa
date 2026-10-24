@@ -25,13 +25,55 @@ export type OauthLinkPlan =
   | { readonly type: "create"; readonly email: string; readonly name: string }
   | { readonly type: "reject"; readonly code: "email" | "conflict" | "linked" };
 
-export const isOauthProvider = (value: string): value is OauthProvider => value === "google" || value === "github";
+export const isOauthProvider = (value: string): value is OauthProvider =>
+  value === "google" || value === "github" || value === "apple";
+
+export const mobileOriginSentinel = "app://mobile";
+
+const mobileSchemePattern = /^[a-z][a-z0-9+.-]{0,30}$/;
 
 export const providerLabel = (provider: OauthProvider): string => {
-  if (provider === "google") {
-    return "Google";
+  switch (provider) {
+    case "google": {
+      return "Google";
+    }
+    case "github": {
+      return "GitHub";
+    }
+    case "apple": {
+      return "Apple";
+    }
   }
-  return "GitHub";
+};
+
+export const oauthResultRedirect = (
+  origin: string,
+  scheme: string,
+  params: Readonly<Record<string, string>>,
+): string | null => {
+  const apply = (url: URL): string => {
+    for (const key of Object.keys(params)) {
+      const value = params[key];
+      if (value === undefined) {
+        continue;
+      }
+      url.searchParams.set(key, value);
+    }
+    return url.toString();
+  };
+
+  if (origin === mobileOriginSentinel) {
+    if (!mobileSchemePattern.test(scheme)) {
+      return null;
+    }
+    return apply(new URL(`${scheme}://auth/callback`));
+  }
+
+  try {
+    return apply(new URL("/auth/callback", origin));
+  } catch {
+    return null;
+  }
 };
 
 export const oauthFailureMessage = (code: string, provider: OauthProvider): string => {

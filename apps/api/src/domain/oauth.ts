@@ -7,13 +7,24 @@ import { isAdminEmail } from "./admin-access.js";
 import { BadInput, OauthFlowError, Unexpected } from "./errors.js";
 import type { AuthResult, OauthProvider, PublicUser } from "./models.js";
 import {
+  appleAuthorizationUrl,
+  appleClientSecret,
+  appleNameFromUser,
+  appleWebReady,
+  readAppleAccount,
+  verifyAppleIdentityToken,
+  type AppleConfig,
+} from "./apple.js";
+import {
   allowedWebOrigin,
   callbackUrl,
   identityEmail,
   isOauthProvider,
+  mobileOriginSentinel,
   normalizeEmail,
-  oauthSkipsEmailVerification,
   oauthFailureMessage,
+  oauthResultRedirect,
+  oauthSkipsEmailVerification,
   planOAuthAccount,
   readGitHubAccount,
   readGoogleAccount,
@@ -30,6 +41,7 @@ export interface BeginOAuthInput {
   readonly provider: OauthProvider;
   readonly returnTo: string | null;
   readonly webOrigin: string | null;
+  readonly client: "web" | "mobile";
 }
 
 export interface FinishOAuthInput {
@@ -37,6 +49,7 @@ export interface FinishOAuthInput {
   readonly code: string | null;
   readonly state: string | null;
   readonly providerError: string | null;
+  readonly appleUserJson: string | null;
 }
 
 const hashToken = (token: string): string => createHash("sha256").update(token).digest("hex");
@@ -118,18 +131,39 @@ const failUnexpected =
 const reject = (provider: OauthProvider, code: OauthFlowError["code"]) =>
   new OauthFlowError({ code, message: oauthFailureMessage(code, provider) });
 
-const errorRedirect = (origin: string, provider: OauthProvider, code: string): string => {
-  const url = new URL("/auth/callback", origin);
-  url.searchParams.set("error", code);
-  url.searchParams.set("provider", provider);
-  return url.toString();
+const appleConfigOf = (config: AppConfig["Service"]): AppleConfig => ({
+  clientId: config.appleClientId,
+  servicesId: config.appleServicesId,
+  teamId: config.appleTeamId,
+  keyId: config.appleKeyId,
+  privateKey: Redacted.value(config.applePrivateKey),
+});
+
+const errorRedirect = (
+  origin: string,
+  scheme: string,
+  provider: OauthProvider,
+  code: string,
+  fallbackOrigin: string,
+): string => {
+  return (
+    oauthResultRedirect(origin, scheme, { error: code, provider }) ??
+    oauthResultRedirect(fallbackOrigin, scheme, { error: code, provider }) ??
+    `${fallbackOrigin}/auth/callback?error=unavailable&provider=${provider}`
+  );
 };
 
-const successRedirect = (origin: string, code: string, returnTo: string): string => {
-  const url = new URL("/auth/callback", origin);
-  url.searchParams.set("code", code);
-  url.searchParams.set("returnTo", returnTo);
-  return url.toString();
+const successRedirect = (
+  origin: string,
+  scheme: string,
+  code: string,
+  returnTo: string,
+  fallbackOrigin: string,
+): string => {
+  return (
+    oauthResultRedirect(origin, scheme, { code, returnTo }) ??
+    `${fallbackOrigin}/auth/callback?error=unavailable`
+  );
 };
 
 const enabledProviders = (config: AppConfig["Service"]): readonly OauthProvider[] => {
@@ -139,6 +173,10 @@ const enabledProviders = (config: AppConfig["Service"]): readonly OauthProvider[
   }
   if (config.githubClientId.length > 0 && Redacted.value(config.githubClientSecret).length > 0) {
     providers.push("github");
+  }
+  const apple = appleConfigOf(config);
+  if (apple.clientId.length > 0 || appleWebReady(apple)) {
+    providers.push("apple");
   }
   return providers;
 };
@@ -154,6 +192,13 @@ const credentialsFor = (
     }
     return { clientId: config.googleClientId, clientSecret };
   }
+  if (provider === "apple") {
+    const apple = appleConfigOf(config);
+    if (!appleWebReady(apple)) {
+      return null;
+    }
+    return { clientId: apple.servicesId, clientSecret: "apple" };
+  }
   const clientSecret = Redacted.value(config.githubClientSecret);
   if (config.githubClientId.length === 0 || clientSecret.length === 0) {
     return null;
@@ -168,6 +213,13 @@ const authorizationUrl = (input: {
   readonly state: string;
   readonly verifier: string;
 }): string => {
+  if (input.provider === "apple") {
+    return appleAuthorizationUrl({
+      clientId: input.clientId,
+      redirectUri: input.redirectUri,
+      state: input.state,
+    });
+  }
   const challenge = createHash("sha256").update(input.verifier).digest("base64url");
   const url =
     input.provider === "google"
@@ -233,6 +285,45 @@ const readAccessToken = (payload: unknown): string | null => {
   return token;
 };
 
+const readIdToken = (payload: unknown): string | null => {
+  if (!isRecord(payload) || typeof payload.id_token !== "string") {
+    return null;
+  }
+  const token = payload.id_token.trim();
+  if (token.length === 0 || token.length > 12000) {
+    return null;
+  }
+  return token;
+};
+
+const exchangeAppleCode = (input: {
+  readonly code: string;
+  readonly redirectUri: string;
+  readonly clientId: string;
+  readonly clientSecret: string;
+}): Effect.Effect<string, Unexpected> =>
+  Effect.gen(function* () {
+    const payload = yield* requestJson("https://appleid.apple.com/auth/token", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        client_id: input.clientId,
+        client_secret: input.clientSecret,
+        code: input.code,
+        redirect_uri: input.redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+    const token = readIdToken(payload);
+    if (token === null) {
+      return yield* new Unexpected({ message: "Could not finish signing in." });
+    }
+    return token;
+  });
+
 const exchangeCode = (input: {
   readonly provider: OauthProvider;
   readonly code: string;
@@ -287,6 +378,9 @@ const providerHeaders = (accessToken: string, provider: OauthProvider): HeadersI
 
 const loadAccount = (provider: OauthProvider, accessToken: string): Effect.Effect<ProviderAccount, Unexpected> =>
   Effect.gen(function* () {
+    if (provider === "apple") {
+      return yield* new Unexpected({ message: "Could not read the Apple profile." });
+    }
     if (provider === "google") {
       const payload = yield* requestJson("https://openidconnect.googleapis.com/v1/userinfo", {
         headers: providerHeaders(accessToken, provider),
@@ -327,6 +421,11 @@ export class OAuth extends Context.Service<
     begin(input: BeginOAuthInput): Effect.Effect<string, BadInput | Unexpected>;
     finish(input: FinishOAuthInput): Effect.Effect<string, Unexpected>;
     redeem(code: string): Effect.Effect<AuthResult, BadInput | Unexpected>;
+    signInWithApple(input: {
+      readonly identityToken: string;
+      readonly nonce: string;
+      readonly name: string | null;
+    }): Effect.Effect<AuthResult, BadInput | OauthFlowError | Unexpected>;
   }
 >()("app/OAuth") {
   static readonly layer = Layer.effect(
@@ -829,12 +928,28 @@ export class OAuth extends Context.Service<
           return Option.getOrUndefined(found);
         });
 
+      const rememberedOrigin = (value: string | null | undefined): string => {
+        if (value === mobileOriginSentinel) {
+          return mobileOriginSentinel;
+        }
+        return allowedWebOrigin(value ?? null, config.webOrigins) ?? firstOrigin(config);
+      };
+
+      const redirectError = (origin: string, provider: OauthProvider, code: string) =>
+        errorRedirect(origin, config.mobileScheme, provider, code, firstOrigin(config));
+
+      const redirectSuccess = (origin: string, code: string, returnTo: string) =>
+        successRedirect(origin, config.mobileScheme, code, returnTo, firstOrigin(config));
+
       const begin = Effect.fn("OAuth.begin")(function* (input: BeginOAuthInput) {
         const creds = credentialsFor(config, input.provider);
         const redirectUri = callbackUrl(config.apiOrigin, input.provider);
-        const origin = allowedWebOrigin(input.webOrigin, config.webOrigins) ?? firstOrigin(config);
+        const origin =
+          input.client === "mobile"
+            ? mobileOriginSentinel
+            : (allowedWebOrigin(input.webOrigin, config.webOrigins) ?? firstOrigin(config));
         if (creds === null || redirectUri === null) {
-          return errorRedirect(origin, input.provider, "unavailable");
+          return redirectError(origin, input.provider, "unavailable");
         }
 
         yield* cleanup;
@@ -864,49 +979,79 @@ export class OAuth extends Context.Service<
         const creds = credentialsFor(config, input.provider);
         const redirectUri = callbackUrl(config.apiOrigin, input.provider);
         if (creds === null || redirectUri === null) {
-          return errorRedirect(fallback, input.provider, "unavailable");
+          return redirectError(fallback, input.provider, "unavailable");
         }
 
         if (input.providerError !== null) {
           const code = input.providerError === "access_denied" ? "access_denied" : "provider";
           const row = input.state === null ? undefined : yield* takeState(input.state);
-          const origin =
-            row === undefined ? fallback : (allowedWebOrigin(row.webOrigin, config.webOrigins) ?? fallback);
-          return errorRedirect(origin, input.provider, code);
+          const origin = row === undefined ? fallback : rememberedOrigin(row.webOrigin);
+          return redirectError(origin, input.provider, code);
         }
 
         if (input.code === null || input.state === null || input.code.length > 2048) {
-          return errorRedirect(fallback, input.provider, "expired");
+          return redirectError(fallback, input.provider, "expired");
         }
 
         const row = yield* takeState(input.state);
         if (row === undefined || row.provider !== input.provider) {
-          return errorRedirect(fallback, input.provider, "expired");
+          return redirectError(fallback, input.provider, "expired");
         }
 
-        const origin = allowedWebOrigin(row.webOrigin, config.webOrigins) ?? fallback;
+        const origin = rememberedOrigin(row.webOrigin);
         const returnTo = safeReturnPath(row.returnTo);
-        const accessToken = yield* exchangeCode({
-          provider: input.provider,
-          code: input.code,
-          codeVerifier: row.codeVerifier,
-          redirectUri,
-          clientId: creds.clientId,
-          clientSecret: creds.clientSecret,
-        }).pipe(
-          Effect.tapError((error) => Effect.logError("OAuth token exchange failed", error)),
-          Effect.catch(() => Effect.succeed(null)),
-        );
-        if (accessToken === null) {
-          return errorRedirect(origin, input.provider, "provider");
-        }
+        const account = yield* Effect.gen(function* () {
+          if (input.provider !== "apple") {
+            const accessToken = yield* exchangeCode({
+              provider: input.provider,
+              code: input.code ?? "",
+              codeVerifier: row.codeVerifier,
+              redirectUri,
+              clientId: creds.clientId,
+              clientSecret: creds.clientSecret,
+            }).pipe(
+              Effect.tapError((error) => Effect.logError("OAuth token exchange failed", error)),
+              Effect.catch(() => Effect.succeed(null)),
+            );
+            if (accessToken === null) {
+              return null;
+            }
+            return yield* loadAccount(input.provider, accessToken).pipe(
+              Effect.tapError((error) => Effect.logError("OAuth profile request failed", error)),
+              Effect.catch(() => Effect.succeed(null)),
+            );
+          }
 
-        const account = yield* loadAccount(input.provider, accessToken).pipe(
-          Effect.tapError((error) => Effect.logError("OAuth profile request failed", error)),
-          Effect.catch(() => Effect.succeed(null)),
-        );
+          const secret = yield* Effect.tryPromise({
+            try: () => appleClientSecret(appleConfigOf(config)),
+            catch: () => new Unexpected({ message: "Could not finish signing in." }),
+          });
+          if (secret === null) {
+            return null;
+          }
+          const idToken = yield* exchangeAppleCode({
+            code: input.code ?? "",
+            redirectUri,
+            clientId: creds.clientId,
+            clientSecret: secret,
+          }).pipe(
+            Effect.tapError((error) => Effect.logError("Apple token exchange failed", error)),
+            Effect.catch(() => Effect.succeed(null)),
+          );
+          if (idToken === null) {
+            return null;
+          }
+          const payload = yield* Effect.tryPromise({
+            try: () => verifyAppleIdentityToken(idToken, [creds.clientId], null),
+            catch: () => new Unexpected({ message: "Could not finish signing in." }),
+          });
+          if (payload === null) {
+            return null;
+          }
+          return readAppleAccount(payload, appleNameFromUser(input.appleUserJson));
+        });
         if (account === null) {
-          return errorRedirect(origin, input.provider, "provider");
+          return redirectError(origin, input.provider, "provider");
         }
 
         const resolved = yield* resolveUser(input.provider, account).pipe(
@@ -920,7 +1065,7 @@ export class OAuth extends Context.Service<
           }),
         );
         if (resolved.type === "reject") {
-          return errorRedirect(origin, input.provider, resolved.code);
+          return redirectError(origin, input.provider, resolved.code);
         }
 
         const user = yield* present(resolved.id);
@@ -933,16 +1078,72 @@ export class OAuth extends Context.Service<
           userId: user.id,
           expiresAt: new Date(Date.now() + exchangeMinutes * 60 * 1000).toISOString(),
         }).pipe(failUnexpected("Could not finish signing in."));
-        return successRedirect(origin, code, returnTo);
+        return redirectSuccess(origin, code, returnTo);
       });
 
       const finish = (input: FinishOAuthInput) =>
         finishInner(input).pipe(
           Effect.catch((error) =>
             Effect.logError("OAuth callback failed", error).pipe(
-              Effect.as(errorRedirect(firstOrigin(config), input.provider, "unavailable")),
+              Effect.as(redirectError(firstOrigin(config), input.provider, "unavailable")),
             ),
           ),
+        );
+
+      const signInWithAppleAttempt = Effect.fn("OAuth.signInWithApple")(function* (input: {
+        readonly identityToken: string;
+        readonly nonce: string;
+        readonly name: string | null;
+      }) {
+        const apple = appleConfigOf(config);
+        const audiences = apple.clientId.length > 0 ? [apple.clientId] : [];
+        if (apple.servicesId.length > 0 && !audiences.includes(apple.servicesId)) {
+          audiences.push(apple.servicesId);
+        }
+        if (audiences.length === 0) {
+          return yield* new OauthFlowError({
+            code: "unavailable",
+            message: oauthFailureMessage("unavailable", "apple"),
+          });
+        }
+        const payload = yield* Effect.tryPromise({
+          try: () => verifyAppleIdentityToken(input.identityToken, audiences, input.nonce),
+          catch: () => new Unexpected({ message: "Could not finish signing in." }),
+        });
+        if (payload === null) {
+          return yield* new OauthFlowError({
+            code: "provider",
+            message: oauthFailureMessage("provider", "apple"),
+          });
+        }
+        const account = readAppleAccount(payload, input.name);
+        if (account === null) {
+          return yield* new OauthFlowError({
+            code: "provider",
+            message: oauthFailureMessage("provider", "apple"),
+          });
+        }
+        const userId = yield* resolveUser("apple", account);
+        const user = yield* present(userId);
+        return yield* openSession(user);
+      });
+
+      const signInWithApple = (input: {
+        readonly identityToken: string;
+        readonly nonce: string;
+        readonly name: string | null;
+      }): Effect.Effect<AuthResult, OauthFlowError | Unexpected> =>
+        signInWithAppleAttempt(input).pipe(
+          Effect.catch((error): Effect.Effect<never, OauthFlowError | Unexpected> => {
+            if (error._tag === "OauthFlowError") {
+              return Effect.fail(error);
+            }
+            return Effect.logError("Apple sign-in failed", error).pipe(
+              Effect.andThen(
+                Effect.fail(new Unexpected({ message: "Could not finish signing in." })),
+              ),
+            );
+          }),
         );
 
       const redeem = Effect.fn("OAuth.redeem")(function* (code: string) {
@@ -970,6 +1171,7 @@ export class OAuth extends Context.Service<
         begin,
         finish,
         redeem,
+        signInWithApple,
       });
     }),
   );

@@ -14,7 +14,8 @@ export const graphqlUrl = process.env.NEXT_PUBLIC_GRAPHQL_URL ?? "http://localho
 
 export const apiOrigin = graphqlUrl.replace(/\/graphql\/?$/, "");
 
-const isProvider = (value: string): value is OauthProvider => value === "google" || value === "github";
+const isProvider = (value: string): value is OauthProvider =>
+  value === "google" || value === "github" || value === "apple";
 
 const readProviders = (value: unknown): readonly OauthProvider[] => {
   if (!Array.isArray(value)) {

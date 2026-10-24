@@ -1,5 +1,6 @@
-import type { Express, Request, Response } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import { Effect } from "effect";
+import { isRecord } from "../lib/guards.js";
 import { OAuth } from "../domain/oauth.js";
 import { allowedWebOrigin, isOauthProvider } from "../domain/oauth-plan.js";
 import { runEffect } from "../runtime.js";
@@ -73,10 +74,12 @@ export const mountOAuth = (app: Express) => {
       Effect.gen(function* () {
         const oauth = yield* OAuth;
         const webOrigin = yield* webOriginFor(request);
+        const client = readQuery(request.query.client) === "mobile" ? "mobile" : "web";
         return yield* oauth.begin({
           provider,
           returnTo: readQuery(request.query.returnTo),
           webOrigin,
+          client,
         });
       }),
     )
@@ -105,6 +108,36 @@ export const mountOAuth = (app: Express) => {
           code: readQuery(request.query.code),
           state: readQuery(request.query.state),
           providerError,
+          appleUserJson: null,
+        }),
+      ),
+    )
+      .then((url) => {
+        sendRedirect(response, url);
+      })
+      .catch(() => {
+        unavailable(response);
+      });
+  });
+
+  app.post("/auth/apple/callback", express.urlencoded({ extended: false }), (request, response) => {
+    const body: unknown = request.body;
+    const field = (key: string): string | null => {
+      if (!isRecord(body)) {
+        return null;
+      }
+      return readQuery(body[key]);
+    };
+    const providerError = field("error");
+    void runEffect(
+      null,
+      OAuth.use((oauth) =>
+        oauth.finish({
+          provider: "apple",
+          code: field("code"),
+          state: field("state"),
+          providerError,
+          appleUserJson: field("user"),
         }),
       ),
     )

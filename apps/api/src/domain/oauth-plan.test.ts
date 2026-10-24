@@ -5,6 +5,8 @@ import {
   allowedWebOrigin,
   callbackUrl,
   identityEmail,
+  mobileOriginSentinel,
+  oauthResultRedirect,
   oauthSkipsEmailVerification,
   planOAuthAccount,
   readGitHubAccount,
@@ -268,6 +270,21 @@ describe("redirect safety", () => {
 
   it("builds the provider callback from the API origin", () => {
     assert.equal(callbackUrl("http://localhost:4000", "google"), "http://localhost:4000/auth/google/callback");
+    assert.equal(callbackUrl("http://localhost:4000", "apple"), "http://localhost:4000/auth/apple/callback");
     assert.equal(callbackUrl("not a url", "github"), null);
+  });
+
+  it("sends a mobile sign-in back to the app scheme", () => {
+    const web = oauthResultRedirect("http://localhost:3000", "dsa", {
+      code: "abc",
+      returnTo: "/course",
+    });
+    assert.equal(web, "http://localhost:3000/auth/callback?code=abc&returnTo=%2Fcourse");
+    const mobile = oauthResultRedirect(mobileOriginSentinel, "dsa", {
+      error: "expired",
+      provider: "google",
+    });
+    assert.equal(mobile, "dsa://auth/callback?error=expired&provider=google");
+    assert.equal(oauthResultRedirect(mobileOriginSentinel, "Bad Scheme", { code: "abc" }), null);
   });
 });

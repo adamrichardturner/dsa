@@ -3,17 +3,25 @@ import type { OauthProvider } from "./types";
 const coursePath = "/course";
 
 export const isOauthProvider = (value: string): value is OauthProvider =>
-  value === "google" || value === "github";
+  value === "google" || value === "github" || value === "apple";
 
 export const providerLabel = (provider: OauthProvider): string => {
-  if (provider === "google") {
-    return "Google";
+  switch (provider) {
+    case "google": {
+      return "Google";
+    }
+    case "github": {
+      return "GitHub";
+    }
+    case "apple": {
+      return "Apple";
+    }
   }
-  return "GitHub";
 };
 
 export const oauthErrorMessage = (code: string | null, provider: string | null): string => {
-  const label = provider === "github" ? "GitHub" : provider === "google" ? "Google" : "That";
+  const label =
+    provider === "github" ? "GitHub" : provider === "google" ? "Google" : provider === "apple" ? "Apple" : "That";
   switch (code) {
     case "access_denied": {
       return `${label} sign-in was cancelled.`;

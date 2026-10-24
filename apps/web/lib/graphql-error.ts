@@ -27,7 +27,7 @@ const graphqlErrorMessages = {
   COURSE_UNVERIFIED: "Verify your email before using the course.",
   PASSWORD_INCORRECT: "Password is incorrect.",
   OAUTH_ACCOUNT:
-    "This email uses Google or GitHub sign-in. Continue with one of those. You can add a password afterward from settings.",
+    "This email uses Google, GitHub, or Apple sign-in. Continue with one of those. You can add a password afterward from settings.",
   INVALID_CREDENTIALS: "Email or password is incorrect.",
   UNAUTHORIZED: "Sign in to continue.",
   ADMIN_FORBIDDEN: "You do not have access to the admin panel.",

@@ -764,6 +764,29 @@ export const schema = new GraphQLSchema({
             ),
           ),
       },
+      signInWithApple: {
+        type: new GraphQLNonNull(AuthPayloadType),
+        args: {
+          identityToken: { type: new GraphQLNonNull(GraphQLString) },
+          nonce: { type: new GraphQLNonNull(GraphQLString) },
+          name: { type: GraphQLString },
+        },
+        resolve: (
+          _parent,
+          args: { identityToken?: unknown; nonce?: unknown; name?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            OAuth.use((oauth) =>
+              oauth.signInWithApple({
+                identityToken: requireString(args.identityToken, "Missing sign-in code."),
+                nonce: requireString(args.nonce, "Missing sign-in code."),
+                name: typeof args.name === "string" ? args.name : null,
+              }),
+            ),
+          ),
+      },
       signOut: {
         type: new GraphQLNonNull(GraphQLBoolean),
         resolve: (_parent, _args, context: GraphQLContext) =>

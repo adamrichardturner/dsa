@@ -6,7 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/domain/oauth-plan.test.ts src/domain/mail.test.ts src/domain/email-verification.test.ts src/domain/runner.test.ts src/domain/admin.test.ts src/domain/gating.test.ts src/domain/insights-view.test.ts src/content/course.test.ts src/content/solutions.test.ts src/content/references.test.ts src/content/gaps.test.ts src/graphql/public-error.test.ts"
+    "test": "tsx --test src/domain/oauth-plan.test.ts src/domain/apple.test.ts src/domain/mail.test.ts src/domain/email-verification.test.ts src/domain/runner.test.ts src/domain/admin.test.ts src/domain/gating.test.ts src/domain/insights-view.test.ts src/content/course.test.ts src/content/solutions.test.ts src/content/references.test.ts src/content/gaps.test.ts src/graphql/public-error.test.ts"
   },
   "dependencies": {
     "@effect/sql-pg": "latest",
@@ -15,6 +15,7 @@
     "express": "latest",
     "graphql": "latest",
     "graphql-yoga": "latest",
+    "jose": "^6.2.13",
     "sucrase": "^3.35.1",
     "tsx": "latest",
     "typescript": "5.9.3"

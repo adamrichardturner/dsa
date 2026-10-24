@@ -396,7 +396,7 @@ export function ProfileSettings({
         <CardHeader>
           <CardTitle>Sign-in methods</CardTitle>
           <CardDescription>
-            Google and GitHub attach to this account when the verified email matches.
+            Google, GitHub, and Apple attach to this account when the verified email matches.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">

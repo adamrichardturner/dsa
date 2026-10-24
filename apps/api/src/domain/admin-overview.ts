@@ -77,12 +77,14 @@ const withinDays = (iso: string, now: Date, days: number): boolean => {
   return time >= earliest && time < start + dayMs;
 };
 
-type AuthMethod = "password" | "google" | "github" | "mixed";
+type AuthMethod = "password" | "google" | "github" | "apple" | "mixed";
 
 const authMethod = (user: AdminOverviewUser): AuthMethod => {
   const google = user.providers.includes("google");
   const github = user.providers.includes("github");
-  const count = (user.hasPassword ? 1 : 0) + (google ? 1 : 0) + (github ? 1 : 0);
+  const apple = user.providers.includes("apple");
+  const count =
+    (user.hasPassword ? 1 : 0) + (google ? 1 : 0) + (github ? 1 : 0) + (apple ? 1 : 0);
   if (count > 1) {
     return "mixed";
   }
@@ -92,6 +94,9 @@ const authMethod = (user: AdminOverviewUser): AuthMethod => {
   if (github) {
     return "github";
   }
+  if (apple) {
+    return "apple";
+  }
   return "password";
 };
 
@@ -99,6 +104,7 @@ const methodLabels: Record<AuthMethod, string> = {
   password: "Email and password",
   google: "Google",
   github: "GitHub",
+  apple: "Apple",
   mixed: "More than one method",
 };
 
@@ -336,6 +342,7 @@ export const buildAdminOverview = (input: AdminOverviewInput): AdminOverview => 
     password: 0,
     google: 0,
     github: 0,
+    apple: 0,
     mixed: 0,
   };
   for (const user of input.users) {
@@ -343,7 +350,7 @@ export const buildAdminOverview = (input: AdminOverviewInput): AdminOverview => 
   }
 
   const authMethods: AdminAuthSlice[] = [];
-  const methodOrder: readonly AuthMethod[] = ["password", "google", "github", "mixed"];
+  const methodOrder: readonly AuthMethod[] = ["password", "google", "github", "apple", "mixed"];
   for (const method of methodOrder) {
     const count = methodCounts[method];
     if (count === 0) {

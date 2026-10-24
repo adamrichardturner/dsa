@@ -1,6 +1,6 @@
 import type { TestResult } from "./runner.js";
 
-export type OauthProvider = "google" | "github";
+export type OauthProvider = "google" | "github" | "apple";
 
 export interface PublicUser {
   readonly id: string;

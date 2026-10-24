@@ -644,7 +644,7 @@ export class Auth extends Context.Service<
         if (user !== undefined && user.passwordHash === null) {
           return yield* new InvalidCredentials({
             message:
-              "This email uses Google or GitHub sign-in. Continue with one of those. You can add a password afterward from settings.",
+              "This email uses Google, GitHub, or Apple sign-in. Continue with one of those. You can add a password afterward from settings.",
           });
         }
         if (user === undefined || !valid) {

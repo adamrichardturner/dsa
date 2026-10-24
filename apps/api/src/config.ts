@@ -22,6 +22,12 @@ export class AppConfig extends Context.Service<
     readonly googleClientSecret: Redacted.Redacted<string>;
     readonly githubClientId: string;
     readonly githubClientSecret: Redacted.Redacted<string>;
+    readonly appleClientId: string;
+    readonly appleServicesId: string;
+    readonly appleTeamId: string;
+    readonly appleKeyId: string;
+    readonly applePrivateKey: Redacted.Redacted<string>;
+    readonly mobileScheme: string;
     readonly resendApiKey: Redacted.Redacted<string>;
   }
 >()("app/AppConfig") {
@@ -46,7 +52,15 @@ export class AppConfig extends Context.Service<
       const googleClientSecret = yield* optionalSecret("GOOGLE_CLIENT_SECRET");
       const githubClientId = yield* optionalString("GITHUB_CLIENT_ID");
       const githubClientSecret = yield* optionalSecret("GITHUB_CLIENT_SECRET");
+      const appleClientId = yield* optionalString("APPLE_CLIENT_ID");
+      const appleServicesId = yield* optionalString("APPLE_SERVICES_ID");
+      const appleTeamId = yield* optionalString("APPLE_TEAM_ID");
+      const appleKeyId = yield* optionalString("APPLE_KEY_ID");
+      const applePrivateKey = yield* optionalSecret("APPLE_PRIVATE_KEY");
+      const mobileScheme = yield* optionalString("MOBILE_SCHEME");
       const resendApiKey = yield* optionalSecret("RESEND_API_KEY");
+      const scheme = mobileScheme.trim().toLowerCase();
+      const safeScheme = /^[a-z][a-z0-9+.-]{0,30}$/.test(scheme) ? scheme : "dsa";
       const webOrigins = webOrigin
         .split(",")
         .map((origin) => origin.trim())
@@ -65,6 +79,12 @@ export class AppConfig extends Context.Service<
         googleClientSecret,
         githubClientId: githubClientId.trim(),
         githubClientSecret,
+        appleClientId: appleClientId.trim(),
+        appleServicesId: appleServicesId.trim(),
+        appleTeamId: appleTeamId.trim(),
+        appleKeyId: appleKeyId.trim(),
+        applePrivateKey,
+        mobileScheme: safeScheme,
         resendApiKey,
       });
     }),

@@ -84,7 +84,7 @@ const messageCodes: Record<string, PublicErrorCode> = {
   [verificationUsedMessage]: "VERIFY_USED",
   [unverifiedCourseMessage]: "COURSE_UNVERIFIED",
   "Password is incorrect.": "PASSWORD_INCORRECT",
-  "This email uses Google or GitHub sign-in. Continue with one of those. You can add a password afterward from settings.":
+  "This email uses Google, GitHub, or Apple sign-in. Continue with one of those. You can add a password afterward from settings.":
     "OAUTH_ACCOUNT",
   "Email or password is incorrect.": "INVALID_CREDENTIALS",
   "Sign in to continue.": "UNAUTHORIZED",
