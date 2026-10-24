@@ -199,7 +199,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    justifyContent: "center",
     paddingHorizontal: 24,
   },
   column: {

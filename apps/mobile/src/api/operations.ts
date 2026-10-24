@@ -17,12 +17,6 @@ export const ME_QUERY = `
   }
 `;
 
-export const OAUTH_PROVIDERS = `
-  query OauthProviders {
-    oauthProviders
-  }
-`;
-
 export const MODULES_QUERY = `
   query Modules {
     modules(client: "mobile") {
