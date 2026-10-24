@@ -25,8 +25,7 @@ export type OauthLinkPlan =
   | { readonly type: "create"; readonly email: string; readonly name: string }
   | { readonly type: "reject"; readonly code: "email" | "conflict" | "linked" };
 
-export const isOauthProvider = (value: string): value is OauthProvider =>
-  value === "google" || value === "github";
+export const isOauthProvider = (value: string): value is OauthProvider => value === "google" || value === "github";
 
 export const providerLabel = (provider: OauthProvider): string => {
   if (provider === "google") {
@@ -69,7 +68,10 @@ const isEmail = (email: string): boolean => emailPattern.test(email);
 const isNoreply = (email: string): boolean => email.endsWith("@users.noreply.github.com");
 
 const collapse = (value: string): string =>
-  value.replace(/[\u0000-\u001F\u007F]/g, "").trim().replace(/\s+/g, " ");
+  value
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .trim()
+    .replace(/\s+/g, " ");
 
 const nameFromEmail = (email: string): string => {
   const at = email.indexOf("@");
@@ -127,7 +129,10 @@ const cleanSubject = (value: string): string | null => {
 export const verifiedEmailList = (
   emails: readonly string[],
   primary: string | null,
-): { readonly verified: readonly string[]; readonly primary: string | null } => {
+): {
+  readonly verified: readonly string[];
+  readonly primary: string | null;
+} => {
   const verified: string[] = [];
   for (const email of emails) {
     const normalized = normalizeEmail(email);
@@ -166,6 +171,8 @@ export const identityEmail = (account: ProviderAccount): string | null => {
   return preferredEmail(listed.verified, listed.primary);
 };
 
+export const oauthSkipsEmailVerification = (account: ProviderAccount): boolean => identityEmail(account) !== null;
+
 const uniqueUsers = (users: readonly OauthAccountMatch[]): OauthAccountMatch[] => {
   const found: OauthAccountMatch[] = [];
   for (const user of users) {
@@ -192,10 +199,7 @@ const usersWithEmail = (users: readonly OauthAccountMatch[], email: string): Oau
   return uniqueUsers(found);
 };
 
-const usersWithAnyEmail = (
-  users: readonly OauthAccountMatch[],
-  emails: readonly string[],
-): OauthAccountMatch[] => {
+const usersWithAnyEmail = (users: readonly OauthAccountMatch[], emails: readonly string[]): OauthAccountMatch[] => {
   const found: OauthAccountMatch[] = [];
   for (const user of users) {
     if (emails.includes(normalizeEmail(user.email))) {
@@ -237,10 +241,8 @@ export const planOAuthAccount = (
     return { type: "reject", code: "email" };
   }
 
-  const primaryMatches =
-    listed.primary === null ? [] : usersWithEmail(users, listed.primary);
-  const matches =
-    primaryMatches.length > 0 ? primaryMatches : usersWithAnyEmail(users, listed.verified);
+  const primaryMatches = listed.primary === null ? [] : usersWithEmail(users, listed.primary);
+  const matches = primaryMatches.length > 0 ? primaryMatches : usersWithAnyEmail(users, listed.verified);
   if (matches.length > 1) {
     return { type: "reject", code: "conflict" };
   }
@@ -300,10 +302,7 @@ export const safeReturnPath = (value: string | null): string => {
   return decoded;
 };
 
-export const allowedWebOrigin = (
-  candidate: string | null,
-  allowed: readonly string[],
-): string | null => {
+export const allowedWebOrigin = (candidate: string | null, allowed: readonly string[]): string | null => {
   const fallback = allowed[0] ?? null;
   if (candidate === null || candidate.length === 0) {
     return fallback;
@@ -353,7 +352,10 @@ export const readGoogleAccount = (payload: unknown): ProviderAccount | null => {
 
 const readGitHubEmails = (
   payload: unknown,
-): { readonly verified: readonly string[]; readonly primary: string | null } | null => {
+): {
+  readonly verified: readonly string[];
+  readonly primary: string | null;
+} | null => {
   if (!Array.isArray(payload)) {
     return null;
   }
@@ -375,10 +377,7 @@ const readGitHubEmails = (
   return { verified, primary };
 };
 
-export const readGitHubAccount = (
-  user: unknown,
-  emails: unknown | null,
-): ProviderAccount | null => {
+export const readGitHubAccount = (user: unknown, emails: unknown | null): ProviderAccount | null => {
   if (!isRecord(user) || typeof user.id !== "number") {
     return null;
   }

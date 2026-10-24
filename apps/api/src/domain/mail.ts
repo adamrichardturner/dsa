@@ -2,8 +2,7 @@ import { Context, Effect, Layer, Redacted } from "effect";
 import { AppConfig } from "../config.js";
 import { Unexpected } from "./errors.js";
 
-export const courseFromAddress =
-  "Data Structures and Algorithms <noreply@datastructuresandalgorithms.com>";
+export const courseFromAddress = "Data Structures and Algorithms <noreply@datastructuresandalgorithms.com>";
 
 const replyToAddress = "Data Structures and Algorithms <hello@datastructuresandalgorithms.com>";
 
@@ -39,11 +38,7 @@ export const linkOrigin = (origins: readonly string[]): string => {
 };
 
 export const escapeHtml = (value: string): string =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+  value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
 interface Letter {
   readonly to: string;
@@ -83,6 +78,7 @@ const renderLetter = (letter: Letter): OutboundMessage => {
             <tr>
               <td style="padding:8px 28px 28px;">
                 <a href="${escapeHtml(letter.actionUrl)}" style="display:inline-block;background:#171717;color:#ffffff;text-decoration:none;font-family:Georgia,'Iowan Old Style',Palatino,'Palatino Linotype',serif;font-size:16px;line-height:1;padding:14px 18px;border-radius:10px;">${escapeHtml(letter.actionLabel)}</a>
+                <p style="margin:16px 0 0;font-family:Georgia,'Iowan Old Style',Palatino,'Palatino Linotype',serif;font-size:13px;line-height:1.5;color:#71717a;word-break:break-all;">${escapeHtml(letter.actionUrl)}</p>
                 <p style="margin:20px 0 0;font-family:Georgia,'Iowan Old Style',Palatino,'Palatino Linotype',serif;font-size:13px;line-height:1.5;color:#71717a;">${escapeHtml(letter.footnote)}</p>
               </td>
             </tr>
@@ -122,6 +118,25 @@ export const accountCreatedMessage = (input: {
     footnote: `You received this because an account was created for ${input.email}. If that was not you, you can ignore this message.`,
   });
 
+export const emailVerificationMessage = (input: {
+  readonly name: string;
+  readonly email: string;
+  readonly verifyUrl: string;
+}): OutboundMessage =>
+  renderLetter({
+    to: input.email,
+    subject: "Verify your email",
+    title: "Verify your email",
+    paragraphs: [
+      `Hello ${input.name},`,
+      "Confirm this email to open the course. The button signs you in and starts the introduction.",
+      "This link lasts 24 hours and can be used once.",
+    ],
+    actionLabel: "Verify email and continue",
+    actionUrl: input.verifyUrl,
+    footnote: `You received this because an account was created for ${input.email}. If that was not you, you can ignore this message.`,
+  });
+
 export const passwordResetMessage = (input: {
   readonly name: string;
   readonly email: string;
@@ -138,8 +153,7 @@ export const passwordResetMessage = (input: {
     ],
     actionLabel: "Choose a new password",
     actionUrl: input.resetUrl,
-    footnote:
-      "If you did not ask for this, ignore the message. Your password will stay the same.",
+    footnote: "If you did not ask for this, ignore the message. Your password will stay the same.",
   });
 
 export const passwordChangedMessage = (input: {
@@ -186,7 +200,9 @@ export class Mail extends Context.Service<
         Effect.gen(function* () {
           const apiKey = Redacted.value(config.resendApiKey).trim();
           if (apiKey.length === 0) {
-            return yield* new Unexpected({ message: "Email is not configured." });
+            return yield* new Unexpected({
+              message: "Email is not configured.",
+            });
           }
 
           const response = yield* Effect.tryPromise({

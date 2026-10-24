@@ -1,14 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Client, Provider, cacheExchange, fetchExchange } from "urql";
 import { isRecord } from "./guards";
 import { ME_QUERY } from "./operations";
@@ -17,13 +10,11 @@ import type { OauthProvider, User } from "./types";
 const tokenKey = "kiln.token";
 const userKey = "kiln.user";
 
-export const graphqlUrl =
-  process.env.NEXT_PUBLIC_GRAPHQL_URL ?? "http://localhost:4000/graphql";
+export const graphqlUrl = process.env.NEXT_PUBLIC_GRAPHQL_URL ?? "http://localhost:4000/graphql";
 
 export const apiOrigin = graphqlUrl.replace(/\/graphql\/?$/, "");
 
-const isProvider = (value: string): value is OauthProvider =>
-  value === "google" || value === "github";
+const isProvider = (value: string): value is OauthProvider => value === "google" || value === "github";
 
 const readProviders = (value: unknown): readonly OauthProvider[] => {
   if (!Array.isArray(value)) {
@@ -51,15 +42,12 @@ const isUserRecord = (
   isAdmin?: unknown;
   auditMode?: unknown;
   onboardingCompleted?: unknown;
+  emailVerified?: unknown;
 } => {
   if (!isRecord(value)) {
     return false;
   }
-  return (
-    typeof value.id === "string" &&
-    typeof value.email === "string" &&
-    typeof value.name === "string"
-  );
+  return typeof value.id === "string" && typeof value.email === "string" && typeof value.name === "string";
 };
 
 const toUser = (value: {
@@ -72,6 +60,7 @@ const toUser = (value: {
   isAdmin?: unknown;
   auditMode?: unknown;
   onboardingCompleted?: unknown;
+  emailVerified?: unknown;
 }): User => {
   const avatarUrl = value.avatarUrl;
   const trimmed = typeof avatarUrl === "string" ? avatarUrl.trim() : "";
@@ -85,6 +74,7 @@ const toUser = (value: {
     isAdmin: value.isAdmin === true,
     auditMode: value.auditMode === true,
     onboardingCompleted: value.onboardingCompleted !== false,
+    emailVerified: value.emailVerified !== false,
   };
 };
 

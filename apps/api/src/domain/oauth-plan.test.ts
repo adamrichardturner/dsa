@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { verificationLandingPath } from "./email-verification.js";
 import {
   allowedWebOrigin,
   callbackUrl,
   identityEmail,
+  oauthSkipsEmailVerification,
   planOAuthAccount,
   readGitHubAccount,
   readGoogleAccount,
@@ -22,11 +24,7 @@ const account = (overrides: Partial<ProviderAccount> = {}): ProviderAccount => (
   ...overrides,
 });
 
-const user = (
-  id: string,
-  email: string,
-  providerLinked = false,
-): OauthAccountMatch => ({
+const user = (id: string, email: string, providerLinked = false): OauthAccountMatch => ({
   id,
   email,
   providerLinked,
@@ -35,7 +33,10 @@ const user = (
 describe("planOAuthAccount", () => {
   it("signs into an existing provider subject even when the email changed", () => {
     const plan = planOAuthAccount(
-      account({ verifiedEmails: ["new@example.com"], primaryEmail: "new@example.com" }),
+      account({
+        verifiedEmails: ["new@example.com"],
+        primaryEmail: "new@example.com",
+      }),
       { userId: "user-a" },
       [user("user-b", "new@example.com")],
     );
@@ -43,11 +44,7 @@ describe("planOAuthAccount", () => {
   });
 
   it("rejects a profile with no verified email", () => {
-    const plan = planOAuthAccount(
-      account({ verifiedEmails: [], primaryEmail: null, emailsKnown: true }),
-      null,
-      [],
-    );
+    const plan = planOAuthAccount(account({ verifiedEmails: [], primaryEmail: null, emailsKnown: true }), null, []);
     assert.deepEqual(plan, { type: "reject", code: "email" });
   });
 
@@ -200,9 +197,18 @@ describe("provider profiles", () => {
 
   it("uses the verified GitHub primary email and ignores unverified ones", () => {
     const profile = readGitHubAccount(
-      { id: 42, login: "ada", name: null, avatar_url: "https://avatars.githubusercontent.com/u/42" },
+      {
+        id: 42,
+        login: "ada",
+        name: null,
+        avatar_url: "https://avatars.githubusercontent.com/u/42",
+      },
       [
-        { email: "hidden@users.noreply.github.com", primary: true, verified: false },
+        {
+          email: "hidden@users.noreply.github.com",
+          primary: true,
+          verified: false,
+        },
         { email: "Ada@Example.com", primary: false, verified: true },
         { email: "not-an-email", primary: false, verified: true },
       ],
@@ -221,11 +227,30 @@ describe("provider profiles", () => {
     assert.deepEqual(profile?.verifiedEmails, []);
     assert.equal(profile?.providerUserId, "7");
   });
+
+  it("skips a second verification email when the provider already verified the address", () => {
+    const verified = account();
+    assert.equal(oauthSkipsEmailVerification(verified), true);
+    const plan = planOAuthAccount(verified, null, []);
+    assert.equal(plan.type, "create");
+
+    const missing = account({
+      verifiedEmails: [],
+      primaryEmail: null,
+      emailsKnown: true,
+    });
+    assert.equal(oauthSkipsEmailVerification(missing), false);
+    assert.deepEqual(planOAuthAccount(missing, null, []), {
+      type: "reject",
+      code: "email",
+    });
+  });
 });
 
 describe("redirect safety", () => {
   it("keeps same-site paths and rejects open redirects", () => {
     assert.equal(safeReturnPath(null), "/course");
+    assert.equal(safeReturnPath(verificationLandingPath), "/course");
     assert.equal(safeReturnPath("/course/lists"), "/course/lists");
     assert.equal(safeReturnPath("https://evil.example/phish"), "/course");
     assert.equal(safeReturnPath("//evil.example"), "/course");
@@ -242,10 +267,7 @@ describe("redirect safety", () => {
   });
 
   it("builds the provider callback from the API origin", () => {
-    assert.equal(
-      callbackUrl("http://localhost:4000", "google"),
-      "http://localhost:4000/auth/google/callback",
-    );
+    assert.equal(callbackUrl("http://localhost:4000", "google"), "http://localhost:4000/auth/google/callback");
     assert.equal(callbackUrl("not a url", "github"), null);
   });
 });

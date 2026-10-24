@@ -12,6 +12,11 @@ export interface PublicUser {
   readonly isAdmin: boolean;
   readonly auditMode: boolean;
   readonly onboardingCompleted: boolean;
+  readonly emailVerified: boolean;
+}
+
+export interface SignUpResult {
+  readonly email: string;
 }
 
 export interface AuthResult {

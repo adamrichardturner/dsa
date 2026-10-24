@@ -10,6 +10,7 @@ export interface User {
   readonly isAdmin: boolean;
   readonly auditMode: boolean;
   readonly onboardingCompleted: boolean;
+  readonly emailVerified: boolean;
 }
 
 export interface AuthPayload {

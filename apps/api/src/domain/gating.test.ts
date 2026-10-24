@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { openLessonSlugs, type GateLesson } from "./gating.js";
+import { appUseAllowed, openLessonSlugs, type GateLesson } from "./gating.js";
 
 const lessons: readonly GateLesson[] = [
   { id: "a", slug: "first" },
@@ -37,6 +37,19 @@ test("a skip later in the path does not unlock past a gap", () => {
 test("passing and skipping can be mixed along the path", () => {
   const open = openLessonSlugs(lessons, { a: true }, { b: true }, false);
   assert.equal(open.third, true);
+});
+
+test("an unverified password account cannot start lessons or onboarding", () => {
+  assert.equal(appUseAllowed({ emailVerified: false, oauthVerified: false }), false);
+});
+
+test("a verified password account can use the course", () => {
+  assert.equal(appUseAllowed({ emailVerified: true, oauthVerified: false }), true);
+});
+
+test("a provider-verified account is not blocked before the course", () => {
+  assert.equal(appUseAllowed({ emailVerified: false, oauthVerified: true }), true);
+  assert.equal(appUseAllowed({ emailVerified: true, oauthVerified: true }), true);
 });
 
 test("audit mode opens every lesson and does not treat a stray skip as progress", () => {

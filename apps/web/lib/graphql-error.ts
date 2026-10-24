@@ -21,6 +21,10 @@ const graphqlErrorMessages = {
   RESET_INVALID: "That reset link is invalid or has expired.",
   OAUTH_CODE_INVALID: "That sign-in link is no longer valid. Try again.",
   EMAIL_TAKEN: "An account with that email already exists.",
+  EMAIL_UNVERIFIED: "Check your inbox to verify your email before using the course. We sent another link.",
+  VERIFY_INVALID: "That verification link is invalid or has expired.",
+  VERIFY_USED: "That verification link has already been used.",
+  COURSE_UNVERIFIED: "Verify your email before using the course.",
   PASSWORD_INCORRECT: "Password is incorrect.",
   OAUTH_ACCOUNT:
     "This email uses Google or GitHub sign-in. Continue with one of those. You can add a password afterward from settings.",
@@ -37,10 +41,8 @@ const graphqlErrorMessages = {
   SOLUTION_TOO_LONG: "That solution is too long to save.",
   MISSING_CODE: "Write some code before running it.",
   EMAIL_UNAVAILABLE: "Could not send that email. Try again in a moment.",
-  OAUTH_EMAIL:
-    "The sign-in provider did not share a verified email address. Allow email access and try again.",
-  OAUTH_CONFLICT:
-    "Those email addresses belong to more than one account, so this sign-in was not linked.",
+  OAUTH_EMAIL: "The sign-in provider did not share a verified email address. Allow email access and try again.",
+  OAUTH_CONFLICT: "Those email addresses belong to more than one account, so this sign-in was not linked.",
   OAUTH_LINKED: "This email is already linked to a different account at that provider.",
   OAUTH_PROVIDER: "Could not finish signing in. Try again.",
   OAUTH_EXPIRED: "That sign-in link expired. Try again.",
@@ -84,10 +86,14 @@ const readCode = (error: CombinedError): string | null => {
  * Readable copy for a GraphQL failure.
  * The server message is never shown, so an unexpected error cannot leak internals.
  */
-export const graphqlErrorMessage = (
-  error: CombinedError | undefined,
-  fallback = unexpectedMessage,
-): string => {
+export const graphqlErrorCode = (error: CombinedError | undefined): string | null => {
+  if (error === undefined) {
+    return null;
+  }
+  return readCode(error);
+};
+
+export const graphqlErrorMessage = (error: CombinedError | undefined, fallback = unexpectedMessage): string => {
   if (error === undefined) {
     return fallback;
   }

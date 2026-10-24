@@ -11,8 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OAuthButtons } from "@/components/oauth-buttons";
+import { VerifyEmailScreen } from "@/components/verify-email-hold";
 import { useAuth } from "@/lib/auth";
-import { graphqlErrorMessage } from "@/lib/graphql-error";
+import { graphqlErrorCode, graphqlErrorMessage } from "@/lib/graphql-error";
 import { SIGN_IN, SIGN_UP } from "@/lib/operations";
 import type { AuthPayload } from "@/lib/types";
 
@@ -28,18 +29,37 @@ export function AuthForm({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [signUpResult, signUp] = useMutation<{ signUp: AuthPayload }>(SIGN_UP);
+  const [hold, setHold] = useState<{
+    readonly email: string;
+    readonly detail: string;
+  } | null>(null);
+  const [signUpResult, signUp] = useMutation<{
+    signUp: { readonly email: string };
+  }>(SIGN_UP);
   const [signInResult, signInMutation] = useMutation<{ signIn: AuthPayload }>(SIGN_IN);
   const pending = signUpResult.fetching || signInResult.fetching;
   const failure = signUpResult.error ?? signInResult.error;
   const error =
     failure === undefined
       ? null
-      : graphqlErrorMessage(
-          failure,
-          mode === "sign-up" ? "Could not create the account." : "Could not sign in.",
-        );
+      : graphqlErrorMessage(failure, mode === "sign-up" ? "Could not create the account." : "Could not sign in.");
   const title = mode === "sign-up" ? "Create your account" : "Welcome back";
+
+  if (hold !== null) {
+    return (
+      <VerifyEmailScreen
+        email={hold.email}
+        detail={hold.detail}
+        onSignIn={
+          mode === "sign-in"
+            ? () => {
+                setHold(null);
+              }
+            : undefined
+        }
+      />
+    );
+  }
 
   if (pending) {
     return <PageSpinner />;
@@ -47,15 +67,28 @@ export function AuthForm({
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const result =
-      mode === "sign-up"
-        ? await signUp({ email, name, password })
-        : await signInMutation({ email, password });
-    const data = result.data;
-    if (data == null) {
+    if (mode === "sign-up") {
+      const created = await signUp({ email, name, password });
+      const sentTo = created.data?.signUp.email;
+      if (sentTo === undefined) {
+        return;
+      }
+      setHold({
+        email: sentTo,
+        detail: "Use the button in the email. That signs you in and starts the introduction. The link works once.",
+      });
       return;
     }
-    const payload = "signUp" in data ? data.signUp : data.signIn;
+
+    const signedIn = await signInMutation({ email, password });
+    if (graphqlErrorCode(signedIn.error) === "EMAIL_UNVERIFIED") {
+      setHold({
+        email: email.trim(),
+        detail: "We sent another link. Use the button in that email. It signs you in and starts the introduction.",
+      });
+      return;
+    }
+    const payload = signedIn.data?.signIn;
     if (payload == null) {
       return;
     }

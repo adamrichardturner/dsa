@@ -1,5 +1,11 @@
 import { GraphQLError } from "graphql";
 import type { Plugin } from "graphql-yoga";
+import {
+  unverifiedCourseMessage,
+  unverifiedSignInMessage,
+  verificationInvalidMessage,
+  verificationUsedMessage,
+} from "../domain/email-verification.js";
 import { isRecord } from "../lib/guards.js";
 
 const requestFailed = "Request failed.";
@@ -16,6 +22,10 @@ export const publicErrorCodes = [
   "RESET_INVALID",
   "OAUTH_CODE_INVALID",
   "EMAIL_TAKEN",
+  "EMAIL_UNVERIFIED",
+  "VERIFY_INVALID",
+  "VERIFY_USED",
+  "COURSE_UNVERIFIED",
   "PASSWORD_INCORRECT",
   "OAUTH_ACCOUNT",
   "INVALID_CREDENTIALS",
@@ -68,6 +78,10 @@ const messageCodes: Record<string, PublicErrorCode> = {
   "That sign-in link is no longer valid. Try again.": "OAUTH_CODE_INVALID",
   "Missing sign-in code.": "OAUTH_CODE_INVALID",
   "An account with that email already exists.": "EMAIL_TAKEN",
+  [unverifiedSignInMessage]: "EMAIL_UNVERIFIED",
+  [verificationInvalidMessage]: "VERIFY_INVALID",
+  [verificationUsedMessage]: "VERIFY_USED",
+  [unverifiedCourseMessage]: "COURSE_UNVERIFIED",
   "Password is incorrect.": "PASSWORD_INCORRECT",
   "This email uses Google or GitHub sign-in. Continue with one of those. You can add a password afterward from settings.":
     "OAUTH_ACCOUNT",

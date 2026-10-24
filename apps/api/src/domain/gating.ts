@@ -26,3 +26,15 @@ export const openLessonSlugs = (
 
   return open;
 };
+
+export interface CourseAccess {
+  readonly emailVerified: boolean;
+  readonly oauthVerified: boolean;
+}
+
+export const appUseAllowed = (account: CourseAccess): boolean => {
+  if (account.emailVerified) {
+    return true;
+  }
+  return account.oauthVerified;
+};

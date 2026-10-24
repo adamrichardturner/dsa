@@ -6,10 +6,12 @@ import { Lock } from "lucide-react";
 import { useQuery } from "urql";
 import { AuditModeToggle } from "@/components/audit-mode-toggle";
 import { PageSpinner } from "@/components/page-spinner";
+import { VerifyEmailScreen } from "@/components/verify-email-hold";
 import { CompletionTick } from "@/components/completion-tick";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useRequireUser } from "@/lib/auth";
+import { courseAccessOpen } from "@/lib/verification";
 import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { MODULES_QUERY } from "@/lib/operations";
 import type { LessonSummary, ModuleView } from "@/lib/types";
@@ -188,9 +190,10 @@ export default function CoursePage() {
   const auth = useRequireUser();
   const auditMode = auth.user?.auditMode ?? false;
   const auditModeRef = useRef(auditMode);
+  const open = auth.user !== null && courseAccessOpen(auth.user);
   const [result, reexecute] = useQuery<{ modules: ModuleView[] }>({
     query: MODULES_QUERY,
-    pause: auth.user === null,
+    pause: !open,
     requestPolicy: "cache-and-network",
   });
 
@@ -204,6 +207,10 @@ export default function CoursePage() {
 
   if (auth.user === null) {
     return <PageSpinner />;
+  }
+
+  if (!courseAccessOpen(auth.user)) {
+    return <VerifyEmailScreen email={auth.user.email} />;
   }
 
   if (result.error !== undefined) {

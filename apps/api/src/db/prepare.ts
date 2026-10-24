@@ -16,6 +16,8 @@ const statements: readonly string[] = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS audit_mode BOOLEAN NOT NULL DEFAULT FALSE`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT TRUE`,
   `ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ DEFAULT NOW()`,
+  `ALTER TABLE users ALTER COLUMN email_verified_at DROP DEFAULT`,
   `CREATE TABLE IF NOT EXISTS oauth_identities (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -118,6 +120,14 @@ const statements: readonly string[] = [
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
+  `CREATE TABLE IF NOT EXISTS email_verifications (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    consumed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
 ];
 
 const reportDatabaseFailure =
@@ -132,9 +142,7 @@ export const prepareDatabase = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
 
   for (const statement of statements) {
-    yield* sql
-      .unsafe(statement)
-      .pipe(reportDatabaseFailure("Could not prepare the database."));
+    yield* sql.unsafe(statement).pipe(reportDatabaseFailure("Could not prepare the database."));
   }
 
   const upsertModule = SqlSchema.void({
@@ -303,9 +311,7 @@ export const prepareDatabase = Effect.gen(function* () {
                   problem.tests.map((test) => ({
                     ...test,
                     immutableArgs: test.immutableArgs ?? problem.immutableArgs,
-                    distinctArrayReturnFromArg:
-                      test.distinctArrayReturnFromArg ??
-                      problem.distinctArrayReturnFromArg,
+                    distinctArrayReturnFromArg: test.distinctArrayReturnFromArg ?? problem.distinctArrayReturnFromArg,
                   })),
                 ),
                 disallowJson: JSON.stringify(problem.disallow),

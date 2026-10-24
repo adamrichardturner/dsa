@@ -8,6 +8,7 @@ const userFields = `
   isAdmin
   auditMode
   onboardingCompleted
+  emailVerified
 `;
 
 export const ME_QUERY = `
@@ -138,9 +139,23 @@ export const ANALYTICS_QUERY = `
 export const SIGN_UP = `
   mutation SignUp($email: String!, $name: String!, $password: String!) {
     signUp(email: $email, name: $name, password: $password) {
+      email
+    }
+  }
+`;
+
+export const VERIFY_EMAIL = `
+  mutation VerifyEmail($token: String!) {
+    verifyEmail(token: $token) {
       token
       user {${userFields}}
     }
+  }
+`;
+
+export const RESEND_VERIFICATION = `
+  mutation ResendVerification($email: String!) {
+    resendVerificationEmail(email: $email)
   }
 `;
 

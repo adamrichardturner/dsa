@@ -11,6 +11,7 @@ import {
   GraphQLString,
 } from "graphql";
 import { Auth } from "../domain/auth.js";
+import { verificationInvalidMessage } from "../domain/email-verification.js";
 import { Admin } from "../domain/admin.js";
 import { OAuth } from "../domain/oauth.js";
 import { Catalog } from "../domain/catalog.js";
@@ -39,6 +40,7 @@ const UserType = new GraphQLObjectType({
     isAdmin: { type: new GraphQLNonNull(GraphQLBoolean) },
     auditMode: { type: new GraphQLNonNull(GraphQLBoolean) },
     onboardingCompleted: { type: new GraphQLNonNull(GraphQLBoolean) },
+    emailVerified: { type: new GraphQLNonNull(GraphQLBoolean) },
   },
 });
 
@@ -47,6 +49,13 @@ const AuthPayloadType = new GraphQLObjectType({
   fields: {
     token: { type: new GraphQLNonNull(GraphQLString) },
     user: { type: new GraphQLNonNull(UserType) },
+  },
+});
+
+const SignUpResultType = new GraphQLObjectType({
+  name: "SignUpResult",
+  fields: {
+    email: { type: new GraphQLNonNull(GraphQLString) },
   },
 });
 
@@ -523,7 +532,7 @@ export const schema = new GraphQLSchema({
     name: "Mutation",
     fields: {
       signUp: {
-        type: new GraphQLNonNull(AuthPayloadType),
+        type: new GraphQLNonNull(SignUpResultType),
         args: {
           email: { type: new GraphQLNonNull(GraphQLString) },
           name: { type: new GraphQLNonNull(GraphQLString) },
@@ -563,6 +572,32 @@ export const schema = new GraphQLSchema({
                 email: requireString(args.email, "Email is required."),
                 password: requireString(args.password, "Password is required."),
               }),
+            ),
+          ),
+      },
+      verifyEmail: {
+        type: new GraphQLNonNull(AuthPayloadType),
+        args: {
+          token: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (_parent, args: { token?: unknown }, context: GraphQLContext) =>
+          execute(
+            context.token,
+            Auth.use((auth) =>
+              auth.verifyEmail(requireString(args.token, verificationInvalidMessage)),
+            ),
+          ),
+      },
+      resendVerificationEmail: {
+        type: new GraphQLNonNull(GraphQLBoolean),
+        args: {
+          email: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (_parent, args: { email?: unknown }, context: GraphQLContext) =>
+          execute(
+            context.token,
+            Auth.use((auth) =>
+              auth.resendVerification(requireString(args.email, "Email is required.")),
             ),
           ),
       },

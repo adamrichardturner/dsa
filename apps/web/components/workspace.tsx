@@ -29,6 +29,7 @@ import {
   type SolutionNoticeState,
 } from "@/components/solution-notice";
 import { StuckPrompt } from "@/components/stuck-prompt";
+import { VerifyEmailHold } from "@/components/verify-email-hold";
 import { CompletionTick } from "@/components/completion-tick";
 import { ProgressSaved } from "@/components/progress-saved";
 import {
@@ -68,6 +69,7 @@ import { annotateLesson, annotateMarkdown } from "@/lib/lesson-keywords";
 import { currentLessonFrom } from "@/lib/lesson-return";
 import { useLessonDraft } from "@/hooks/use-lesson-draft";
 import { useRequireUser } from "@/lib/auth";
+import { courseAccessOpen } from "@/lib/verification";
 import { LESSON_QUERY, RUN_CODE, SUBMIT_SOLUTION } from "@/lib/operations";
 import type { LessonView, SkipResult, SubmissionView } from "@/lib/types";
 
@@ -182,7 +184,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [result, reexecute] = useQuery<{ lesson: LessonView | null }>({
     query: LESSON_QUERY,
     variables: { slug },
-    pause: auth.user === null || slug.length === 0,
+    pause: auth.user === null || !courseAccessOpen(auth.user) || slug.length === 0,
     requestPolicy: "cache-and-network",
   });
   const [submitState, submit] = useMutation<{ submitSolution: SubmissionView }>(
@@ -304,6 +306,19 @@ export function Workspace({ slug }: { readonly slug: string }) {
       savedTick={tick}
     />
   );
+
+  if (auth.user !== null && !courseAccessOpen(auth.user)) {
+    return (
+      <div className="flex h-full min-h-0 flex-1 flex-col">
+        {bar}
+        <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-16">
+          <div className="w-full max-w-md">
+            <VerifyEmailHold email={auth.user.email} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (auth.user === null || (!lessonReady && result.fetching)) {
     return (

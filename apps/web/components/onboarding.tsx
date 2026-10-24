@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/lib/auth";
+import { courseAccessOpen } from "@/lib/verification";
 import { graphqlErrorMessage } from "@/lib/graphql-error";
 import { COMPLETE_ONBOARDING, SET_AUDIT_MODE } from "@/lib/operations";
 import type { User } from "@/lib/types";
@@ -74,7 +75,7 @@ export function Onboarding() {
   );
   const [, setAudit] = useMutation<{ setAuditMode: User }>(SET_AUDIT_MODE);
 
-  if (!settled || user === null || user.onboardingCompleted) {
+  if (!settled || user === null || !courseAccessOpen(user) || user.onboardingCompleted) {
     return null;
   }
 

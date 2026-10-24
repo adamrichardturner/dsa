@@ -12,6 +12,7 @@ import {
   identityEmail,
   isOauthProvider,
   normalizeEmail,
+  oauthSkipsEmailVerification,
   oauthFailureMessage,
   planOAuthAccount,
   readGitHubAccount,
@@ -48,6 +49,7 @@ const UserRow = Schema.Struct({
   avatarUrl: Schema.NullOr(Schema.String),
   auditMode: Schema.Boolean,
   onboardingCompleted: Schema.Boolean,
+  emailVerified: Schema.Boolean,
 });
 
 const IdentityRow = Schema.Struct({
@@ -105,11 +107,13 @@ const flowCode = (error: unknown): OauthFlowError["code"] | null => {
   }
 };
 
-const failUnexpected = (message: string) => <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-  effect.pipe(
-    Effect.tapError((error) => Effect.logError(message, error)),
-    Effect.mapError(() => new Unexpected({ message })),
-  );
+const failUnexpected =
+  (message: string) =>
+  <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+    effect.pipe(
+      Effect.tapError((error) => Effect.logError(message, error)),
+      Effect.mapError(() => new Unexpected({ message })),
+    );
 
 const reject = (provider: OauthProvider, code: OauthFlowError["code"]) =>
   new OauthFlowError({ code, message: oauthFailureMessage(code, provider) });
@@ -281,10 +285,7 @@ const providerHeaders = (accessToken: string, provider: OauthProvider): HeadersI
   };
 };
 
-const loadAccount = (
-  provider: OauthProvider,
-  accessToken: string,
-): Effect.Effect<ProviderAccount, Unexpected> =>
+const loadAccount = (provider: OauthProvider, accessToken: string): Effect.Effect<ProviderAccount, Unexpected> =>
   Effect.gen(function* () {
     if (provider === "google") {
       const payload = yield* requestJson("https://openidconnect.googleapis.com/v1/userinfo", {
@@ -292,7 +293,9 @@ const loadAccount = (
       });
       const account = readGoogleAccount(payload);
       if (account === null) {
-        return yield* new Unexpected({ message: "Could not read the Google profile." });
+        return yield* new Unexpected({
+          message: "Could not read the Google profile.",
+        });
       }
       return account;
     }
@@ -308,13 +311,14 @@ const loadAccount = (
     );
     const account = readGitHubAccount(user, emails);
     if (account === null) {
-      return yield* new Unexpected({ message: "Could not read the GitHub profile." });
+      return yield* new Unexpected({
+        message: "Could not read the GitHub profile.",
+      });
     }
     return account;
   });
 
-const firstOrigin = (config: AppConfig["Service"]): string =>
-  config.webOrigins[0] ?? "http://localhost:3000";
+const firstOrigin = (config: AppConfig["Service"]): string => config.webOrigins[0] ?? "http://localhost:3000";
 
 export class OAuth extends Context.Service<
   OAuth,
@@ -435,7 +439,8 @@ export class OAuth extends Context.Service<
               password_hash AS "passwordHash",
               avatar_url AS "avatarUrl",
               audit_mode AS "auditMode",
-              onboarding_completed AS "onboardingCompleted"
+              onboarding_completed AS "onboardingCompleted",
+              email_verified_at IS NOT NULL AS "emailVerified"
             FROM users
             WHERE email = ${request.email}
           `,
@@ -468,7 +473,8 @@ export class OAuth extends Context.Service<
               password_hash AS "passwordHash",
               avatar_url AS "avatarUrl",
               audit_mode AS "auditMode",
-              onboarding_completed AS "onboardingCompleted"
+              onboarding_completed AS "onboardingCompleted",
+              email_verified_at IS NOT NULL AS "emailVerified"
             FROM users
             WHERE id = ${request.id}
           `,
@@ -496,15 +502,34 @@ export class OAuth extends Context.Service<
         }),
         execute: (request) =>
           sql`
-            INSERT INTO users (id, email, name, password_hash, avatar_url, onboarding_completed)
+            INSERT INTO users (
+              id,
+              email,
+              name,
+              password_hash,
+              avatar_url,
+              onboarding_completed,
+              email_verified_at
+            )
             VALUES (
               ${request.id},
               ${request.email},
               ${request.name},
               ${request.passwordHash},
               ${request.avatarUrl},
-              FALSE
+              FALSE,
+              NOW()
             )
+          `,
+      });
+
+      const markEmailVerified = SqlSchema.void({
+        Request: Schema.Struct({ id: Schema.String }),
+        execute: (request) =>
+          sql`
+            UPDATE users
+            SET email_verified_at = COALESCE(email_verified_at, NOW())
+            WHERE id = ${request.id}
           `,
       });
 
@@ -576,12 +601,8 @@ export class OAuth extends Context.Service<
       });
 
       const cleanup = Effect.gen(function* () {
-        yield* sql`DELETE FROM oauth_states WHERE expires_at <= NOW()`.pipe(
-          Effect.catch(() => Effect.void),
-        );
-        yield* sql`DELETE FROM oauth_exchanges WHERE expires_at <= NOW()`.pipe(
-          Effect.catch(() => Effect.void),
-        );
+        yield* sql`DELETE FROM oauth_states WHERE expires_at <= NOW()`.pipe(Effect.catch(() => Effect.void));
+        yield* sql`DELETE FROM oauth_exchanges WHERE expires_at <= NOW()`.pipe(Effect.catch(() => Effect.void));
       });
 
       const readIdentity = (provider: OauthProvider, providerUserId: string) =>
@@ -597,16 +618,15 @@ export class OAuth extends Context.Service<
           const matches: OauthAccountMatch[] = [];
           for (const rawEmail of account.verifiedEmails) {
             const email = normalizeEmail(rawEmail);
-            const found = yield* findUserByEmail({ email }).pipe(
-              failUnexpected("Could not finish signing in."),
-            );
+            const found = yield* findUserByEmail({ email }).pipe(failUnexpected("Could not finish signing in."));
             const row = Option.getOrUndefined(found);
             if (row === undefined) {
               continue;
             }
-            const link = yield* findProviderLink({ userId: row.id, provider }).pipe(
-              failUnexpected("Could not finish signing in."),
-            );
+            const link = yield* findProviderLink({
+              userId: row.id,
+              provider,
+            }).pipe(failUnexpected("Could not finish signing in."));
             matches.push({
               id: row.id,
               email: row.email,
@@ -618,16 +638,14 @@ export class OAuth extends Context.Service<
 
       const present = (userId: string) =>
         Effect.gen(function* () {
-          const found = yield* findUserById({ id: userId }).pipe(
-            failUnexpected("Could not load your account."),
-          );
+          const found = yield* findUserById({ id: userId }).pipe(failUnexpected("Could not load your account."));
           const row = Option.getOrUndefined(found);
           if (row === undefined) {
-            return yield* new Unexpected({ message: "Could not load your account." });
+            return yield* new Unexpected({
+              message: "Could not load your account.",
+            });
           }
-          const linked = yield* listProviderRows({ userId }).pipe(
-            failUnexpected("Could not load your account."),
-          );
+          const linked = yield* listProviderRows({ userId }).pipe(failUnexpected("Could not load your account."));
           const linkedProviders: OauthProvider[] = [];
           for (const item of linked) {
             if (isOauthProvider(item.provider)) {
@@ -644,6 +662,7 @@ export class OAuth extends Context.Service<
             isAdmin: isAdminEmail(row.email),
             auditMode: row.auditMode,
             onboardingCompleted: row.onboardingCompleted,
+            emailVerified: row.emailVerified,
           };
           return user;
         });
@@ -661,18 +680,22 @@ export class OAuth extends Context.Service<
           return { token, user };
         });
 
-      const writeIdentity = (
-        provider: OauthProvider,
-        account: ProviderAccount,
-        userId: string,
-        email: string,
-      ) =>
+      const writeIdentity = (provider: OauthProvider, account: ProviderAccount, userId: string, email: string) =>
         insertIdentity({
           id: randomUUID(),
           userId,
           provider,
           providerUserId: account.providerUserId,
           email,
+        });
+
+      const rememberVerifiedEmail = (userId: string, account: ProviderAccount) =>
+        Effect.gen(function* () {
+          if (!oauthSkipsEmailVerification(account)) {
+            return userId;
+          }
+          yield* markEmailVerified({ id: userId }).pipe(failUnexpected("Could not finish signing in."));
+          return userId;
         });
 
       /**
@@ -691,11 +714,12 @@ export class OAuth extends Context.Service<
               );
             }
             if (account.avatarUrl !== null) {
-              yield* fillAvatar({ userId: identity.userId, avatarUrl: account.avatarUrl }).pipe(
-                failUnexpected("Could not finish signing in."),
-              );
+              yield* fillAvatar({
+                userId: identity.userId,
+                avatarUrl: account.avatarUrl,
+              }).pipe(failUnexpected("Could not finish signing in."));
             }
-            return identity.userId;
+            return yield* rememberVerifiedEmail(identity.userId, account);
           }
 
           if (!account.emailsKnown) {
@@ -705,7 +729,9 @@ export class OAuth extends Context.Service<
           const matches = yield* matchesFor(provider, account);
           const plan = planOAuthAccount(account, null, matches);
           if (plan.type === "use-identity") {
-            return yield* new Unexpected({ message: "Could not finish signing in." });
+            return yield* new Unexpected({
+              message: "Could not finish signing in.",
+            });
           }
           if (plan.type === "reject") {
             return yield* reject(provider, plan.code);
@@ -717,10 +743,12 @@ export class OAuth extends Context.Service<
                 if (plan.type === "link") {
                   const email = identityEmail(account);
                   if (email === null) {
-                    return yield* new Unexpected({ message: "Could not finish signing in." });
+                    return yield* new Unexpected({
+                      message: "Could not finish signing in.",
+                    });
                   }
                   yield* writeIdentity(provider, account, plan.userId, email);
-                  return plan.userId;
+                  return yield* rememberVerifiedEmail(plan.userId, account);
                 }
                 const userId = randomUUID();
                 yield* insertUser({
@@ -731,7 +759,7 @@ export class OAuth extends Context.Service<
                   avatarUrl: account.avatarUrl,
                 });
                 yield* writeIdentity(provider, account, userId, plan.email);
-                return userId;
+                return yield* rememberVerifiedEmail(userId, account);
               }),
             )
             .pipe(
@@ -742,7 +770,7 @@ export class OAuth extends Context.Service<
                 return Effect.gen(function* () {
                   const winner = yield* readIdentity(provider, account.providerUserId);
                   if (winner !== undefined) {
-                    return winner.userId;
+                    return yield* rememberVerifiedEmail(winner.userId, account);
                   }
                   const again = yield* matchesFor(provider, account);
                   const next = planOAuthAccount(account, null, again);
@@ -750,11 +778,15 @@ export class OAuth extends Context.Service<
                     return yield* reject(provider, next.code);
                   }
                   if (next.type !== "link") {
-                    return yield* new Unexpected({ message: "Could not finish signing in." });
+                    return yield* new Unexpected({
+                      message: "Could not finish signing in.",
+                    });
                   }
                   const email = identityEmail(account);
                   if (email === null) {
-                    return yield* new Unexpected({ message: "Could not finish signing in." });
+                    return yield* new Unexpected({
+                      message: "Could not finish signing in.",
+                    });
                   }
                   const inserted = yield* writeIdentity(provider, account, next.userId, email).pipe(
                     Effect.map(() => true),
@@ -766,11 +798,11 @@ export class OAuth extends Context.Service<
                     }),
                   );
                   if (inserted) {
-                    return next.userId;
+                    return yield* rememberVerifiedEmail(next.userId, account);
                   }
                   const linked = yield* readIdentity(provider, account.providerUserId);
                   if (linked !== undefined) {
-                    return linked.userId;
+                    return yield* rememberVerifiedEmail(linked.userId, account);
                   }
                   return yield* reject(provider, "linked");
                 });
@@ -778,9 +810,10 @@ export class OAuth extends Context.Service<
             );
 
           if (account.avatarUrl !== null) {
-            yield* fillAvatar({ userId: created, avatarUrl: account.avatarUrl }).pipe(
-              failUnexpected("Could not finish signing in."),
-            );
+            yield* fillAvatar({
+              userId: created,
+              avatarUrl: account.avatarUrl,
+            }).pipe(failUnexpected("Could not finish signing in."));
           }
           return created;
         });
@@ -790,9 +823,9 @@ export class OAuth extends Context.Service<
           if (state.length === 0 || state.length > 512) {
             return undefined;
           }
-          const found = yield* consumeState({ stateHash: hashToken(state) }).pipe(
-            failUnexpected("Could not finish signing in."),
-          );
+          const found = yield* consumeState({
+            stateHash: hashToken(state),
+          }).pipe(failUnexpected("Could not finish signing in."));
           return Option.getOrUndefined(found);
         });
 
@@ -838,9 +871,7 @@ export class OAuth extends Context.Service<
           const code = input.providerError === "access_denied" ? "access_denied" : "provider";
           const row = input.state === null ? undefined : yield* takeState(input.state);
           const origin =
-            row === undefined
-              ? fallback
-              : (allowedWebOrigin(row.webOrigin, config.webOrigins) ?? fallback);
+            row === undefined ? fallback : (allowedWebOrigin(row.webOrigin, config.webOrigins) ?? fallback);
           return errorRedirect(origin, input.provider, code);
         }
 
@@ -921,9 +952,9 @@ export class OAuth extends Context.Service<
             message: "That sign-in link is no longer valid. Try again.",
           });
         }
-        const found = yield* consumeExchange({ codeHash: hashToken(trimmed) }).pipe(
-          failUnexpected("Could not finish signing in."),
-        );
+        const found = yield* consumeExchange({
+          codeHash: hashToken(trimmed),
+        }).pipe(failUnexpected("Could not finish signing in."));
         const row = Option.getOrUndefined(found);
         if (row === undefined) {
           return yield* new BadInput({

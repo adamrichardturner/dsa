@@ -1,33 +1,22 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { GraphQLError } from "graphql";
+import { unverifiedSignInMessage } from "../domain/email-verification.js";
 import { BadInput, OauthFlowError, Unexpected } from "../domain/errors.js";
-import {
-  classifyError,
-  maskPublicError,
-  maskValidationResult,
-  publicGraphQLError,
-} from "./public-error.js";
+import { classifyError, maskPublicError, maskValidationResult, publicGraphQLError } from "./public-error.js";
 
 const serialized = (error: GraphQLError): string => JSON.stringify(error.toJSON());
 
 describe("public GraphQL errors", () => {
   it("replaces a known validation error with a code and a fixed message", () => {
-    const error = maskPublicError(
-      new BadInput({ message: "Enter a valid email address." }),
-      "Unexpected error.",
-      true,
-    );
+    const error = maskPublicError(new BadInput({ message: "Enter a valid email address." }), "Unexpected error.", true);
     assert.equal(error.message, "Request failed.");
     assert.equal(error.extensions.code, "BAD_EMAIL");
     assert.equal(serialized(error).includes("Enter a valid email"), false);
   });
 
   it("keeps an actionable failure that was raised as an unexpected error", () => {
-    assert.equal(
-      classifyError(new Unexpected({ message: "Write a solution before submitting." })),
-      "SOLUTION_EMPTY",
-    );
+    assert.equal(classifyError(new Unexpected({ message: "Write a solution before submitting." })), "SOLUTION_EMPTY");
   });
 
   it("hides internal failure text", () => {
@@ -41,10 +30,7 @@ describe("public GraphQL errors", () => {
 
   it("uses the OAuth flow code and drops the provider message", () => {
     const secret = "token exchange body from the provider";
-    const error = maskPublicError(
-      new OauthFlowError({ code: "linked", message: secret }),
-      "Unexpected error.",
-    );
+    const error = maskPublicError(new OauthFlowError({ code: "linked", message: secret }), "Unexpected error.");
     assert.equal(error.extensions.code, "OAUTH_LINKED");
     assert.equal(serialized(error).includes("token exchange"), false);
   });
@@ -62,6 +48,12 @@ describe("public GraphQL errors", () => {
     const masked = maskPublicError(wrapped, "Unexpected error.", true);
     assert.equal(masked.extensions.code, "LESSON_LOCKED");
     assert.equal(masked.originalError, undefined);
+  });
+
+  it("publishes a code when sign-in is waiting on email verification", () => {
+    const error = maskPublicError(new BadInput({ message: unverifiedSignInMessage }), "Unexpected error.", true);
+    assert.equal(error.extensions.code, "EMAIL_UNVERIFIED");
+    assert.equal(serialized(error).includes("inbox"), false);
   });
 
   it("classifies plain resolver errors by their known message", () => {
