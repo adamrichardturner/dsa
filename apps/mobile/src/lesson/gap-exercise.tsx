@@ -16,6 +16,7 @@ import type { GapChip, GapGrade, GapPart, GapSubmission, ProblemView } from "@/a
 import { CodeLine, CodeWindow } from "@/lesson/code-window";
 import { useCodeTheme } from "@/lesson/code-theme";
 import { GapOutline } from "@/lesson/completion";
+import { exerciseStatus, StatusMark, statusLabel } from "@/course/status-mark";
 import { exerciseHighlightLanguage } from "@/lesson/highlight";
 import { HighlightedCode } from "@/lesson/highlighted-code";
 import { Reading } from "@/lesson/reading";
@@ -166,12 +167,14 @@ function GapSlot({
 }
 
 export function GapExercise({
+  lessonSkipped,
   onOpenGuide,
   onPassed,
   problem,
   scrollToEnd,
   token,
 }: {
+  readonly lessonSkipped: boolean;
   readonly problem: ProblemView;
   readonly token: string;
   readonly onPassed: () => void;
@@ -306,12 +309,17 @@ export function GapExercise({
   };
 
   const lines = linesFrom(puzzle.parts);
+  const status = exerciseStatus({ solved: passed, attempts: problem.attempts }, lessonSkipped);
+  const label = statusLabel(status);
 
   return (
     <DropProvider>
       <View style={styles.block}>
-        <Text style={[styles.kicker, { color: colors.mutedForeground }]}>Exercise</Text>
-        <Text style={[styles.exerciseTitle, { color: colors.foreground }]}>{problem.title}</Text>
+        <Text style={[styles.kicker, { color: colors.mutedForeground }]}>{label}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.exerciseTitle, { color: colors.foreground }]}>{problem.title}</Text>
+          <StatusMark label={label} status={status} />
+        </View>
         <Reading markdown={problem.promptMd} />
         {problem.examples.length === 0 ? null : (
           <Card>
@@ -419,7 +427,14 @@ const styles = StyleSheet.create({
     letterSpacing: 1.1,
     textTransform: "uppercase",
   },
+  titleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+  },
   exerciseTitle: {
+    flex: 1,
     fontFamily: "Fraunces_500Medium",
     fontSize: 26,
     letterSpacing: -0.4,

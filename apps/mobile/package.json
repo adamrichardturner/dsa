@@ -12,6 +12,7 @@
     "expo-apple-authentication": "~58.0.2",
     "expo-constants": "~58.0.13",
     "expo-crypto": "~58.0.7",
+    "expo-dev-client": "~58.0.15",
     "expo-device": "~58.0.5",
     "expo-font": "~58.0.10",
     "expo-glass-effect": "~58.0.5",
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@types/prismjs": "^1.26.6",
     "@types/react": "~19.3.0",
+    "eas-cli": "^25.3.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -53,7 +55,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:ios:dev": "mkdir -p builds/ios && EAS_LOCAL_BUILD_ARTIFACTS_DIR=\"$(pwd)/builds/ios\" eas build --profile development --platform ios --local",
+    "build:ios:dev:device": "mkdir -p builds/ios && EAS_LOCAL_BUILD_ARTIFACTS_DIR=\"$(pwd)/builds/ios\" eas build --profile development-device --platform ios --local",
+    "build:ios:prod": "eas build --profile production --platform ios",
+    "submit:ios": "eas build --profile production --platform ios --auto-submit"
   },
   "private": true
 }

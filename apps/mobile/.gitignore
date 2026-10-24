@@ -41,3 +41,9 @@ example
 # generated native folders
 /ios
 /android
+
+# local EAS build artifacts
+/builds/
+
+# local EAS build archives
+build-*.tar.gz

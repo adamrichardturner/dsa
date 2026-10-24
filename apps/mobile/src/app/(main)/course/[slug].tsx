@@ -6,6 +6,7 @@ import { ApiError, request } from "@/api/client";
 import { LESSON_QUERY } from "@/api/operations";
 import type { LessonView, ProblemView, SkipResult } from "@/api/types";
 import { useSession } from "@/auth/session";
+import { exerciseStatus, StatusMark, statusLabel } from "@/course/status-mark";
 import { GapExercise } from "@/lesson/gap-exercise";
 import { GuideSheet } from "@/lesson/guide-sheet";
 import { Reading } from "@/lesson/reading";
@@ -92,25 +93,30 @@ export default function LessonScreen() {
           <Body muted>{lesson.summary}</Body>
           <Reading markdown={lesson.contentMd} />
           {lesson.problems.length < 2 ? null : (
-            <View style={styles.switcher}>
+            <View accessibilityRole="tablist" style={styles.switcher}>
               {lesson.problems.map((item, index) => {
                 const selected = item.id === problem.id;
+                const status = exerciseStatus(item, lesson.skipped);
+                const label = statusLabel(status);
                 return (
                   <Pressable
                     key={item.id}
-                    accessibilityRole="button"
+                    accessibilityLabel={`${item.title}. ${label}`}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected }}
                     onPress={() => setProblemId(item.id)}
                     style={[
                       styles.switch,
                       {
-                        backgroundColor: selected ? colors.primary : colors.secondary,
-                        borderColor: colors.border,
+                        backgroundColor: selected ? colors.secondary : colors.card,
+                        borderColor: selected ? colors.foreground : colors.border,
                       },
                     ]}
                   >
-                    <Text style={{ color: selected ? colors.primaryForeground : colors.foreground, fontFamily: "Geist_500Medium" }}>
-                      {item.solved ? "Done" : `Exercise ${index + 1}`}
-                    </Text>
+                    <Text style={[styles.switchIndex, { color: colors.mutedForeground }]}>{index + 1}</Text>
+                    <Text style={[styles.switchTitle, { color: colors.foreground }]}>{item.title}</Text>
+                    <Text style={[styles.switchStatus, { color: colors.mutedForeground }]}>{label}</Text>
+                    <StatusMark label={label} status={status} />
                   </Pressable>
                 );
               })}
@@ -118,6 +124,7 @@ export default function LessonScreen() {
           )}
           <GapExercise
             key={problem.id}
+            lessonSkipped={lesson.skipped}
             onOpenGuide={() => setGuideOpen(true)}
             onPassed={() => void load()}
             problem={problem}
@@ -164,15 +171,30 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   switcher: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
     marginTop: 8,
   },
   switch: {
-    borderRadius: 999,
+    alignItems: "center",
+    borderRadius: 12,
     borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
+  },
+  switchIndex: {
+    fontFamily: "Geist_500Medium",
+    fontSize: 13,
+    width: 16,
+  },
+  switchTitle: {
+    flex: 1,
+    fontFamily: "Geist_500Medium",
+    fontSize: 14,
+  },
+  switchStatus: {
+    fontFamily: "Geist_400Regular",
+    fontSize: 12,
   },
 });

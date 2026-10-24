@@ -1,0 +1,38 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "development-device": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development"
+    },
+    "production": {
+      "autoIncrement": true,
+      "distribution": "store",
+      "environment": "production",
+      "node": "22.23.3",
+      "env": {
+        "EXPO_PUBLIC_GRAPHQL_URL": "https://api.datastructuresandalgorithms.com/graphql",
+        "EXPO_PUBLIC_WEB_URL": "https://datastructuresandalgorithms.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6826677227"
+      }
+    }
+  }
+}

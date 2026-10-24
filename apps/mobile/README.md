@@ -18,13 +18,15 @@ npm run dev:mobile
 
 From this directory, `npm start` is the same Expo command.
 
-Copy the env file if the API is not on `http://localhost:4000`:
+Copy the env file before starting the app. The GraphQL client reads `EXPO_PUBLIC_GRAPHQL_URL` and throws if it is missing.
 
 ```bash
 cp .env.example .env.local
 ```
 
 `EXPO_PUBLIC_GRAPHQL_URL` is the GraphQL endpoint. `EXPO_PUBLIC_WEB_URL` is the site the article reader opens. A simulator can use `localhost`. A phone on the same network needs your machine's address.
+
+EAS Build does not read `.env.local`. The `development` and `development-device` profiles use the `development` environment, and `production` uses the `production` environment. Set `EXPO_PUBLIC_GRAPHQL_URL` on that environment as plain text or sensitive, not secret, so the build can inline it. `eas update` needs `--environment` set to the same environment.
 
 Sign-in is email and password, plus Google and GitHub when the API has those providers configured. Sign in with Apple appears when `APPLE_CLIENT_ID` is set to this app's bundle id, `com.datastructuresandalgorithms.app`. Android uses Apple's web flow when `APPLE_SERVICES_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and `APPLE_PRIVATE_KEY` are set. The redirect back into the app is `dsa://auth/callback`.
 

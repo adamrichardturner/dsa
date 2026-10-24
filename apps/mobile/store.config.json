@@ -1,0 +1,54 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "copyright": "2026 Adam Richard Turner",
+    "categories": ["EDUCATION", "DEVELOPER_TOOLS"],
+    "release": {
+      "automaticRelease": false
+    },
+    "advisory": {
+      "alcoholTobaccoOrDrugUseOrReferences": "NONE",
+      "contests": "NONE",
+      "gamblingSimulated": "NONE",
+      "horrorOrFearThemes": "NONE",
+      "matureOrSuggestiveThemes": "NONE",
+      "medicalOrTreatmentInformation": "NONE",
+      "profanityOrCrudeHumor": "NONE",
+      "sexualContentGraphicAndNudity": "NONE",
+      "sexualContentOrNudity": "NONE",
+      "violenceCartoonOrFantasy": "NONE",
+      "violenceRealistic": "NONE",
+      "violenceRealisticProlongedGraphicOrSadistic": "NONE",
+      "gambling": false,
+      "unrestrictedWebAccess": false,
+      "kidsAgeBand": null,
+      "ageRatingOverride": "NONE",
+      "koreaAgeRatingOverride": "NONE"
+    },
+    "info": {
+      "en-US": {
+        "title": "DSA in TypeScript",
+        "subtitle": "Free algorithms interview prep",
+        "promoText": "Free four-week TypeScript course. Fill in the missing lines, submit them against tests, and keep your progress. No trial and no card.",
+        "description": "Learn data structures and algorithms by writing TypeScript. The course is free. There is no trial, no card, and no paid tier.\n\nEach lesson is short. Read the idea, fill in the missing lines of a TypeScript function, and submit it. The same tests used on the website decide whether the exercise passes. A lesson is done when every exercise passes.\n\nThe phone is for practice, not a full editor. A function is shown with a few blanks and a set of snippets. Drag a snippet into a blank, or tap the blank and then the snippet. A correct blank is marked in green and a wrong one in red. After two misses you can open the written solution.\n\nYour account keeps the progress. Sign in with Apple, Google, GitHub, or an email and password. Lessons you finish on the phone stay with the phone. The website has the same course with a full editor when you are at a desk.\n\nThe path covers complexity, arrays, hash maps, two pointers, sliding windows, linked lists, stacks, queues, recursion, binary search, merge sort, trees, binary search trees, heaps, graphs, greedy choices, backtracking, dynamic programming, and tries. Articles explain the terms, and you can read them without finishing a lesson first.\n\nThis course is for people who already write TypeScript and want the structures and algorithms used in interviews and production code. It is for ages 16 and over.",
+        "keywords": [
+          "practice",
+          "coding",
+          "structures",
+          "big-o",
+          "arrays",
+          "trees",
+          "graphs",
+          "recursion",
+          "sorting",
+          "hashmap",
+          "linked-list",
+          "dynamic"
+        ],
+        "marketingUrl": "https://datastructuresandalgorithms.com",
+        "supportUrl": "https://datastructuresandalgorithms.com",
+        "privacyPolicyUrl": "https://datastructuresandalgorithms.com/privacy"
+      }
+    }
+  }
+}

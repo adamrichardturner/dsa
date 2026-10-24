@@ -95,7 +95,7 @@ export function BrandSplash({
       <View style={styles.center}>
         <View style={styles.block}>
           {mark}
-          <Text style={[styles.title, { color: colors.foreground }]}>Data Structures and Algorithms</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>DSA in TypeScript</Text>
         </View>
       </View>
     </Animated.View>

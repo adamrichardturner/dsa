@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text } from "react-native";
 import { request } from "@/api/client";
 import { SIGN_UP } from "@/api/operations";
-import { AuthFrame, AuthTextButton, useAuthSubmit, type BrowserProvider } from "@/auth/auth-frame";
-import { redeemBrowserSignIn } from "@/auth/providers";
+import { AuthFrame, AuthTextButton, useAuthSubmit, type AuthProvider } from "@/auth/auth-frame";
+import { appleSignInOffered, signInWithProvider } from "@/auth/providers";
 import { useSession } from "@/auth/session";
 import { useTheme } from "@/theme/theme";
 import { Button, Field, Notice } from "@/ui/primitives";
@@ -22,11 +22,11 @@ export default function SignUpScreen() {
     return <Redirect href="/(main)/course" />;
   }
 
-  const onProvider = (provider: BrowserProvider) => {
+  const onProvider = (provider: AuthProvider) => {
     void run(
       provider,
       async () => {
-        await accept(await redeemBrowserSignIn(provider));
+        await accept(await signInWithProvider(provider));
         router.replace("/(main)/course");
       },
       "Could not create the account.",
@@ -60,7 +60,11 @@ export default function SignUpScreen() {
 
   return (
     <AuthFrame
-      detail="One account for the website and the phone. Exercises on the phone stay separate from the website."
+      detail={
+        appleSignInOffered
+          ? "One account for the website and the phone. Use Apple, Google, GitHub, or an email and password. Exercises on the phone stay separate from the website."
+          : "One account for the website and the phone. Exercises on the phone stay separate from the website."
+      }
       footer={
         <AuthTextButton emphasis="Sign in" label="Already have an account?" onPress={() => router.replace("/sign-in")} />
       }

@@ -7,6 +7,7 @@ import { isAdminEmail } from "./admin-access.js";
 import { BadInput, OauthFlowError, Unexpected } from "./errors.js";
 import type { AuthResult, OauthProvider, PublicUser } from "./models.js";
 import {
+  appleAudiences,
   appleAuthorizationUrl,
   appleClientSecret,
   appleNameFromUser,
@@ -1095,11 +1096,7 @@ export class OAuth extends Context.Service<
         readonly nonce: string;
         readonly name: string | null;
       }) {
-        const apple = appleConfigOf(config);
-        const audiences = apple.clientId.length > 0 ? [apple.clientId] : [];
-        if (apple.servicesId.length > 0 && !audiences.includes(apple.servicesId)) {
-          audiences.push(apple.servicesId);
-        }
+        const audiences = appleAudiences(appleConfigOf(config));
         if (audiences.length === 0) {
           return yield* new OauthFlowError({
             code: "unavailable",

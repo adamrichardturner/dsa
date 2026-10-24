@@ -202,6 +202,7 @@ Copy the env files, put a real `POSTGRES_PASSWORD` in `.env`, and start Postgres
 ```bash
 cp .env.example .env
 cp apps/web/.env.example apps/web/.env.local
+cp apps/mobile/.env.example apps/mobile/.env.local
 npm run dev:db
 ```
 

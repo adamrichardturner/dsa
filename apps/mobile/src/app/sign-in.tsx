@@ -3,8 +3,8 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { request } from "@/api/client";
 import { SIGN_IN } from "@/api/operations";
-import { AuthFrame, AuthTextButton, useAuthSubmit, type BrowserProvider } from "@/auth/auth-frame";
-import { redeemBrowserSignIn } from "@/auth/providers";
+import { AuthFrame, AuthTextButton, useAuthSubmit, type AuthProvider } from "@/auth/auth-frame";
+import { appleSignInOffered, signInWithProvider } from "@/auth/providers";
 import { readAuthPayload, useSession } from "@/auth/session";
 import { useTheme } from "@/theme/theme";
 import { Button, Field, Notice } from "@/ui/primitives";
@@ -20,11 +20,11 @@ export default function SignInScreen() {
     return <Redirect href="/(main)/course" />;
   }
 
-  const onProvider = (provider: BrowserProvider) => {
+  const onProvider = (provider: AuthProvider) => {
     void run(
       provider,
       async () => {
-        await accept(await redeemBrowserSignIn(provider));
+        await accept(await signInWithProvider(provider));
         router.replace("/(main)/course");
       },
       "Could not sign in.",
@@ -49,7 +49,11 @@ export default function SignInScreen() {
 
   return (
     <AuthFrame
-      detail="Use Google, GitHub, or the email and password for your account. Exercises on the phone stay separate from the website."
+      detail={
+        appleSignInOffered
+          ? "Use Apple, Google, GitHub, or the email and password for your account. Exercises on the phone stay separate from the website."
+          : "Use Google, GitHub, or the email and password for your account. Exercises on the phone stay separate from the website."
+      }
       footer={
         <View style={styles.links}>
           <Link href="/forgot-password" style={[styles.link, { color: colors.foreground }]}>

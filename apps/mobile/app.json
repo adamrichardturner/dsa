@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Data Structures and Algorithms",
+    "name": "DSA in TypeScript",
     "slug": "dsa",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,9 +8,15 @@
     "scheme": "dsa",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "infoPlist": {
+        "CFBundleDisplayName": "DSA"
+      },
       "bundleIdentifier": "com.datastructuresandalgorithms.app",
       "supportsTablet": true,
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.datastructuresandalgorithms.app",
@@ -43,6 +49,16 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "df934573-a084-4858-acc2-9bcbd6a0d141"
+      }
     }
   }
 }

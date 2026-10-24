@@ -11,14 +11,15 @@ import {
 import Animated, { FadeIn, ReduceMotion } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiError } from "@/api/client";
-import { GitHubMark, GoogleMark } from "@/auth/provider-marks";
+import { AppleMark, GitHubMark, GoogleMark } from "@/auth/provider-marks";
+import { appleSignInOffered } from "@/auth/providers";
 import { InfinityMark } from "@/splash/infinity-mark";
 import { useTheme } from "@/theme/theme";
 import { Body, Title } from "@/ui/primitives";
 
-export type BrowserProvider = "google" | "github";
+export type AuthProvider = "apple" | "google" | "github";
 
-type AuthBusy = BrowserProvider | "email" | null;
+type AuthBusy = AuthProvider | "email" | null;
 
 const opacityFor = (locked: boolean, pressed: boolean): number => {
   if (locked) {
@@ -135,7 +136,7 @@ export function AuthFrame({
   readonly title: string;
   readonly detail: string;
   readonly locked: boolean;
-  readonly onProvider: (provider: BrowserProvider) => void;
+  readonly onProvider: (provider: AuthProvider) => void;
   readonly header?: ReactNode;
   readonly children: ReactNode;
   readonly footer?: ReactNode;
@@ -167,6 +168,14 @@ export function AuthFrame({
           <Title>{title}</Title>
           <Body muted>{detail}</Body>
           <View style={styles.providers}>
+            {appleSignInOffered ? (
+              <ProviderButton
+                label="Continue with Apple"
+                locked={locked}
+                mark={<AppleMark color={colors.foreground} />}
+                onPress={() => onProvider("apple")}
+              />
+            ) : null}
             <ProviderButton
               label="Continue with Google"
               locked={locked}

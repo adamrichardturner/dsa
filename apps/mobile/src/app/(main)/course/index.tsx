@@ -4,11 +4,30 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "r
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiError, request } from "@/api/client";
 import { MODULES_QUERY } from "@/api/operations";
-import type { ModuleView } from "@/api/types";
+import type { LessonSummary, ModuleView } from "@/api/types";
 import { useSession } from "@/auth/session";
 import { Onboarding } from "@/components/onboarding";
+import { lessonStatus, StatusMark, statusLabel } from "@/course/status-mark";
 import { useTheme } from "@/theme/theme";
-import { Badge, Body, Notice, Title } from "@/ui/primitives";
+import { Body, Notice, Title } from "@/ui/primitives";
+
+const completedCount = (lessons: readonly LessonSummary[]): number => {
+  let count = 0;
+  for (const lesson of lessons) {
+    if (lesson.completed) {
+      count += 1;
+    }
+  }
+  return count;
+};
+
+const lessonNumber = (index: number): string => {
+  const number = index + 1;
+  if (number < 10) {
+    return `0${number}`;
+  }
+  return String(number);
+};
 
 export default function CourseScreen() {
   const { token, user } = useSession();
@@ -50,7 +69,7 @@ export default function CourseScreen() {
       }
       style={{ backgroundColor: colors.background }}
     >
-      <Text style={[styles.wordmark, { color: colors.foreground }]}>DSA</Text>
+      <Text style={[styles.wordmark, { color: colors.foreground }]}>DSA in TypeScript</Text>
       <Title>The course</Title>
       <Body muted>
         {user === null ? "" : `Hello, ${user.name}. Four weeks, taken in order, unless audit mode is on.`}
@@ -58,16 +77,27 @@ export default function CourseScreen() {
       {error === null ? null : <Notice>{error}</Notice>}
       {modules.map((module) => (
         <View key={module.id} style={styles.week}>
-          <Text style={[styles.weekTitle, { color: colors.foreground }]}>
-            Week {module.weekNumber}. {module.title}
-          </Text>
+          <View style={styles.weekHeading}>
+            <View style={styles.weekCopy}>
+              <Text style={[styles.weekKicker, { color: colors.mutedForeground }]}>
+                Week {module.weekNumber}
+              </Text>
+              <Text style={[styles.weekTitle, { color: colors.foreground }]}>{module.title}</Text>
+            </View>
+            <Text style={[styles.weekCount, { color: colors.mutedForeground }]}>
+              {completedCount(module.lessons)}/{module.lessons.length}
+            </Text>
+          </View>
           <Body muted>{module.summary}</Body>
-          {module.lessons.map((lesson) => {
-            const status = lesson.completed ? "Done" : lesson.skipped ? "Skipped" : lesson.available ? "Open" : "Locked";
+          {module.lessons.map((lesson, index) => {
+            const status = lessonStatus(lesson);
+            const label = statusLabel(status);
             return (
               <Pressable
                 key={lesson.id}
+                accessibilityLabel={`${lesson.title}. ${label}`}
                 accessibilityRole="button"
+                accessibilityState={{ disabled: !lesson.available }}
                 disabled={!lesson.available}
                 onPress={() => router.push({ pathname: "/course/[slug]", params: { slug: lesson.slug } })}
                 style={[
@@ -75,15 +105,16 @@ export default function CourseScreen() {
                   {
                     borderColor: colors.border,
                     backgroundColor: colors.card,
-                    opacity: lesson.available ? 1 : 0.45,
+                    opacity: lesson.available ? 1 : 0.55,
                   },
                 ]}
               >
+                <StatusMark label={label} status={status} />
+                <Text style={[styles.lessonIndex, { color: colors.mutedForeground }]}>{lessonNumber(index)}</Text>
                 <View style={styles.lessonCopy}>
                   <Text style={[styles.lessonTitle, { color: colors.foreground }]}>{lesson.title}</Text>
                   <Text style={[styles.lessonSummary, { color: colors.mutedForeground }]}>{lesson.summary}</Text>
                 </View>
-                <Badge label={status} tone={lesson.completed ? "success" : "muted"} />
               </Pressable>
             );
           })}
@@ -107,19 +138,45 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 8,
   },
+  weekHeading: {
+    alignItems: "flex-end",
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+  },
+  weekCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  weekKicker: {
+    fontFamily: "Geist_500Medium",
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
   weekTitle: {
     fontFamily: "Fraunces_500Medium",
     fontSize: 22,
     letterSpacing: -0.3,
+  },
+  weekCount: {
+    fontFamily: "Geist_400Regular",
+    fontSize: 13,
+    fontVariant: ["tabular-nums"],
   },
   lesson: {
     alignItems: "flex-start",
     borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 12,
-    justifyContent: "space-between",
+    gap: 10,
     padding: 14,
+  },
+  lessonIndex: {
+    fontFamily: "JetBrainsMono_400Regular",
+    fontSize: 12,
+    lineHeight: 18,
+    width: 20,
   },
   lessonCopy: {
     flex: 1,
