@@ -9,9 +9,10 @@ import { useSession } from "@/auth/session";
 import { exerciseStatus, StatusMark, statusLabel } from "@/course/status-mark";
 import { GapExercise } from "@/lesson/gap-exercise";
 import { GuideSheet } from "@/lesson/guide-sheet";
+import { nextExerciseTarget } from "@/lesson/next-exercise";
 import { Reading } from "@/lesson/reading";
 import { useTheme } from "@/theme/theme";
-import { Badge, Body, Button, Notice, Title } from "@/ui/primitives";
+import { Badge, Body, Notice, Title } from "@/ui/primitives";
 
 const readSlug = (value: string | string[] | undefined): string => {
   if (typeof value === "string") {
@@ -57,6 +58,26 @@ export default function LessonScreen() {
 
   const problem: ProblemView | null =
     lesson?.problems.find((item) => item.id === problemId) ?? lesson?.problems[0] ?? null;
+  const nextExercise =
+    lesson === null || problem === null
+      ? null
+      : nextExerciseTarget(lesson.problems, problem.id, lesson.nextSlug, lesson.nextAvailable);
+
+  const openNextExercise = () => {
+    if (nextExercise === null) {
+      return;
+    }
+    switch (nextExercise.kind) {
+      case "problem": {
+        setProblemId(nextExercise.id);
+        return;
+      }
+      case "lesson": {
+        router.replace({ pathname: "/course/[slug]", params: { slug: nextExercise.slug } });
+        return;
+      }
+    }
+  };
 
   const onSkipped = (result: SkipResult) => {
     setGuideOpen(false);
@@ -125,23 +146,13 @@ export default function LessonScreen() {
           <GapExercise
             key={problem.id}
             lessonSkipped={lesson.skipped}
+            onNextExercise={nextExercise === null ? null : openNextExercise}
             onOpenGuide={() => setGuideOpen(true)}
             onPassed={() => void load()}
             problem={problem}
             scrollToEnd={() => scrollToEnd.current()}
             token={token}
           />
-          {problem.solved && lesson.nextSlug !== null && lesson.nextAvailable ? (
-            <Button
-              label="Next lesson"
-              onPress={() => {
-                if (lesson.nextSlug === null) {
-                  return;
-                }
-                router.replace({ pathname: "/course/[slug]", params: { slug: lesson.nextSlug } });
-              }}
-            />
-          ) : null}
           <GuideSheet
             lessonSlug={lesson.slug}
             onClose={() => setGuideOpen(false)}

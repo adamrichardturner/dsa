@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useRef, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiError, request } from "@/api/client";
@@ -31,28 +31,41 @@ const lessonNumber = (index: number): string => {
 
 export default function CourseScreen() {
   const { token, user } = useSession();
+  const auditMode = user?.auditMode ?? false;
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [modules, setModules] = useState<readonly ModuleView[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const loadGeneration = useRef(0);
 
   const load = useCallback(async () => {
     if (token === null) {
       return;
     }
+    loadGeneration.current += 1;
+    const generation = loadGeneration.current;
     try {
       const data = await request<{ modules: ModuleView[] }>(MODULES_QUERY, null, token);
+      if (generation !== loadGeneration.current) {
+        return;
+      }
       setModules(data.modules);
       setError(null);
     } catch (caught) {
+      if (generation !== loadGeneration.current) {
+        return;
+      }
       setError(caught instanceof ApiError ? caught.message : "Could not load the course.");
     }
   }, [token]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // Reload when this screen is shown, including after audit mode changes while it stays focused.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [auditMode, load]),
+  );
 
   return (
     <ScrollView

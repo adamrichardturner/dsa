@@ -168,6 +168,7 @@ function GapSlot({
 
 export function GapExercise({
   lessonSkipped,
+  onNextExercise,
   onOpenGuide,
   onPassed,
   problem,
@@ -175,11 +176,12 @@ export function GapExercise({
   token,
 }: {
   readonly lessonSkipped: boolean;
-  readonly problem: ProblemView;
-  readonly token: string;
-  readonly onPassed: () => void;
+  readonly onNextExercise: (() => void) | null;
   readonly onOpenGuide: () => void;
+  readonly onPassed: () => void;
+  readonly problem: ProblemView;
   readonly scrollToEnd: () => void;
+  readonly token: string;
 }) {
   const { colors } = useTheme();
   const puzzle = problem.gap;
@@ -411,6 +413,18 @@ export function GapExercise({
           </Animated.View>
         ) : null}
         <Button disabled={passed} label={passed ? "Passed" : "Submit"} onPress={() => void submit()} pending={pending} />
+        {passed && onNextExercise !== null ? (
+          <View
+            onLayout={() => {
+              if (!celebrate) {
+                return;
+              }
+              scrollToEnd();
+            }}
+          >
+            <Button label="Next Exercise" onPress={onNextExercise} />
+          </View>
+        ) : null}
       </View>
     </DropProvider>
   );
