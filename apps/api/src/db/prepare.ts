@@ -2,6 +2,9 @@ import { Effect, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { course } from "../content/course.js";
 import { Unexpected } from "../domain/errors.js";
+import { progressTables } from "../domain/progress-client.js";
+
+const mobileTables = progressTables("mobile");
 
 const statements: readonly string[] = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -107,6 +110,33 @@ const statements: readonly string[] = [
     PRIMARY KEY (user_id, lesson_id)
   )`,
   `CREATE TABLE IF NOT EXISTS drafts (
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    problem_id TEXT NOT NULL REFERENCES problems(id),
+    code TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, problem_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS ${mobileTables.submissions} (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    problem_id TEXT NOT NULL REFERENCES problems(id),
+    code TEXT NOT NULL,
+    passed BOOLEAN NOT NULL,
+    tests_passed INTEGER NOT NULL,
+    tests_total INTEGER NOT NULL,
+    feedback TEXT NOT NULL,
+    results_json TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS ${mobileTables.submissions}_user_problem_idx
+    ON ${mobileTables.submissions} (user_id, problem_id, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS ${mobileTables.lessonSkips} (
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, lesson_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS ${mobileTables.drafts} (
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     problem_id TEXT NOT NULL REFERENCES problems(id),
     code TEXT NOT NULL,

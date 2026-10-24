@@ -25,7 +25,7 @@ export const OAUTH_PROVIDERS = `
 
 export const MODULES_QUERY = `
   query Modules {
-    modules {
+    modules(client: "mobile") {
       id
       title
       summary
@@ -46,7 +46,7 @@ export const MODULES_QUERY = `
 
 export const LESSON_QUERY = `
   query Lesson($slug: String!) {
-    lesson(slug: $slug) {
+    lesson(slug: $slug, client: "mobile") {
       id
       slug
       title
@@ -85,7 +85,7 @@ export const LESSON_QUERY = `
 
 export const ANALYTICS_QUERY = `
   query Analytics {
-    analytics {
+    analytics(client: "mobile") {
       lessonsCompleted
       lessonsTotal
       problemsSolved
@@ -200,7 +200,7 @@ export const SUBMIT_GAP = `
 
 export const SOLUTION_GUIDE = `
   query SolutionGuide($problemId: ID!) {
-    solutionGuide(problemId: $problemId) {
+    solutionGuide(problemId: $problemId, client: "mobile") {
       code
       reveals { gapId text }
       blocks { kind text items chart }
@@ -210,7 +210,7 @@ export const SOLUTION_GUIDE = `
 
 export const SKIP_LESSON = `
   mutation SkipLesson($slug: String!) {
-    skipLesson(slug: $slug) {
+    skipLesson(slug: $slug, client: "mobile") {
       slug
       skipped
       nextSlug

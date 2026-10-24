@@ -16,6 +16,7 @@ import { Admin } from "../domain/admin.js";
 import { OAuth } from "../domain/oauth.js";
 import { Catalog } from "../domain/catalog.js";
 import { Insights } from "../domain/insights.js";
+import { progressClientFrom } from "../domain/progress-client.js";
 import { runSnippet } from "../domain/runner.js";
 import { Solutions } from "../domain/solutions.js";
 import {
@@ -586,14 +587,24 @@ export const schema = new GraphQLSchema({
         type: new GraphQLNonNull(
           new GraphQLList(new GraphQLNonNull(ModuleType)),
         ),
-        resolve: (_parent, _args, context: GraphQLContext) =>
+        args: {
+          client: { type: GraphQLString },
+        },
+        resolve: (
+          _parent,
+          args: { client?: unknown },
+          context: GraphQLContext,
+        ) =>
           execute(
             context.token,
             Effect.gen(function* () {
               const auth = yield* Auth;
               const catalog = yield* Catalog;
               const user = yield* auth.currentUser;
-              return yield* catalog.listModules(user.id);
+              return yield* catalog.listModules(
+                user.id,
+                progressClientFrom(args.client),
+              );
             }),
           ),
       },
@@ -601,8 +612,13 @@ export const schema = new GraphQLSchema({
         type: LessonType,
         args: {
           slug: { type: new GraphQLNonNull(GraphQLString) },
+          client: { type: GraphQLString },
         },
-        resolve: (_parent, args: { slug?: unknown }, context: GraphQLContext) =>
+        resolve: (
+          _parent,
+          args: { slug?: unknown; client?: unknown },
+          context: GraphQLContext,
+        ) =>
           execute(
             context.token,
             Effect.gen(function* () {
@@ -612,6 +628,7 @@ export const schema = new GraphQLSchema({
               return yield* catalog.getLesson(
                 user.id,
                 requireString(args.slug, "Missing lesson."),
+                progressClientFrom(args.client),
               );
             }),
           ),
@@ -620,10 +637,11 @@ export const schema = new GraphQLSchema({
         type: new GraphQLNonNull(SolutionGuideType),
         args: {
           problemId: { type: new GraphQLNonNull(GraphQLID) },
+          client: { type: GraphQLString },
         },
         resolve: (
           _parent,
-          args: { problemId?: unknown },
+          args: { problemId?: unknown; client?: unknown },
           context: GraphQLContext,
         ) =>
           execute(
@@ -639,6 +657,7 @@ export const schema = new GraphQLSchema({
               const progress = yield* catalog.problemProgress(
                 user.id,
                 problemId,
+                progressClientFrom(args.client),
               );
               if (!progress.solved && progress.failedAttempts < 2) {
                 return yield* new BadInput({
@@ -657,14 +676,24 @@ export const schema = new GraphQLSchema({
       },
       analytics: {
         type: new GraphQLNonNull(AnalyticsType),
-        resolve: (_parent, _args, context: GraphQLContext) =>
+        args: {
+          client: { type: GraphQLString },
+        },
+        resolve: (
+          _parent,
+          args: { client?: unknown },
+          context: GraphQLContext,
+        ) =>
           execute(
             context.token,
             Effect.gen(function* () {
               const auth = yield* Auth;
               const insights = yield* Insights;
               const user = yield* auth.currentUser;
-              return yield* insights.forUser(user.id);
+              return yield* insights.forUser(
+                user.id,
+                progressClientFrom(args.client),
+              );
             }),
           ),
       },
@@ -982,7 +1011,7 @@ export const schema = new GraphQLSchema({
                 args.problemId,
                 "Missing exercise.",
               );
-              yield* catalog.assertProblemOpen(user.id, problemId);
+              yield* catalog.assertProblemOpen(user.id, problemId, "web");
               return yield* solutions.saveDraft(
                 user.id,
                 problemId,
@@ -1013,11 +1042,12 @@ export const schema = new GraphQLSchema({
                 args.problemId,
                 "Missing exercise.",
               );
-              yield* catalog.assertProblemOpen(user.id, problemId);
+              yield* catalog.assertProblemOpen(user.id, problemId, "web");
               return yield* solutions.submit(
                 user.id,
                 problemId,
                 requireString(args.code, "Missing solution."),
+                "web",
               );
             }),
           ),
@@ -1044,7 +1074,7 @@ export const schema = new GraphQLSchema({
                 args.problemId,
                 "Missing exercise.",
               );
-              yield* catalog.assertProblemOpen(user.id, problemId);
+              yield* catalog.assertProblemOpen(user.id, problemId, "web");
               return yield* solutions.run(
                 problemId,
                 requireString(args.code, "Missing solution."),
@@ -1074,7 +1104,7 @@ export const schema = new GraphQLSchema({
                 args.problemId,
                 "Missing exercise.",
               );
-              yield* catalog.assertProblemOpen(user.id, problemId);
+              yield* catalog.assertProblemOpen(user.id, problemId, "mobile");
               const puzzle = puzzleForProblem(problemId);
               if (puzzle === null) {
                 return yield* new NotFound({
@@ -1095,6 +1125,7 @@ export const schema = new GraphQLSchema({
                 user.id,
                 problemId,
                 code,
+                "mobile",
               );
               const gapsCorrect = grades.every((grade) => grade.correct);
               return {
@@ -1109,8 +1140,13 @@ export const schema = new GraphQLSchema({
         type: new GraphQLNonNull(SkipResultType),
         args: {
           slug: { type: new GraphQLNonNull(GraphQLString) },
+          client: { type: GraphQLString },
         },
-        resolve: (_parent, args: { slug?: unknown }, context: GraphQLContext) =>
+        resolve: (
+          _parent,
+          args: { slug?: unknown; client?: unknown },
+          context: GraphQLContext,
+        ) =>
           execute(
             context.token,
             Effect.gen(function* () {
@@ -1120,6 +1156,7 @@ export const schema = new GraphQLSchema({
               return yield* catalog.skipLesson(
                 user.id,
                 requireString(args.slug, "Missing lesson."),
+                progressClientFrom(args.client),
               );
             }),
           ),

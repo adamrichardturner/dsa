@@ -4,6 +4,12 @@ import { SqlClient, SqlSchema } from "effect/sql";
 import { NotFound, Unexpected } from "./errors.js";
 import type { SubmissionView } from "./models.js";
 import {
+  progressClientFrom,
+  progressTables,
+  ProgressClientSchema,
+  type ProgressClient,
+} from "./progress-client.js";
+import {
   previewSolution,
   runSolution,
   type PreviewCase,
@@ -48,6 +54,7 @@ export class Solutions extends Context.Service<
       userId: string,
       problemId: string,
       code: string,
+      client: ProgressClient,
     ): Effect.Effect<SubmissionView, NotFound | Unexpected>;
     saveDraft(
       userId: string,
@@ -95,10 +102,12 @@ export class Solutions extends Context.Service<
           feedback: Schema.String,
           resultsJson: Schema.String,
           createdAt: Schema.String,
+          client: ProgressClientSchema,
         }),
-        execute: (request) =>
-          sql`
-            INSERT INTO submissions (
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
+            INSERT INTO ${sql(tables.submissions)} (
               id,
               user_id,
               problem_id,
@@ -122,7 +131,8 @@ export class Solutions extends Context.Service<
               ${request.resultsJson},
               ${request.createdAt}::timestamptz
             )
-          `,
+          `;
+        },
       });
 
       const upsertDraft = SqlSchema.void({
@@ -208,6 +218,7 @@ export class Solutions extends Context.Service<
         userId: string,
         problemId: string,
         code: string,
+        client: ProgressClient,
       ) {
         if (code.trim().length === 0) {
           return yield* new Unexpected({
@@ -236,6 +247,7 @@ export class Solutions extends Context.Service<
           feedback: outcome.feedback,
           resultsJson: JSON.stringify(outcome.results),
           createdAt,
+          client,
         }).pipe(failUnexpected("Could not save the submission."));
 
         return {

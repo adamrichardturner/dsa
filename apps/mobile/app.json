@@ -8,7 +8,6 @@
     "scheme": "dsa",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.datastructuresandalgorithms.app",
       "supportsTablet": true,
       "usesAppleSignIn": true
@@ -16,17 +15,16 @@
     "android": {
       "package": "com.datastructuresandalgorithms.app",
       "usesCleartextTraffic": true,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "backgroundColor": "#fafafa",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#000000",
+        "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "server",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
@@ -38,7 +36,7 @@
         {
           "backgroundColor": "#fafafa",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 1
         }
       ]
     ],

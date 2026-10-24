@@ -2,7 +2,7 @@
 
 The course's backend. Express serves HTTP, GraphQL Yoga serves the schema, and the domain is written in Effect. Postgres is reached through `@effect/sql-pg`.
 
-This process owns accounts, the course catalogue, submissions, and the code runner. The web app is a client of it.
+This process owns accounts, the course catalogue, submissions, and the code runner. The website and the phone are clients of it. They share one account and keep progress apart.
 
 How to run this API beside the web app, and how a push to `main` ships both, is in the [repository README](../../README.md).
 
@@ -52,18 +52,20 @@ Match on the tag at the boundary. A resolver should leave raw driver errors insi
 | --- | --- |
 | `oauthProviders` | `"google"` and `"github"`, for the providers that have both a client id and a secret |
 | `me` | The current user, or null when the session is missing |
-| `modules` | The syllabus, with each lesson marked completed, skipped, and available |
-| `lesson(slug)` | Reading, exercises, starter code, draft, and passing solution |
-| `analytics` | Lessons completed, pass rate, skips, and topic totals |
+| `modules` | The syllabus, with each lesson marked completed, skipped, and available. Optional `client` selects the desk or the phone |
+| `lesson(slug)` | Reading, exercises, starter code, draft, and passing solution for that client |
+| `analytics` | Lessons completed, pass rate, skips, and topic totals for that client |
 | `adminOverview` | Account and progress totals for the maintainer |
 
 Sign-up and session mutations are `signUp`, `verifyEmail`, `resendVerificationEmail`, `signIn`, `redeemOAuthCode`, and `signOut`.
 
 Profile mutations are `completeOnboarding`, `setAuditMode`, `updateProfile`, `changePassword`, `requestPasswordReset`, `resetPassword`, and `deleteAccount`.
 
-Desk mutations are `saveProgress`, `runCode`, `submitSolution`, and `skipLesson`. `runSnippet` is the public snippet runner. `adminDeleteAccount` is limited to the maintainer.
+Desk mutations are `saveProgress`, `runCode`, `submitSolution`, and `skipLesson`. They read and write the desk tables only. `runSnippet` is the public snippet runner. `adminDeleteAccount` is limited to the maintainer.
 
-The phone adds `submitGap` and `solutionGuide`. A problem's `gap` field is the template and the unlabelled snippets. The answers stay on the server. `submitGap` assembles the function, runs the same tests as `submitSolution`, and reports which blanks matched. `solutionGuide` returns the written explanation after two failed submissions, or after the exercise has been solved. `signInWithApple` accepts an Apple identity token. Google and GitHub also accept `client=mobile` on `/auth/:provider`, which redirects to the `dsa://` scheme instead of the website.
+The phone adds `submitGap` and `solutionGuide`. A problem's `gap` field is the template and the unlabelled snippets. The answers stay on the server. `submitGap` assembles the function, runs the same tests as `submitSolution`, stores the attempt on `mobile_submissions`, and reports which blanks matched. `solutionGuide` returns the written explanation after two failed submissions, or after the exercise has been solved, counted on the client that asked. `modules`, `lesson`, `analytics`, `skipLesson`, and `solutionGuide` take an optional `client` string. Omitted, or any value other than `mobile`, means the desk. The phone passes `mobile`.
+
+`signInWithApple` accepts an Apple identity token. Google and GitHub also accept `client=mobile` on `/auth/:provider`, which only redirects to the `dsa://` scheme instead of the website. That query parameter does not choose a progress table.
 
 ## Accounts
 
@@ -93,25 +95,35 @@ Account mail is sent through Resend from `Data Structures and Algorithms <norepl
 
 `RESEND_API_KEY` is the only mail setting. With the key empty, verification and reset mail are not sent.
 
+## Shared accounts, separate progress
+
+One person has one account. `users`, `sessions`, `oauth_identities`, `email_verifications`, and `password_resets` are shared, so the same email, Google, GitHub, or Apple identity signs in on the website and the phone. Audit mode and onboarding live on that account.
+
+Progress does not. The reading is the same, and the exercises are not: the desk is a TypeScript editor scored by tests, and the phone is fill-in-the-gap. A pass, draft, skip, or failed attempt on one client does not change the other client's progress, gating, analytics, or solved state.
+
+The desk tables stay `submissions`, `drafts`, and `lesson_skips`. The phone has `mobile_submissions`, `mobile_drafts`, and `mobile_lesson_skips`, created in `prepare.ts` the same additive way, with the same columns and foreign keys. Deleting an account removes both, because the phone tables reference `users`.
+
+`saveProgress` writes `drafts`. The phone's lesson reads latest code from `mobile_submissions` and `mobile_drafts`. `submitGap` records the attempt on `mobile_submissions`. The maintainer overview still counts desk submissions.
+
 ## Course and submissions
 
 Lesson prose, starter code, and tests live in `src/content/week1.ts` through `week4.ts`.
 
 `src/content/course.ts` runs them through `expandCourse`, which keeps every original lesson id, swaps in the shorter reading, adds the extra exercises, and inserts one follow-up lesson after each.
 
-On startup `prepareDatabase` creates any missing tables, applies additive column changes, drops the retired `submissions.stars` column, and upserts modules, lessons, and problems.
+On startup `prepareDatabase` creates any missing tables, including the phone progress tables, applies additive column changes, drops the retired `submissions.stars` column, and upserts modules, lessons, and problems.
 
 A new lesson or column in that list is applied the next time the process boots. Submitted code and drafts are left as they are.
 
 Removing a lesson from the seed leaves its row in place.
 
-Lessons open in order unless the account has audit mode on. `Catalog` marks a lesson available when audit mode is on, or when every earlier lesson has been passed or skipped.
+Lessons open in order unless the account has audit mode on. `Catalog` marks a lesson available when audit mode is on, or when every earlier lesson has been passed or skipped on that client.
 
-A skip is stored on `lesson_skips` and leaves the exercises unsolved. `assertProblemOpen` rejects a draft, a run, or a submit against a lesson that is still closed.
+A skip is stored on `lesson_skips` for the desk and `mobile_lesson_skips` for the phone. It leaves the exercises unsolved. `assertProblemOpen` rejects a draft, a run, or a submit against a lesson that is still closed on the client making the request.
 
 New accounts have `onboarding_completed` false until they finish the introduction. Existing accounts default to finished.
 
-`Solutions.submit` runs the hidden and public tests and stores the submission. A pass marks the exercise solved. Drafts are capped at 100,000 characters.
+`Solutions.submit` runs the hidden and public tests and stores the submission on the desk or the phone, depending on the caller. A pass marks that client's exercise solved. Desk drafts are capped at 100,000 characters.
 
 ## The runner
 
@@ -198,7 +210,7 @@ npm run typecheck
 npm test
 ```
 
-`npm test` runs the runner, gating, mail, OAuth plan, email verification, admin, insights, course seed, and public-error tests.
+`npm test` runs the runner, gating, progress stores, mail, OAuth plan, email verification, admin, insights, course seed, and public-error tests.
 
 ## Deployment
 

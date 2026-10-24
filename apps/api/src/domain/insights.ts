@@ -3,6 +3,12 @@ import { SqlClient, SqlSchema } from "effect/sql";
 import { Unexpected } from "./errors.js";
 import { buildInsights } from "./insights-view.js";
 import type { AnalyticsView } from "./models.js";
+import {
+  progressClientFrom,
+  progressTables,
+  ProgressClientSchema,
+  type ProgressClient,
+} from "./progress-client.js";
 
 const ProblemRow = Schema.Struct({
   id: Schema.String,
@@ -43,7 +49,10 @@ const failUnexpected = (message: string) => <A, E, R>(effect: Effect.Effect<A, E
 export class Insights extends Context.Service<
   Insights,
   {
-    forUser(userId: string): Effect.Effect<AnalyticsView, Unexpected>;
+    forUser(
+      userId: string,
+      client: ProgressClient,
+    ): Effect.Effect<AnalyticsView, Unexpected>;
   }
 >()("app/Insights") {
   static readonly layer = Layer.effect(
@@ -75,74 +84,97 @@ export class Insights extends Context.Service<
       });
 
       const listStats = SqlSchema.findAll({
-        Request: Schema.Struct({ userId: Schema.String }),
+        Request: Schema.Struct({
+          userId: Schema.String,
+          client: ProgressClientSchema,
+        }),
         Result: StatRow,
-        execute: (request) =>
-          sql`
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
             SELECT
               problem_id AS "problemId",
               BOOL_OR(passed) AS "solved",
               COUNT(*)::int AS "attempts"
-            FROM submissions
+            FROM ${sql(tables.submissions)}
             WHERE user_id = ${request.userId}
             GROUP BY problem_id
-          `,
+          `;
+        },
       });
 
       const listSkips = SqlSchema.findAll({
-        Request: Schema.Struct({ userId: Schema.String }),
+        Request: Schema.Struct({
+          userId: Schema.String,
+          client: ProgressClientSchema,
+        }),
         Result: Schema.Struct({ lessonId: Schema.String }),
-        execute: (request) =>
-          sql`
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
             SELECT lesson_id AS "lessonId"
-            FROM lesson_skips
+            FROM ${sql(tables.lessonSkips)}
             WHERE user_id = ${request.userId}
-          `,
+          `;
+        },
       });
 
       const countAttempts = SqlSchema.findAll({
-        Request: Schema.Struct({ userId: Schema.String }),
+        Request: Schema.Struct({
+          userId: Schema.String,
+          client: ProgressClientSchema,
+        }),
         Result: AttemptRow,
-        execute: (request) =>
-          sql`
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
             SELECT
               COUNT(*)::int AS "attempts",
               COUNT(*) FILTER (WHERE passed)::int AS "passes"
-            FROM submissions
+            FROM ${sql(tables.submissions)}
             WHERE user_id = ${request.userId}
-          `,
+          `;
+        },
       });
 
       const listDays = SqlSchema.findAll({
-        Request: Schema.Struct({ userId: Schema.String }),
+        Request: Schema.Struct({
+          userId: Schema.String,
+          client: ProgressClientSchema,
+        }),
         Result: DayRow,
-        execute: (request) =>
-          sql`
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
             SELECT
               to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
               COUNT(*)::int AS submissions,
               COUNT(*) FILTER (WHERE passed)::int AS passes
-            FROM submissions
+            FROM ${sql(tables.submissions)}
             WHERE user_id = ${request.userId}
             GROUP BY 1
             ORDER BY 1
-          `,
+          `;
+        },
       });
 
-      const forUser = Effect.fn("Insights.forUser")(function* (userId: string) {
+      const forUser = Effect.fn("Insights.forUser")(function* (
+        userId: string,
+        client: ProgressClient,
+      ) {
         const problems = yield* listProblems().pipe(
           failUnexpected("Could not load your progress."),
         );
-        const stats = yield* listStats({ userId }).pipe(
+        const stats = yield* listStats({ userId, client }).pipe(
           failUnexpected("Could not load your progress."),
         );
-        const totals = yield* countAttempts({ userId }).pipe(
+        const totals = yield* countAttempts({ userId, client }).pipe(
           failUnexpected("Could not load your progress."),
         );
-        const skipRows = yield* listSkips({ userId }).pipe(
+        const skipRows = yield* listSkips({ userId, client }).pipe(
           failUnexpected("Could not load your progress."),
         );
-        const days = yield* listDays({ userId }).pipe(
+        const days = yield* listDays({ userId, client }).pipe(
           failUnexpected("Could not load your progress."),
         );
         const skippedLessonIds: string[] = [];

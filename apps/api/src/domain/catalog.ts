@@ -2,6 +2,12 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
 import { NotFound, Unexpected } from "./errors.js";
 import { openLessonSlugs } from "./gating.js";
+import {
+  progressClientFrom,
+  progressTables,
+  ProgressClientSchema,
+  type ProgressClient,
+} from "./progress-client.js";
 import type {
   ExampleView,
   LessonView,
@@ -228,18 +234,22 @@ export class Catalog extends Context.Service<
   {
     listModules(
       userId: string,
+      client: ProgressClient,
     ): Effect.Effect<readonly ModuleView[], Unexpected>;
     getLesson(
       userId: string,
       slug: string,
+      client: ProgressClient,
     ): Effect.Effect<LessonView, NotFound | Unexpected>;
     assertProblemOpen(
       userId: string,
       problemId: string,
+      client: ProgressClient,
     ): Effect.Effect<void, NotFound | Unexpected>;
     problemProgress(
       userId: string,
       problemId: string,
+      client: ProgressClient,
     ): Effect.Effect<
       { readonly solved: boolean; readonly failedAttempts: number },
       NotFound | Unexpected
@@ -247,6 +257,7 @@ export class Catalog extends Context.Service<
     skipLesson(
       userId: string,
       slug: string,
+      client: ProgressClient,
     ): Effect.Effect<SkipResult, NotFound | Unexpected>;
   }
 >()("app/Catalog") {
@@ -279,41 +290,51 @@ export class Catalog extends Context.Service<
       });
 
       const listStats = SqlSchema.findAll({
-        Request: Schema.Struct({ userId: Schema.String }),
+        Request: Schema.Struct({
+          userId: Schema.String,
+          client: ProgressClientSchema,
+        }),
         Result: StatRow,
-        execute: (request) =>
-          sql`
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
             SELECT
               problem_id AS "problemId",
               COUNT(*)::int AS "attempts",
               COUNT(*) FILTER (WHERE NOT passed)::int AS "failedAttempts",
               BOOL_OR(passed) AS "solved",
               (ARRAY_AGG(code ORDER BY created_at DESC) FILTER (WHERE passed))[1] AS "passingCode"
-            FROM submissions
+            FROM ${sql(tables.submissions)}
             WHERE user_id = ${request.userId}
             GROUP BY problem_id
-          `,
+          `;
+        },
       });
 
       const listLatest = SqlSchema.findAll({
-        Request: Schema.Struct({ userId: Schema.String }),
+        Request: Schema.Struct({
+          userId: Schema.String,
+          client: ProgressClientSchema,
+        }),
         Result: CodeRow,
-        execute: (request) =>
-          sql`
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
             SELECT DISTINCT ON (saved.problem_id)
               saved.problem_id AS "problemId",
               saved.code
             FROM (
               SELECT problem_id, code, created_at AS saved_at
-              FROM submissions
+              FROM ${sql(tables.submissions)}
               WHERE user_id = ${request.userId}
               UNION ALL
               SELECT problem_id, code, updated_at AS saved_at
-              FROM drafts
+              FROM ${sql(tables.drafts)}
               WHERE user_id = ${request.userId}
             ) AS saved
             ORDER BY saved.problem_id, saved.saved_at DESC
-          `,
+          `;
+        },
       });
 
       const findLesson = SqlSchema.findAll({
@@ -358,27 +379,35 @@ export class Catalog extends Context.Service<
       });
 
       const listSkips = SqlSchema.findAll({
-        Request: Schema.Struct({ userId: Schema.String }),
+        Request: Schema.Struct({
+          userId: Schema.String,
+          client: ProgressClientSchema,
+        }),
         Result: Schema.Struct({ lessonId: Schema.String }),
-        execute: (request) =>
-          sql`
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
             SELECT lesson_id AS "lessonId"
-            FROM lesson_skips
+            FROM ${sql(tables.lessonSkips)}
             WHERE user_id = ${request.userId}
-          `,
+          `;
+        },
       });
 
       const insertSkip = SqlSchema.void({
         Request: Schema.Struct({
           userId: Schema.String,
           lessonId: Schema.String,
+          client: ProgressClientSchema,
         }),
-        execute: (request) =>
-          sql`
-            INSERT INTO lesson_skips (user_id, lesson_id)
+        execute: (request) => {
+          const tables = progressTables(progressClientFrom(request.client));
+          return sql`
+            INSERT INTO ${sql(tables.lessonSkips)} (user_id, lesson_id)
             VALUES (${request.userId}, ${request.lessonId})
             ON CONFLICT (user_id, lesson_id) DO NOTHING
-          `,
+          `;
+        },
       });
 
       const findAuditMode = SqlSchema.findAll({
@@ -400,9 +429,9 @@ export class Catalog extends Context.Service<
           return rows[0]?.auditMode ?? false;
         });
 
-      const loadSkips = (userId: string) =>
+      const loadSkips = (userId: string, client: ProgressClient) =>
         Effect.gen(function* () {
-          const rows = yield* listSkips({ userId }).pipe(
+          const rows = yield* listSkips({ userId, client }).pipe(
             failUnexpected("Could not load your progress."),
           );
           const skipped: Record<string, boolean> = {};
@@ -412,12 +441,12 @@ export class Catalog extends Context.Service<
           return skipped;
         });
 
-      const loadStats = (userId: string) =>
+      const loadStats = (userId: string, client: ProgressClient) =>
         Effect.gen(function* () {
-          const stats = yield* listStats({ userId }).pipe(
+          const stats = yield* listStats({ userId, client }).pipe(
             failUnexpected("Could not load your progress."),
           );
-          const latest = yield* listLatest({ userId }).pipe(
+          const latest = yield* listLatest({ userId, client }).pipe(
             failUnexpected("Could not load your saved code."),
           );
           const byProblem: Record<string, ProblemStat> = {};
@@ -442,12 +471,13 @@ export class Catalog extends Context.Service<
 
       const listModules = Effect.fn("Catalog.listModules")(function* (
         userId: string,
+        client: ProgressClient,
       ) {
         const rows = yield* listOutline().pipe(
           failUnexpected("Could not load the course."),
         );
-        const stats = yield* loadStats(userId);
-        const skips = yield* loadSkips(userId);
+        const stats = yield* loadStats(userId, client);
+        const skips = yield* loadSkips(userId, client);
         const auditMode = yield* loadAuditMode(userId);
         const open = openSlugs(orderedLessons(rows), stats, skips, auditMode);
         const modules: Record<
@@ -562,6 +592,7 @@ export class Catalog extends Context.Service<
       const getLesson = Effect.fn("Catalog.getLesson")(function* (
         userId: string,
         slug: string,
+        client: ProgressClient,
       ) {
         const lessons = yield* findLesson({ slug }).pipe(
           failUnexpected("Could not load that lesson."),
@@ -576,8 +607,8 @@ export class Catalog extends Context.Service<
         const outline = yield* listOutline().pipe(
           failUnexpected("Could not load the course."),
         );
-        const stats = yield* loadStats(userId);
-        const skips = yield* loadSkips(userId);
+        const stats = yield* loadStats(userId, client);
+        const skips = yield* loadSkips(userId, client);
         const auditMode = yield* loadAuditMode(userId);
         const sequence = orderedLessons(outline);
         const open = openSlugs(sequence, stats, skips, auditMode);
@@ -645,12 +676,12 @@ export class Catalog extends Context.Service<
       });
 
       const assertProblemOpen = Effect.fn("Catalog.assertProblemOpen")(
-        function* (userId: string, problemId: string) {
+        function* (userId: string, problemId: string, client: ProgressClient) {
           const outline = yield* listOutline().pipe(
             failUnexpected("Could not load the course."),
           );
-          const stats = yield* loadStats(userId);
-          const skips = yield* loadSkips(userId);
+          const stats = yield* loadStats(userId, client);
+          const skips = yield* loadSkips(userId, client);
           const auditMode = yield* loadAuditMode(userId);
           const sequence = orderedLessons(outline);
           const slug = slugForProblem(sequence, problemId);
@@ -672,6 +703,7 @@ export class Catalog extends Context.Service<
       const problemProgress = Effect.fn("Catalog.problemProgress")(function* (
         userId: string,
         problemId: string,
+        client: ProgressClient,
       ) {
         const outline = yield* listOutline().pipe(
           failUnexpected("Could not load the course."),
@@ -683,7 +715,7 @@ export class Catalog extends Context.Service<
             message: "That exercise does not exist.",
           });
         }
-        const stats = yield* loadStats(userId);
+        const stats = yield* loadStats(userId, client);
         const stat = stats[problemId];
         return {
           solved: stat?.solved ?? false,
@@ -694,6 +726,7 @@ export class Catalog extends Context.Service<
       const skipLesson = Effect.fn("Catalog.skipLesson")(function* (
         userId: string,
         slug: string,
+        client: ProgressClient,
       ) {
         const lessons = yield* findLesson({ slug }).pipe(
           failUnexpected("Could not load that lesson."),
@@ -708,8 +741,8 @@ export class Catalog extends Context.Service<
         const outline = yield* listOutline().pipe(
           failUnexpected("Could not load the course."),
         );
-        const stats = yield* loadStats(userId);
-        const skips = yield* loadSkips(userId);
+        const stats = yield* loadStats(userId, client);
+        const skips = yield* loadSkips(userId, client);
         const auditMode = yield* loadAuditMode(userId);
         const sequence = orderedLessons(outline);
         const open = openSlugs(sequence, stats, skips, auditMode);
@@ -719,7 +752,7 @@ export class Catalog extends Context.Service<
           });
         }
 
-        yield* insertSkip({ userId, lessonId: lesson.id }).pipe(
+        yield* insertSkip({ userId, lessonId: lesson.id, client }).pipe(
           failUnexpected("Could not skip that lesson."),
         );
 

@@ -6,11 +6,13 @@ import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono/400R
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
+import { useCallback, useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SessionProvider, useSession } from "@/auth/session";
-import { useTheme, ThemeProvider } from "@/theme/theme";
+import { BrandSplash } from "@/splash/brand-splash";
+import { ThemeProvider, useTheme } from "@/theme/theme";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,33 +26,41 @@ function RootStack() {
     Geist_600SemiBold,
     JetBrainsMono_400Regular,
   });
+  const [splashVisible, setSplashVisible] = useState(true);
+  const hideSplash = useCallback(() => {
+    setSplashVisible(false);
+  }, []);
 
   useEffect(() => {
-    if (ready && fontsLoaded) {
-      void SplashScreen.hideAsync();
+    if (!fontsLoaded) {
+      return;
     }
-  }, [fontsLoaded, ready]);
+    void SplashScreen.hideAsync();
+  }, [fontsLoaded]);
 
-  if (!ready || !fontsLoaded) {
+  if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
-        }}
-      />
-    </>
+      {ready ? (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+      ) : null}
+      {splashVisible ? <BrandSplash onFinished={hideSplash} sessionReady={ready} /> : null}
+    </View>
   );
 }
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.root}>
       <ThemeProvider>
         <SessionProvider>
           <RootStack />
@@ -59,3 +69,9 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});
