@@ -179,7 +179,7 @@ export function CodeRunner({ code }: { readonly code: string }) {
           themeId={themeId}
           autoFocus={false}
           editorRef={editorRef}
-          lineNumbers={mobile ? "off" : "on"}
+          lineNumbers="on"
           wordWrap={mobile ? "off" : "on"}
         />
       </div>
