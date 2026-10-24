@@ -237,6 +237,13 @@ export class Catalog extends Context.Service<
       userId: string,
       problemId: string,
     ): Effect.Effect<void, NotFound | Unexpected>;
+    problemProgress(
+      userId: string,
+      problemId: string,
+    ): Effect.Effect<
+      { readonly solved: boolean; readonly failedAttempts: number },
+      NotFound | Unexpected
+    >;
     skipLesson(
       userId: string,
       slug: string,
@@ -662,6 +669,28 @@ export class Catalog extends Context.Service<
         },
       );
 
+      const problemProgress = Effect.fn("Catalog.problemProgress")(function* (
+        userId: string,
+        problemId: string,
+      ) {
+        const outline = yield* listOutline().pipe(
+          failUnexpected("Could not load the course."),
+        );
+        const sequence = orderedLessons(outline);
+        const slug = slugForProblem(sequence, problemId);
+        if (slug === null) {
+          return yield* new NotFound({
+            message: "That exercise does not exist.",
+          });
+        }
+        const stats = yield* loadStats(userId);
+        const stat = stats[problemId];
+        return {
+          solved: stat?.solved ?? false,
+          failedAttempts: stat?.failedAttempts ?? 0,
+        };
+      });
+
       const skipLesson = Effect.fn("Catalog.skipLesson")(function* (
         userId: string,
         slug: string,
@@ -715,6 +744,7 @@ export class Catalog extends Context.Service<
         listModules,
         getLesson,
         assertProblemOpen,
+        problemProgress,
         skipLesson,
       });
     }),

@@ -18,6 +18,15 @@ import { Catalog } from "../domain/catalog.js";
 import { Insights } from "../domain/insights.js";
 import { runSnippet } from "../domain/runner.js";
 import { Solutions } from "../domain/solutions.js";
+import {
+  assembleGap,
+  gradeGap,
+  puzzleForProblem,
+  readFills,
+  walkthroughLockedMessage,
+} from "../content/gaps.js";
+import { solutionGuideFor } from "../content/guide.js";
+import { BadInput, NotFound } from "../domain/errors.js";
 import { execute } from "./execute.js";
 
 export interface GraphQLContext {
@@ -96,6 +105,82 @@ const ExampleType = new GraphQLObjectType({
   },
 });
 
+const GapPartType = new GraphQLObjectType({
+  name: "GapPart",
+  fields: {
+    kind: { type: new GraphQLNonNull(GraphQLString) },
+    text: { type: new GraphQLNonNull(GraphQLString) },
+    gapId: { type: GraphQLString },
+  },
+});
+
+const GapChipType = new GraphQLObjectType({
+  name: "GapChip",
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    text: { type: new GraphQLNonNull(GraphQLString) },
+  },
+});
+
+const GapPuzzleType = new GraphQLObjectType({
+  name: "GapPuzzle",
+  fields: {
+    parts: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GapPartType)),
+      ),
+    },
+    chips: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GapChipType)),
+      ),
+    },
+  },
+});
+
+const GapGradeType = new GraphQLObjectType({
+  name: "GapGrade",
+  fields: {
+    gapId: { type: new GraphQLNonNull(GraphQLString) },
+    correct: { type: new GraphQLNonNull(GraphQLBoolean) },
+  },
+});
+
+const GuideBlockType = new GraphQLObjectType({
+  name: "GuideBlock",
+  fields: {
+    kind: { type: new GraphQLNonNull(GraphQLString) },
+    text: { type: GraphQLString },
+    items: { type: new GraphQLList(new GraphQLNonNull(GraphQLString)) },
+    chart: { type: GraphQLString },
+  },
+});
+
+const GuideRevealType = new GraphQLObjectType({
+  name: "GuideReveal",
+  fields: {
+    gapId: { type: new GraphQLNonNull(GraphQLString) },
+    text: { type: new GraphQLNonNull(GraphQLString) },
+  },
+});
+
+const SolutionGuideType = new GraphQLObjectType({
+  name: "SolutionGuide",
+  fields: {
+    blocks: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GuideBlockType)),
+      ),
+    },
+    code: { type: new GraphQLNonNull(GraphQLString) },
+    reveals: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GuideRevealType)),
+      ),
+    },
+  },
+});
+
 const ProblemType = new GraphQLObjectType({
   name: "Problem",
   fields: {
@@ -115,6 +200,19 @@ const ProblemType = new GraphQLObjectType({
     failedAttempts: { type: new GraphQLNonNull(GraphQLInt) },
     passingCode: { type: GraphQLString },
     latestCode: { type: GraphQLString },
+    gap: {
+      type: GapPuzzleType,
+      resolve: (problem: { readonly id?: unknown }) => {
+        if (typeof problem.id !== "string") {
+          return null;
+        }
+        const puzzle = puzzleForProblem(problem.id);
+        if (puzzle === null) {
+          return null;
+        }
+        return { parts: puzzle.parts, chips: puzzle.chips };
+      },
+    },
   },
 });
 
@@ -188,6 +286,19 @@ const SubmissionType = new GraphQLObjectType({
       ),
     },
     createdAt: { type: new GraphQLNonNull(GraphQLString) },
+  },
+});
+
+const GapSubmissionType = new GraphQLObjectType({
+  name: "GapSubmission",
+  fields: {
+    passed: { type: new GraphQLNonNull(GraphQLBoolean) },
+    gaps: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(GapGradeType)),
+      ),
+    },
+    submission: { type: new GraphQLNonNull(SubmissionType) },
   },
 });
 
@@ -502,6 +613,45 @@ export const schema = new GraphQLSchema({
                 user.id,
                 requireString(args.slug, "Missing lesson."),
               );
+            }),
+          ),
+      },
+      solutionGuide: {
+        type: new GraphQLNonNull(SolutionGuideType),
+        args: {
+          problemId: { type: new GraphQLNonNull(GraphQLID) },
+        },
+        resolve: (
+          _parent,
+          args: { problemId?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const catalog = yield* Catalog;
+              const user = yield* auth.currentUser;
+              const problemId = requireString(
+                args.problemId,
+                "Missing exercise.",
+              );
+              const progress = yield* catalog.problemProgress(
+                user.id,
+                problemId,
+              );
+              if (!progress.solved && progress.failedAttempts < 2) {
+                return yield* new BadInput({
+                  message: walkthroughLockedMessage,
+                });
+              }
+              const guide = solutionGuideFor(problemId);
+              if (guide === null) {
+                return yield* new NotFound({
+                  message: "That exercise does not exist.",
+                });
+              }
+              return guide;
             }),
           ),
       },
@@ -876,6 +1026,59 @@ export const schema = new GraphQLSchema({
                 problemId,
                 requireString(args.code, "Missing solution."),
               );
+            }),
+          ),
+      },
+      submitGap: {
+        type: new GraphQLNonNull(GapSubmissionType),
+        args: {
+          problemId: { type: new GraphQLNonNull(GraphQLID) },
+          fillsJson: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: (
+          _parent,
+          args: { problemId?: unknown; fillsJson?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const catalog = yield* Catalog;
+              const solutions = yield* Solutions;
+              const user = yield* auth.currentUser;
+              const problemId = requireString(
+                args.problemId,
+                "Missing exercise.",
+              );
+              yield* catalog.assertProblemOpen(user.id, problemId);
+              const puzzle = puzzleForProblem(problemId);
+              if (puzzle === null) {
+                return yield* new NotFound({
+                  message: "That exercise does not exist.",
+                });
+              }
+              const fills = readFills(
+                requireString(args.fillsJson, "Missing solution."),
+              );
+              if (fills === null) {
+                return yield* new BadInput({
+                  message: "Write a solution before submitting.",
+                });
+              }
+              const grades = gradeGap(puzzle, fills);
+              const code = assembleGap(puzzle, fills);
+              const submission = yield* solutions.submit(
+                user.id,
+                problemId,
+                code,
+              );
+              const gapsCorrect = grades.every((grade) => grade.correct);
+              return {
+                passed: submission.passed && gapsCorrect,
+                gaps: grades,
+                submission,
+              };
             }),
           ),
       },

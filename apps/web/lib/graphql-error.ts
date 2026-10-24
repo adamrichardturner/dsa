@@ -39,6 +39,7 @@ const graphqlErrorMessages = {
   EXERCISE_LOCKED: "Finish the previous lesson before submitting this one.",
   SOLUTION_EMPTY: "Write a solution before submitting.",
   SOLUTION_TOO_LONG: "That solution is too long to save.",
+  WALKTHROUGH_LOCKED: "Try the exercise twice before opening the walkthrough.",
   MISSING_CODE: "Write some code before running it.",
   EMAIL_UNAVAILABLE: "Could not send that email. Try again in a moment.",
   OAUTH_EMAIL: "The sign-in provider did not share a verified email address. Allow email access and try again.",
