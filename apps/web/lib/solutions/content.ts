@@ -1,5 +1,5 @@
-import type { LessonSolution, SolutionBlock } from "@/lib/solutions/types";
-import { extraSolutions, stepSolutions } from "@/lib/solutions/steps";
+import type { LessonSolution, SolutionBlock } from "./types";
+import { extraSolutions, stepSolutions } from "./steps";
 
 const lesson = (
   slug: string,
@@ -787,27 +787,76 @@ export const lessonSolutions: readonly LessonSolution[] = [
   ]),
 ];
 
-const bySlug: Record<string, LessonSolution> = {};
+const primaryProblemId: Record<string, string> = {
+  complexity: "count-below",
+  arrays: "rotate-left",
+  "hash-maps": "two-sum",
+  "two-pointers": "sorted-squares",
+  "sliding-window": "max-window-sum",
+  "linked-lists": "reverse-values",
+  stacks: "is-balanced",
+  queues: "window-sums",
+  recursion: "flatten",
+  "binary-search": "binary-search",
+  sorting: "merge-sort",
+  trees: "max-depth",
+  "binary-search-trees": "bst-contains",
+  heaps: "kth-largest",
+  graphs: "shortest-path",
+  greedy: "max-non-overlapping",
+  backtracking: "subsets",
+  "dynamic-programming": "climb-stairs",
+  tries: "words-found",
+};
+
+const byLesson: Record<string, LessonSolution> = {};
 const byProblem: Record<string, LessonSolution> = {};
 
 for (const solution of lessonSolutions) {
-  bySlug[solution.slug] = solution;
+  byLesson[solution.slug] = solution;
+  const problemId = primaryProblemId[solution.slug];
+  if (problemId === undefined) {
+    continue;
+  }
+  byProblem[problemId] = solution;
 }
 
 for (const solution of stepSolutions) {
-  bySlug[solution.slug] = solution;
+  byProblem[solution.slug] = solution;
 }
 
 for (const solution of extraSolutions) {
   byProblem[solution.slug] = solution;
 }
 
-export const solutionFor = (slug: string): LessonSolution | null =>
-  bySlug[slug] ?? null;
+export const explanationText = (solution: LessonSolution): string => {
+  const parts: string[] = [];
+  for (const block of solution.blocks) {
+    if (block.kind === "code") {
+      continue;
+    }
+    if (block.kind === "list") {
+      for (const item of block.items) {
+        parts.push(item);
+      }
+      continue;
+    }
+    if (block.kind === "diagram") {
+      parts.push(block.chart);
+      continue;
+    }
+    parts.push(block.text);
+  }
+  return parts.join("\n").trim();
+};
+
+export const solutionFor = (slug: string): LessonSolution | null => {
+  return byLesson[slug] ?? null;
+};
 
 export const solutionForProblem = (
-  slug: string,
+  _slug: string,
   problemId: string,
 ): LessonSolution | null => {
-  return byProblem[problemId] ?? bySlug[slug] ?? null;
+  return byProblem[problemId] ?? null;
 };
