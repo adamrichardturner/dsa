@@ -495,7 +495,11 @@ console.log(bstContains([8, 3, 10, 1, 6], 7));
       let smallest = index;
       const current = heap[smallest];
       const leftValue = heap[left];
-      if (leftValue !== undefined && current !== undefined && leftValue < current) {
+      if (
+        leftValue !== undefined &&
+        current !== undefined &&
+        leftValue < current
+      ) {
         smallest = left;
       }
       const smallestValue = heap[smallest];
@@ -543,7 +547,11 @@ console.log(kthLargest([3, 2, 1, 5, 6, 4], 2));
 console.log(kthLargest([2, 2], 2));
 `,
 
-  graphs: `export function shortestPath(edges: number[][], start: number, end: number): number {
+  graphs: `export function shortestPath(
+  edges: number[][],
+  start: number,
+  end: number,
+): number {
   if (start === end) {
     return 0;
   }

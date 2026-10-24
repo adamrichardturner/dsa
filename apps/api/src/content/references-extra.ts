@@ -371,7 +371,11 @@ export function bstMin(values: number[]): number | null {
 }
 `,
   "can-reach": `${graphHelpers}
-export function canReach(edges: number[][], start: number, end: number): boolean {
+export function canReach(
+  edges: number[][],
+  start: number,
+  end: number,
+): boolean {
   if (start === end) {
     return true;
   }
@@ -534,7 +538,11 @@ export function hasPrefix(words: string[], queries: string[]): boolean[] {
   return next;
 }
 `,
-  "insert-at": `export function insertAt(nums: number[], index: number, value: number): number[] {
+  "insert-at": `export function insertAt(
+  nums: number[],
+  index: number,
+  value: number,
+): number[] {
   const next: number[] = [];
   let placed = index < 0;
   if (placed) {
@@ -966,7 +974,11 @@ export function componentSize(edges: number[][], start: number): number {
 }
 `,
   "reaches-all": `${graphHelpers}
-export function reachesAll(edges: number[][], count: number, start: number): boolean {
+export function reachesAll(
+  edges: number[][],
+  count: number,
+  start: number,
+): boolean {
   return walk(edges, start) === count;
 }
 `,
@@ -1321,10 +1333,7 @@ export function isValidBst(values: Array<number | null>): boolean {
   return solve(n);
 }
 `,
-  "count-components": `export function countComponents(
-  edges: number[][],
-  count: number,
-): number {
+  "count-components": `export function countComponents(edges: number[][], count: number): number {
   const neighbours: Record<string, number[]> = {};
   for (let vertex = 0; vertex < count; vertex += 1) {
     neighbours[String(vertex)] = [];

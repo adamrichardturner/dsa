@@ -250,7 +250,11 @@ Return a new array with \`value\` inserted at \`index\`. Values that were at tha
 
 If \`index\` is negative, insert at the front. If it is past the end, add \`value\` at the end. Do not mutate \`nums\`.
       `,
-      `export function insertAt(nums: number[], index: number, value: number): number[] {
+      `export function insertAt(
+  nums: number[],
+  index: number,
+  value: number,
+): number[] {
   return [];
 }
 `,
