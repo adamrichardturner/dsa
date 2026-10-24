@@ -31,8 +31,8 @@ export function LandingCloseCopy() {
           The course is open.
         </h2>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-primary-foreground/75">
-          Pick up the lesson you left. Your code and progress are already on the
-          account.
+          Pick up the lesson you left, or open an article. Your code and
+          progress are already on the account.
         </p>
       </>
     );
@@ -47,9 +47,10 @@ export function LandingCloseCopy() {
         Sign up. The whole course is yours.
       </h2>
       <p className="mt-4 max-w-xl text-base leading-relaxed text-primary-foreground/75">
-        Week one is a single pass over an array. The rest of the month builds on
-        it. Short lessons, the editor, the tests, and your progress. Nothing to
-        pay for.
+        Week one names the cost of a scan and of a pair, then arrays, hash maps,
+        two pointers, and a sliding window. The articles are open if you want to
+        read first. Short lessons, the editor, the tests, and your progress.
+        Nothing to pay for.
       </p>
     </>
   );

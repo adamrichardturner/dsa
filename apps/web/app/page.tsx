@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BookOpen, Check, Columns2, Gift, Moon, Terminal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,6 +15,7 @@ import {
   RevealGroup,
   RevealItem,
 } from "@/components/reveal";
+import { articleGroups, articleTopicId } from "@/lib/articles";
 import {
   creatorName,
   siteDescription,
@@ -21,6 +23,32 @@ import {
   siteName,
   siteUrl,
 } from "@/lib/site";
+
+const courseDescription =
+  "A 100% free, four-week TypeScript course in data structures and algorithms. Short lessons, an editor, tests, and progress saved on your account.";
+
+const articleCountLabel = (count: number): string => {
+  if (count === 1) {
+    return "1 article";
+  }
+  return `${count} articles`;
+};
+
+const readingGroups = articleGroups().map((group) => ({
+  topic: group.topic,
+  href: `/articles#${articleTopicId(group.topic)}`,
+  count: group.articles.length,
+}));
+
+const countArticles = (): number => {
+  let total = 0;
+  for (const group of readingGroups) {
+    total += group.count;
+  }
+  return total;
+};
+
+const articleCount = countArticles();
 
 const weeks = [
   {
@@ -100,7 +128,7 @@ const features = [
     icon: Gift,
     title: "100% free",
     detail:
-      "Every lesson, the editor, the tests, and your progress. No trial, no card, and nothing locked behind an upgrade.",
+      "Every lesson, the articles, the editor, the tests, and your progress. No trial, no card, and nothing locked behind an upgrade.",
   },
   {
     icon: BookOpen,
@@ -112,7 +140,7 @@ const features = [
     icon: Columns2,
     title: "A desk, not a video",
     detail:
-      "The lesson and a TypeScript editor open side by side. Flip the split horizontal when you want the editor underneath.",
+      "The lesson and a TypeScript editor open side by side. Flip the split horizontal when you want the editor underneath. You can run the code in the terminal before you submit.",
   },
   {
     icon: Terminal,
@@ -124,13 +152,13 @@ const features = [
     icon: Check,
     title: "A tick when it passes",
     detail:
-      "Pass the exercise and the lesson keeps a green tick. If an attempt fails, open a written solution, or skip without points and come back later.",
+      "Pass an exercise and it keeps a green tick. Pass every exercise in the lesson and the lesson is done. If an attempt fails, open the solution: an explanation and an example you can run. Or skip without points and come back later.",
   },
   {
     icon: Moon,
     title: "Yours when you come back",
     detail:
-      "The account keeps your code and a note on the topics that still need a pass. Light and dark mode stay with the browser.",
+      "The account keeps your code. Progress shows lessons done, exercises passed, your pass rate, and what you skipped or still need to pass. Light and dark mode stay with the browser.",
   },
 ];
 
@@ -139,19 +167,19 @@ const steps = [
     step: "01",
     title: "Read the lesson",
     detail:
-      "A few minutes on the idea, with the cost and the trade stated in plain language.",
+      "The reading states the cost and the trade in plain language. The bitesize explanation adds a diagram, a TypeScript example you can run, and the mistakes that usually show up.",
   },
   {
     step: "02",
     title: "Write the function",
     detail:
-      "TypeScript checking runs as you type. The starter is already in the editor.",
+      "The starter is already in the editor. TypeScript checking runs as you type, and you can run the code in the terminal before you submit.",
   },
   {
     step: "03",
     title: "Submit",
     detail:
-      "The tests run immediately. A pass marks that exercise done. Finish the exercises in the lesson and the next one opens. A failed attempt can open a solution, or you can skip the lesson and come back.",
+      "The tests run straight away. A pass marks that exercise done. When every exercise in the lesson passes, the next one opens. After a failed attempt you can open the solution, or skip the lesson without points and come back.",
   },
 ];
 
@@ -159,7 +187,7 @@ const faqs = [
   {
     question: "Is this data structures and algorithms course free?",
     answer:
-      "Yes. The course is 100% free. Creating an account, the lessons, the editor, the tests, and saved progress do not cost anything. There is no paid tier.",
+      "Yes. The course and the articles are 100% free. Creating an account, the lessons, the editor, the tests, and saved progress do not cost anything. There is no paid tier. You can read the articles before you sign up. Sign up with Google, GitHub, or an email and password.",
   },
   {
     question: "What are data structures and algorithms?",
@@ -169,17 +197,17 @@ const faqs = [
   {
     question: "How do I learn data structures and algorithms?",
     answer:
-      "Learn data structures and algorithms by writing them. This 100% free course is four weeks of TypeScript: read a short lesson, implement the exercises, and submit each one against tests. A lesson is done when its exercises pass. A new account gets a short introduction, including the choice to browse with audit mode.",
+      "Learn data structures and algorithms by writing them. This 100% free course is four weeks of TypeScript: read the lesson, open the bitesize explanation for a diagram and a runnable example, implement the exercises, and submit each one against tests. A lesson is done when every exercise passes. Terms in the lesson link to articles you can read without an account. A new account gets a short introduction, including the choice to browse with audit mode.",
   },
   {
     question: "Which data structures and algorithms does the course cover?",
     answer:
-      "The path covers complexity, arrays, hash maps, two pointers, sliding windows, linked lists, stacks, queues, recursion, binary search, merge sort, trees, binary search trees, heaps, graphs, greedy choices, backtracking, dynamic programming, and tries.",
+      "The path covers complexity, arrays, hash maps, two pointers, sliding windows, linked lists, stacks, queues, recursion, binary search, merge sort, trees, binary search trees, heaps, graphs, greedy choices, backtracking, dynamic programming, and tries. The articles cover those terms. Quicksort, disjoint-set union, and directed acyclic graphs are extra reading, past the exercises.",
   },
   {
     question: "Who is this data structures and algorithms course for?",
     answer:
-      "It is for people who already write TypeScript and want the structures and algorithms used in interviews and production code, without a semester of theory first. The coding desk is meant for a laptop or desktop.",
+      "It is for people who already write TypeScript and want the structures and algorithms used in interviews and production code, without a semester of theory first. The coding desk is meant for a laptop or desktop. The articles are reading pages, so you can open them without the desk.",
   },
 ];
 
@@ -199,7 +227,7 @@ const structuredData = {
       "@type": "Course",
       "@id": `${siteUrl}/#course`,
       name: siteName,
-      description: siteDescription,
+      description: courseDescription,
       url: siteUrl,
       inLanguage: "en",
       educationalLevel: "Beginner",
@@ -253,7 +281,8 @@ export default function HomePage() {
               Data structures and algorithms are how a program stores values and
               the steps it uses to work on them. This course is 100% free. You
               read a short lesson, write the function in TypeScript, and find
-              out at once whether it holds.
+              out at once whether it holds. The articles are open if you want
+              the longer explanation of a term before you sign up.
             </p>
             <div className="flex flex-wrap gap-3">
               <LandingActions />
@@ -270,12 +299,13 @@ export default function HomePage() {
             <CardContent className="space-y-4 text-sm leading-relaxed text-muted-foreground">
               <p>
                 Short lessons, a few exercises on each, then a slightly harder
-                step. An editor, tests, and a progress page that stays on your
-                account.
+                follow-up. An editor, tests, and a progress page that stays on
+                your account. Articles, with diagrams, for when a term needs
+                more than the lesson.
               </p>
               <p>
-                No trial period, no card, and no lesson held back for a paid
-                plan.
+                No trial period, no card, and no lesson or article held back for
+                a paid plan.
               </p>
             </CardContent>
           </Card>
@@ -283,7 +313,10 @@ export default function HomePage() {
 
         <section className="mt-20" aria-labelledby="features">
           <Reveal className="max-w-2xl space-y-3">
-            <h2 id="features" className="font-serif text-3xl tracking-tight">
+            <h2
+              id="features"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+            >
               What you get
             </h2>
             <p className="text-muted-foreground">
@@ -320,13 +353,17 @@ export default function HomePage() {
 
         <section className="mt-20" aria-labelledby="syllabus">
           <Reveal className="max-w-2xl space-y-3">
-            <h2 id="syllabus" className="font-serif text-3xl tracking-tight">
+            <h2
+              id="syllabus"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+            >
               Four weeks of course material
             </h2>
             <p className="text-muted-foreground">
-              Basics first, then the structures, then the patterns. Work in
-              order, or turn on audit mode to open any lesson. A lesson is
-              complete when its exercises pass.
+              Thirty-eight lessons and eighty-four exercises. Basics first, then
+              the structures, then the patterns. Work in order, or turn on audit
+              mode to open any lesson. A lesson is complete when every exercise
+              in it passes.
             </p>
           </Reveal>
           <RevealGroup className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -357,9 +394,62 @@ export default function HomePage() {
           </RevealGroup>
         </section>
 
+        <section className="mt-20" aria-labelledby="articles">
+          <Reveal className="max-w-2xl space-y-3">
+            <h2
+              id="articles"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+            >
+              Articles beside the course
+            </h2>
+            <p className="text-muted-foreground">
+              {articleCount} explainers for the terms the lessons use. Each one
+              answers a specific question, with a diagram, the cost, and a
+              worked example. A lesson links the terms it mentions, and you can
+              read them without an account. Quicksort, disjoint-set union, and
+              directed acyclic graphs are extra reading, past the exercises.
+            </p>
+            <p>
+              <Link
+                href="/articles"
+                className="text-sm underline underline-offset-4"
+              >
+                Browse the articles
+              </Link>
+            </p>
+          </Reveal>
+          <RevealGroup className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {readingGroups.map((group) => (
+              <RevealItem key={group.topic} className="h-full">
+                <Link
+                  href={group.href}
+                  className="block h-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  <Card
+                    className="h-full transition-colors hover:bg-muted/60"
+                    size="sm"
+                  >
+                    <CardHeader>
+                      <CardDescription>
+                        {articleCountLabel(group.count)}
+                      </CardDescription>
+                      <h3 className="font-serif text-xl leading-snug font-medium">
+                        {group.topic}
+                      </h3>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </section>
+
         <section className="mt-20" aria-labelledby="desk">
           <Reveal className="max-w-2xl space-y-3">
-            <h2 id="desk" className="font-serif text-3xl tracking-tight">
+            <h2
+              id="desk"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+            >
               How a lesson goes
             </h2>
             <p className="text-muted-foreground">
@@ -390,7 +480,10 @@ export default function HomePage() {
 
         <section className="mt-20" aria-labelledby="faq">
           <Reveal className="max-w-2xl space-y-3">
-            <h2 id="faq" className="font-serif text-3xl tracking-tight">
+            <h2
+              id="faq"
+              className="font-serif text-3xl tracking-tight max-md:scroll-mt-16"
+            >
               Questions about data structures and algorithms
             </h2>
             <p className="text-muted-foreground">

@@ -21,6 +21,7 @@ export function LandingFooter() {
       links: [
         { href: "#features", label: "What you get" },
         { href: "#syllabus", label: "Four weeks" },
+        { href: "#articles", label: "Articles" },
         { href: "#desk", label: "How a lesson goes" },
         { href: "#faq", label: "Questions" },
       ],
