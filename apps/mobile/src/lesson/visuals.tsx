@@ -8,7 +8,7 @@ import {
   type GraphVisualization,
   type LinkedListVisualization,
   type VisualizationState,
-} from "../../../web/components/visualizations/types";
+} from "../../../api/src/content/visualizations";
 import { useTheme } from "@/theme/theme";
 
 const stateColor = (

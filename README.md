@@ -68,7 +68,7 @@ On startup `prepareDatabase` creates any missing tables, applies additive column
 
 Submitted code and drafts are left as they are. Removing a lesson from the seed leaves its row in place.
 
-Articles take a different path. They are TypeScript modules in `apps/web/lib/articles/`, bundled with the Next.js app, and never written to Postgres.
+Articles live in `apps/api/src/content/articles/` with the rest of the course. The site and the phone import that module, and the articles are never written to Postgres.
 
 Lesson markdown can include Mermaid diagrams and `visualization` fences. A fence is strict JSON for an array, a linked list, or a graph, and the desk renders it inline.
 
@@ -304,9 +304,9 @@ Good places to start:
   A lesson has more than one exercise. Include public tests that show the shape of the answer, and hidden tests for the empty, boundary, and awkward cases.
 
   Name the function the runner should call in `functionName`. Keep an existing lesson id when you extend it, and add a new id for a later step.
-- **Articles.** Add an explainer with `defineArticle` in the matching file under `apps/web/lib/articles/`, then export it from that file's list.
+- **Articles.** Add an explainer with `defineArticle` in the matching file under `apps/api/src/content/articles/`, then export it from that file's list.
 
-  `apps/web/lib/articles/index.ts` already gathers those lists. One question per article, with the cost and a worked example.
+  `apps/api/src/content/articles/index.ts` already gathers those lists. One question per article, with the cost and a worked example. The site re-exports the module, and the phone reads the same list.
 - **The desk.** Editor, split layout, syllabus, progress, and account screens live in `apps/web`.
 - **The runner and the domain.** Submission, scoring, auth, and insights live in `apps/api/src/domain/`.
 

@@ -1,5 +1,5 @@
-import { solutionForProblem } from "../../../web/lib/solutions/content.js";
-import type { SolutionBlock } from "../../../web/lib/solutions/types.js";
+import { solutionForProblem } from "./explanations/content.js";
+import type { SolutionBlock } from "./explanations/types.js";
 import { puzzleForProblem, type GapReveal } from "./gaps.js";
 
 export interface GuideBlockView {

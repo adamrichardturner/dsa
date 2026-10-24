@@ -4,7 +4,7 @@ import { course } from "./course.js";
 import {
   explanationText,
   solutionForProblem,
-} from "../../../web/lib/solutions/content.js";
+} from "./explanations/content.js";
 
 const otherSlug = (slug: string): string => {
   if (slug === "complexity") {

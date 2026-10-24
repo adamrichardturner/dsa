@@ -73,7 +73,7 @@ The browser never holds a Google or GitHub token.
 
 A `visualization` fence is strict JSON. The desk draws three kinds: `array`, `linked-list`, and `graph`.
 
-Unknown shapes are refused in the parser, in `components/visualizations/types.ts`.
+Unknown shapes are refused in the parser, in `apps/api/src/content/visualizations.ts`.
 
 The split is vertical or horizontal, remembered in `localStorage` as `dsa.split-layout.columns` or `dsa.split-layout.stacked`.
 
@@ -89,9 +89,9 @@ A new account sees a short introduction once. `onboardingCompleted` on the user 
 
 ## Articles
 
-Articles are loaded from this app, not from the API.
+Article source lives in `apps/api/src/content/articles/`. This app imports that module and renders the pages.
 
-Each file under `lib/articles/` exports a list built with `defineArticle`, and `lib/articles/index.ts` concatenates those lists in topic order.
+Each file there exports a list built with `defineArticle`, and `index.ts` concatenates those lists in topic order.
 
 A page looks up one slug from that module.
 
@@ -110,7 +110,7 @@ app/                  routes, sitemap, robots
 components/           desk, shell, account forms, visualizations
 components/ui/        shared controls, shadcn-style, on Base UI
 hooks/                draft saving, and the mobile viewport check
-lib/articles/         article content
+lib/articles/         re-exports of the API article module
 lib/auth.tsx          session and the urql client
 lib/operations.ts     GraphQL documents
 lib/site.ts           name, domain, and the social image

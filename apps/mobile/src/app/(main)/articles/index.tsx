@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { articleGroups } from "../../../../../web/lib/articles/index";
+import { articleGroups } from "../../../../../api/src/content/articles";
 import { useTheme } from "@/theme/theme";
 import { Body, Title } from "@/ui/primitives";
 
