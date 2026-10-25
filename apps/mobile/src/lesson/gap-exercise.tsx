@@ -1,6 +1,6 @@
 import * as Haptics from "expo-haptics";
 import { useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -73,14 +73,8 @@ const toneTarget = (correct: boolean | null): number => {
   return 2;
 };
 
-const lineHasGap = (line: readonly LinePiece[]): boolean => {
-  for (const piece of line) {
-    if (piece.kind === "gap") {
-      return true;
-    }
-  }
-  return false;
-};
+const gapBorderWidth = 1.5;
+const gapRadius = 8;
 
 const languageLabel = (starterCode: string): string => {
   if (exerciseHighlightLanguage(starterCode) === "javascript") {
@@ -113,17 +107,24 @@ function GapSlot({
   readonly onFocus: () => void;
 }) {
   const { palette } = useCodeTheme();
+  const [bounds, setBounds] = useState<{ readonly height: number; readonly width: number } | null>(null);
   const target = toneTarget(correct);
   const tone = useSharedValue(target);
   const seen = useRef(correct);
+  const showedCorrect = useRef(false);
   const idleBorder = useSharedValue(active ? palette.gapActive : palette.gapBorder);
   const goodBorder = useSharedValue(palette.success);
   const badBorder = useSharedValue(palette.danger);
   const idleFill = useSharedValue(palette.gapBackground);
   const goodFill = useSharedValue(palette.successFill);
   const badFill = useSharedValue(palette.dangerFill);
-  idleBorder.value = active ? palette.gapActive : palette.gapBorder;
-  goodBorder.value = palette.success;
+  const restingBorder = active ? palette.gapActive : palette.gapBorder;
+  if (correct === true && !celebrate) {
+    showedCorrect.current = true;
+  }
+  const traceFromRest = celebrate && !showedCorrect.current;
+  idleBorder.value = restingBorder;
+  goodBorder.value = traceFromRest ? restingBorder : palette.success;
   badBorder.value = palette.danger;
   idleFill.value = palette.gapBackground;
   goodFill.value = palette.successFill;
@@ -139,6 +140,17 @@ function GapSlot({
     borderColor: interpolateColor(tone.value, [0, 1, 2], [idleBorder.value, goodBorder.value, badBorder.value]),
   }));
 
+  const onFrame = (event: LayoutChangeEvent) => {
+    const nextWidth = event.nativeEvent.layout.width;
+    const nextHeight = event.nativeEvent.layout.height;
+    setBounds((current) => {
+      if (current !== null && Math.abs(current.width - nextWidth) < 0.5 && Math.abs(current.height - nextHeight) < 0.5) {
+        return current;
+      }
+      return { height: nextHeight, width: nextWidth };
+    });
+  };
+
   return (
     <Droppable<ChipData>
       activeStyle={{ borderColor: palette.gapActive }}
@@ -152,15 +164,26 @@ function GapSlot({
         accessibilityRole="button"
         accessibilityState={{ checked: correct === true }}
         onPress={chip === null ? onFocus : onClear}
+        style={styles.gapHost}
       >
-        <Animated.View style={[styles.gap, frame]}>
-          {correct === true ? <GapOutline animate={celebrate} color={palette.success} delay={delay} /> : null}
+        <Animated.View collapsable={false} onLayout={onFrame} style={[styles.gap, frame]}>
           {chip === null ? (
             <Text style={[styles.placeholder, { color: palette.muted }]}>gap</Text>
           ) : (
             <HighlightedCode code={chip.text} language={language} />
           )}
         </Animated.View>
+        {celebrate && bounds !== null ? (
+          <GapOutline
+            animate
+            borderRadius={gapRadius}
+            borderWidth={gapBorderWidth}
+            color={palette.success}
+            delay={delay}
+            height={bounds.height}
+            width={bounds.width}
+          />
+        ) : null}
       </Pressable>
     </Droppable>
   );
@@ -290,6 +313,7 @@ export function GapExercise({
       setGrades(next);
       setPassed(data.submitGap.passed);
       if (data.submitGap.passed) {
+        setActiveGap(null);
         setCelebrate(true);
         setMessage("That passes.");
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -311,6 +335,17 @@ export function GapExercise({
   };
 
   const lines = linesFrom(puzzle.parts);
+  const gapDelay: Record<string, number> = {};
+  let gapOrdinal = 0;
+  for (const line of lines) {
+    for (const piece of line) {
+      if (piece.kind !== "gap" || piece.gapId === null) {
+        continue;
+      }
+      gapDelay[piece.gapId] = gapOrdinal * 90;
+      gapOrdinal += 1;
+    }
+  }
   const status = exerciseStatus({ solved: passed, attempts: problem.attempts }, lessonSkipped);
   const label = statusLabel(status);
 
@@ -334,34 +369,31 @@ export function GapExercise({
           </Card>
         )}
         <CodeWindow celebrate={celebrate} languageLabel={languageLabel(problem.starterCode)} passed={passed}>
-          {lines.map((line, lineIndex) => {
-            const emphasize = passed && lineHasGap(line);
-            return (
-              <CodeLine key={`line-${lineIndex}`} animate={celebrate} delay={lineIndex * 90} emphasize={emphasize}>
-                {line.map((piece, pieceIndex) => {
-                  if (piece.kind === "text") {
-                    return <HighlightedCode key={`t-${lineIndex}-${pieceIndex}`} code={piece.text} language={language} />;
-                  }
-                  const gapId = piece.gapId ?? "";
-                  return (
-                    <GapSlot
-                      key={gapId}
-                      active={activeGap === gapId}
-                      celebrate={celebrate}
-                      chip={chipById(fills[gapId])}
-                      correct={gapCorrect(gapId)}
-                      delay={lineIndex * 90}
-                      gapId={gapId}
-                      language={language}
-                      onClear={() => clearGap(gapId)}
-                      onDrop={(data) => place(gapId, data)}
-                      onFocus={() => focusGap(gapId)}
-                    />
-                  );
-                })}
-              </CodeLine>
-            );
-          })}
+          {lines.map((line, lineIndex) => (
+            <CodeLine key={`line-${lineIndex}`}>
+              {line.map((piece, pieceIndex) => {
+                if (piece.kind === "text") {
+                  return <HighlightedCode key={`t-${lineIndex}-${pieceIndex}`} code={piece.text} language={language} />;
+                }
+                const gapId = piece.gapId ?? "";
+                return (
+                  <GapSlot
+                    key={gapId}
+                    active={activeGap === gapId}
+                    celebrate={celebrate}
+                    chip={chipById(fills[gapId])}
+                    correct={gapCorrect(gapId)}
+                    delay={gapDelay[gapId] ?? 0}
+                    gapId={gapId}
+                    language={language}
+                    onClear={() => clearGap(gapId)}
+                    onDrop={(data) => place(gapId, data)}
+                    onFocus={() => focusGap(gapId)}
+                  />
+                );
+              })}
+            </CodeLine>
+          ))}
         </CodeWindow>
         <Text style={[styles.hint, { color: colors.mutedForeground }]}>
           {activeGap === null
@@ -469,10 +501,14 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     flexShrink: 0,
   },
+  gapHost: {
+    alignSelf: "flex-start",
+    position: "relative",
+  },
   gap: {
     alignItems: "center",
-    borderRadius: 8,
-    borderWidth: 1.5,
+    borderRadius: gapRadius,
+    borderWidth: gapBorderWidth,
     flexDirection: "row",
     flexShrink: 0,
     flexWrap: "nowrap",

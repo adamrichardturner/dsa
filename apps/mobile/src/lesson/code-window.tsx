@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { CompleteTick, SuccessRule } from "@/lesson/completion";
+import { CompleteTick } from "@/lesson/completion";
 import { useCodeTheme, type CodePalette, type CodeThemeId } from "@/lesson/code-theme";
 import { HighlightedCode } from "@/lesson/highlighted-code";
 import type { HighlightLanguage } from "@/lesson/highlight";
@@ -63,24 +63,8 @@ function ThemeMenu() {
   );
 }
 
-export function CodeLine({
-  animate = false,
-  children,
-  delay = 0,
-  emphasize = false,
-}: {
-  readonly animate?: boolean;
-  readonly children: ReactNode;
-  readonly delay?: number;
-  readonly emphasize?: boolean;
-}) {
-  const { palette } = useCodeTheme();
-  return (
-    <View style={[styles.line, emphasize ? styles.lineEmphasized : null]}>
-      {emphasize ? <SuccessRule animate={animate} color={palette.success} delay={delay} /> : null}
-      {children}
-    </View>
-  );
+export function CodeLine({ children }: { readonly children: ReactNode }) {
+  return <View style={styles.line}>{children}</View>;
 }
 
 export function PlainCodeLines({
@@ -231,10 +215,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     flexWrap: "nowrap",
     minHeight: 24,
-    position: "relative",
-  },
-  lineEmphasized: {
-    paddingBottom: 6,
   },
   blank: {
     fontFamily: "JetBrainsMono_400Regular",
