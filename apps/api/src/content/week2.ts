@@ -70,7 +70,9 @@ export const week2: SeedModule = {
           immutableArgs: [0],
           distinctArrayReturnFromArg: 0,
           promptMd: `
-\`reverseValues(values)\` receives an array of numbers. The starter code converts it to a singly linked list, then converts the returned list back to an array.
+\`reverseValues(values)\` receives an array of numbers.
+
+The starter code converts it to a singly linked list, then converts the returned list back to an array.
 
 **Requirements**
 
@@ -360,7 +362,9 @@ export const week2: SeedModule = {
           immutableArgs: [0],
           distinctArrayReturnFromArg: 0,
           promptMd: `
-\`Nested\` is recursive: each value is either a number or an array containing more \`Nested\` values. Implement \`flatten(value)\` recursively.
+\`Nested\` is recursive: each value is either a number or an array containing more \`Nested\` values.
+
+Implement \`flatten(value)\` recursively.
 
 **Requirements**
 

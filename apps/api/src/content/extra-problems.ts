@@ -379,7 +379,9 @@ const listSum: SeedProblem = {
   functionName: "listSum",
   disallow: [".reduce(", ".filter("],
   promptMd: `
-Implement \`listSum(values)\`. The supplied \`fromArray\` helper converts \`values\` into a linked list and gives you its head.
+Implement \`listSum(values)\`.
+
+The supplied \`fromArray\` helper converts \`values\` into a linked list and gives you its head.
 
 - **Input:** \`values\` is an array of finite numbers used only to construct the list.
 - **Output:** return the sum of the \`value\` field on every node.
@@ -802,7 +804,9 @@ const countNodes: SeedProblem = {
   functionName: "countNodes",
   disallow: [".filter(", ".reduce("],
   promptMd: `
-Implement \`countNodes(values)\`. The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
+Implement \`countNodes(values)\`.
+
+The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
 
 - **Input:** \`values\` is a valid level-order binary-tree encoding. Numbers are nodes and \`null\` marks a missing child.
 - **Output:** return the number of actual \`TreeNode\` objects in the constructed tree.
@@ -1734,7 +1738,9 @@ const levelOrder: SeedProblem = {
   immutableArgs: [0],
   distinctArrayReturnFromArg: 0,
   promptMd: `
-Implement \`levelOrder(values)\`. The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
+Implement \`levelOrder(values)\`.
+
+The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
 
 - **Input:** \`values\` is a valid level-order binary-tree encoding. Numbers are nodes and \`null\` marks a missing child.
 - **Output:** return the node values from a left-to-right breadth-first walk. Skip missing children. Do not include \`null\` in the output.
@@ -1804,7 +1810,9 @@ const isValidBst: SeedProblem = {
   disallow: [".sort(", ".toSorted("],
   immutableArgs: [0],
   promptMd: `
-Implement \`isValidBst(values)\`. The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
+Implement \`isValidBst(values)\`.
+
+The supplied \`buildTree\` helper converts the level-order encoding into linked \`TreeNode\` objects.
 
 - **Input:** \`values\` is a level-order binary-tree encoding. Numbers are nodes and \`null\` marks a missing child. This tree was not necessarily built by the course's insertion routine.
 - **Output:** return \`true\` exactly when every node obeys the strict BST rule: every value in its left subtree is smaller than the node, and every value in its right subtree is larger.
@@ -1813,7 +1821,9 @@ Implement \`isValidBst(values)\`. The supplied \`buildTree\` helper converts the
 - **Complexity:** O(n) time and O(h) call-stack space.
 - **Do not:** sort the encoding. Level order is not sorted order, and sorting would hide the tree shape.
 
-\`isValidBst([2, 1, 3])\` is \`true\`. \`isValidBst([5, 1, 4, null, null, 3, 6])\` is \`false\`.
+\`isValidBst([2, 1, 3])\` is \`true\`.
+
+\`isValidBst([5, 1, 4, null, null, 3, 6])\` is \`false\`.
   `.trim(),
   starterCode: treeStarter(
     "export function isValidBst(values: Array<number | null>): boolean",

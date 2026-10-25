@@ -47,7 +47,9 @@ Implement \`maxNonOverlapping(intervals)\` to return the maximum number of inter
 
 **Algorithm expectation**
 
-Use the greedy interval-scheduling strategy from the lesson: consider intervals by earliest finishing time and accept each compatible interval. Aim for O(n log n) time for sorting followed by an O(n) scan.
+Use the greedy interval-scheduling strategy from the lesson: consider intervals by earliest finishing time and accept each compatible interval.
+
+Aim for O(n log n) time for sorting followed by an O(n) scan.
 
 Do not enumerate every subset of intervals or hard-code results for the examples.
           `.trim(),
@@ -212,11 +214,19 @@ Implement \`subsets(nums)\` to generate the power set: every possible subset of 
 
 **Algorithm expectation**
 
-Use recursive backtracking. At each input index, explore both decisions: exclude the value and include it. Undo the included choice before returning to the previous decision. Copy the current path when saving a completed subset so later mutations do not change saved results.
+Use recursive backtracking.
+
+At each input index, explore both decisions: exclude the value and include it.
+
+Undo the included choice before returning to the previous decision.
+
+Copy the current path when saving a completed subset so later mutations do not change saved results.
 
 Generating every subset necessarily takes O(n · 2^n) time when copied output is counted, with O(n) recursion/path space besides the returned results.
 
-Do not use \`flatMap\` or \`reduce\` to build the power set, use bitmask enumeration, or call a library power-set helper. This exercise is specifically practice in choose, explore, and undo.
+Do not use \`flatMap\` or \`reduce\` to build the power set, use bitmask enumeration, or call a library power-set helper.
+
+This exercise is specifically practice in choose, explore, and undo.
           `.trim(),
           starterCode: `export function subsets(nums: number[]): number[][] {
   return [];
@@ -331,7 +341,9 @@ Implement \`climbStairs(n)\` to count the distinct sequences of moves that reach
 
 **Algorithm expectation**
 
-Use dynamic programming with the recurrence \`ways(n) = ways(n - 1) + ways(n - 2)\`. A bottom-up solution takes O(n) time and O(1) extra space; memoised recursion may use O(n) extra space.
+Use dynamic programming with the recurrence \`ways(n) = ways(n - 1) + ways(n - 2)\`.
+
+A bottom-up solution takes O(n) time and O(1) extra space; memoised recursion may use O(n) extra space.
 
 Do not enumerate the move sequences, use exponential recursion that recomputes the same state, use a closed-form formula, or return values from a precomputed answer table.
           `.trim(),
@@ -422,9 +434,15 @@ For example, \`wordsFound(["cat", "car"], ["cat", "cab", "car"])\` returns \`[tr
 
 **Algorithm expectation**
 
-Build a trie whose nodes store character-keyed child objects and an \`isWord\` flag. Insertion and lookup should each take O(L) time for a string of length L. Across all inputs, aim for O(total characters in \`words\` and \`queries\`) time and O(total characters in \`words\`) trie space.
+Build a trie whose nodes store character-keyed child objects and an \`isWord\` flag.
 
-Do not use whole-word linear search helpers such as \`includes\`, \`indexOf\`, \`some\`, or \`find\`, and do not scan the full \`words\` array separately for each query. A \`Map\` for each node's children is a valid trie representation; the supplied object shape is simpler for this starter.
+Insertion and lookup should each take O(L) time for a string of length L.
+
+Across all inputs, aim for O(total characters in \`words\` and \`queries\`) time and O(total characters in \`words\`) trie space.
+
+Do not use whole-word linear search helpers such as \`includes\`, \`indexOf\`, \`some\`, or \`find\`, and do not scan the full \`words\` array separately for each query.
+
+A \`Map\` for each node's children is a valid trie representation; the supplied object shape is simpler for this starter.
           `.trim(),
           starterCode: `export function wordsFound(words: string[], queries: string[]): boolean[] {
   return [];

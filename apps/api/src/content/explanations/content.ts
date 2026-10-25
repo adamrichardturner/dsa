@@ -17,11 +17,27 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "countBelow should return how many values in nums are strictly less than limit. Equal to the limit does not count. An empty array counts as zero, because there is nothing to compare.",
+      text: "countBelow should return how many values in nums are strictly less than limit.",
     },
     {
       kind: "paragraph",
-      text: "The lesson is about cost, not about finding a clever formula. One pass over the array is O(n). A loop inside a loop also produces the right number, and it is the habit this lesson is trying to retire.",
+      text: "Equal to the limit does not count.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty array counts as zero, because there is nothing to compare.",
+    },
+    {
+      kind: "paragraph",
+      text: "The lesson is about cost, not about finding a clever formula.",
+    },
+    {
+      kind: "paragraph",
+      text: "One pass over the array is O(n).",
+    },
+    {
+      kind: "paragraph",
+      text: "A loop inside a loop also produces the right number, and it is the habit this lesson is trying to retire.",
     },
     {
       kind: "heading",
@@ -40,7 +56,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The same walk handles the other cases. [5, 6] against 3 never increments. An empty array never enters the loop. [-2, 0, 1] against 2 increments three times.",
+      text: "The same walk handles the other cases.",
+    },
+    {
+      kind: "paragraph",
+      text: "[5, 6] against 3 never increments.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty array never enters the loop.",
+    },
+    {
+      kind: "paragraph",
+      text: "[-2, 0, 1] against 2 increments three times.",
     },
     {
       kind: "heading",
@@ -48,7 +76,11 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Keep one number, the count, and look at each value once. That is the whole function. Name the cost out loud after it passes: one loop, linear time, and no extra array.",
+      text: "Keep one number, the count, and look at each value once. That is the whole function.",
+    },
+    {
+      kind: "paragraph",
+      text: "Name the cost out loud after it passes: one loop, linear time, and no extra array.",
     },
     { kind: "code" },
   ]),
@@ -59,11 +91,27 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "rotateLeft returns a new array. The first steps elements move to the back, and the rest shift forward. The input array must stay as it was. An empty array stays empty.",
+      text: "rotateLeft returns a new array.",
     },
     {
       kind: "paragraph",
-      text: "steps can be larger than the length. Rotating by the length puts every element back where it started, so only the remainder matters: steps % nums.length.",
+      text: "The first steps elements move to the back, and the rest shift forward.",
+    },
+    {
+      kind: "paragraph",
+      text: "The input array must stay as it was.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty array stays empty.",
+    },
+    {
+      kind: "paragraph",
+      text: "steps can be larger than the length.",
+    },
+    {
+      kind: "paragraph",
+      text: "Rotating by the length puts every element back where it started, so only the remainder matters: steps % nums.length.",
     },
     {
       kind: "heading",
@@ -81,7 +129,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The second row is the result. For [1, 2, 3] and 4 steps, 4 % 3 is 1, so it is the same move as a single step: [2, 3, 1]. Zero steps has remainder 0, so the copy is the original order. You never write back into nums.",
+      text: "The second row is the result.",
+    },
+    {
+      kind: "paragraph",
+      text: "For [1, 2, 3] and 4 steps, 4 % 3 is 1, so it is the same move as a single step: [2, 3, 1].",
+    },
+    {
+      kind: "paragraph",
+      text: "Zero steps has remainder 0, so the copy is the original order.",
+    },
+    {
+      kind: "paragraph",
+      text: "You never write back into nums.",
     },
     {
       kind: "heading",
@@ -89,7 +149,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Guard the empty array before the remainder, because a remainder by zero is not defined. Then slice twice and concatenate. Both slices are new arrays, so the input is left alone. The work is one pass over the length, which is O(n).",
+      text: "Guard the empty array before the remainder, because a remainder by zero is not defined.",
+    },
+    {
+      kind: "paragraph",
+      text: "Then slice twice and concatenate.",
+    },
+    {
+      kind: "paragraph",
+      text: "Both slices are new arrays, so the input is left alone.",
+    },
+    {
+      kind: "paragraph",
+      text: "The work is one pass over the length, which is O(n).",
     },
     { kind: "code" },
   ]),
@@ -100,11 +172,27 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "twoSum returns the indices of the two values that add up to target. There is exactly one pair. You may not use the same index twice. Return the indices in ascending order, smaller index first.",
+      text: "twoSum returns the indices of the two values that add up to target.",
     },
     {
       kind: "paragraph",
-      text: "A nested loop checks every pair and is O(n²). The lesson's trade is a map: remember the index of each value you have already seen, so the complement is a lookup instead of another scan.",
+      text: "There is exactly one pair.",
+    },
+    {
+      kind: "paragraph",
+      text: "You may not use the same index twice.",
+    },
+    {
+      kind: "paragraph",
+      text: "Return the indices in ascending order, smaller index first.",
+    },
+    {
+      kind: "paragraph",
+      text: "A nested loop checks every pair and is O(n²).",
+    },
+    {
+      kind: "paragraph",
+      text: "The lesson's trade is a map: remember the index of each value you have already seen, so the complement is a lookup instead of another scan.",
     },
     {
       kind: "heading",
@@ -112,7 +200,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Walk [2, 7, 11, 15] looking for 9. At 2, the complement 7 is not in the map yet. Store 2 at index 0. At 7, the complement is 2, which is stored at index 0. Return [0, 1].",
+      text: "Walk [2, 7, 11, 15] looking for 9.",
+    },
+    {
+      kind: "paragraph",
+      text: "At 2, the complement 7 is not in the map yet.",
+    },
+    {
+      kind: "paragraph",
+      text: "Store 2 at index 0.",
+    },
+    {
+      kind: "paragraph",
+      text: "At 7, the complement is 2, which is stored at index 0.",
+    },
+    {
+      kind: "paragraph",
+      text: "Return [0, 1].",
     },
     {
       kind: "diagram",
@@ -134,7 +238,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "A Map keeps the key as a number. Look up target - value before you store the current index. When the lookup hits, the stored index is already smaller than the current one, so the pair is in ascending order. Extra memory is O(n). Time is one pass.",
+      text: "A Map keeps the key as a number.",
+    },
+    {
+      kind: "paragraph",
+      text: "Look up target - value before you store the current index.",
+    },
+    {
+      kind: "paragraph",
+      text: "When the lookup hits, the stored index is already smaller than the current one, so the pair is in ascending order.",
+    },
+    {
+      kind: "paragraph",
+      text: "Extra memory is O(n).",
+    },
+    {
+      kind: "paragraph",
+      text: "Time is one pass.",
     },
     { kind: "code" },
   ]),
@@ -145,7 +265,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "nums is sorted and may contain negatives. sortedSquares returns a new array of the squares, also sorted ascending. Squaring and then sorting works, and it costs an extra O(n log n) sort. The sorted input lets two pointers do the job in one pass.",
+      text: "nums is sorted and may contain negatives. sortedSquares returns a new array of the squares, also sorted ascending.",
+    },
+    {
+      kind: "paragraph",
+      text: "Squaring and then sorting works, and it costs an extra O(n log n) sort.",
+    },
+    {
+      kind: "paragraph",
+      text: "The sorted input lets two pointers do the job in one pass.",
     },
     {
       kind: "heading",
@@ -153,7 +281,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "[-4, -1, 0, 3, 10] squares to 16, 1, 0, 9, and 100 before sorting. 100 and 16 are at the ends, not in the middle. Put one pointer on the left and one on the right. Square both. Write the larger square, and move the pointer that produced it inward.",
+      text: "[-4, -1, 0, 3, 10] squares to 16, 1, 0, 9, and 100 before sorting. 100 and 16 are at the ends, not in the middle.",
+    },
+    {
+      kind: "paragraph",
+      text: "Put one pointer on the left and one on the right.",
+    },
+    {
+      kind: "paragraph",
+      text: "Square both.",
+    },
+    {
+      kind: "paragraph",
+      text: "Write the larger square, and move the pointer that produced it inward.",
     },
     {
       kind: "diagram",
@@ -163,11 +303,35 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Next the ends are -4 and 3. 16 is larger than 9, so write 16 and move the left pointer. Continue until the pointers cross. The squares come out largest first. Reverse that list, or write each square into the back of a result array, and the order is ascending: [0, 1, 9, 16, 100].",
+      text: "Next the ends are -4 and 3.",
     },
     {
       kind: "paragraph",
-      text: "All-negative input still works, because the leftmost value has the largest magnitude. A single element is one comparison with itself. An already positive array always takes the right-hand square.",
+      text: "16 is larger than 9, so write 16 and move the left pointer.",
+    },
+    {
+      kind: "paragraph",
+      text: "Continue until the pointers cross.",
+    },
+    {
+      kind: "paragraph",
+      text: "The squares come out largest first.",
+    },
+    {
+      kind: "paragraph",
+      text: "Reverse that list, or write each square into the back of a result array, and the order is ascending: [0, 1, 9, 16, 100].",
+    },
+    {
+      kind: "paragraph",
+      text: "All-negative input still works, because the leftmost value has the largest magnitude.",
+    },
+    {
+      kind: "paragraph",
+      text: "A single element is one comparison with itself.",
+    },
+    {
+      kind: "paragraph",
+      text: "An already positive array always takes the right-hand square.",
     },
     {
       kind: "heading",
@@ -175,7 +339,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The snippet writes the larger square and then reads that list from the back, so it does not depend on reversing in place. Each pointer moves at most n times. The cost is O(n) time and O(n) for the result.",
+      text: "The snippet writes the larger square and then reads that list from the back, so it does not depend on reversing in place.",
+    },
+    {
+      kind: "paragraph",
+      text: "Each pointer moves at most n times.",
+    },
+    {
+      kind: "paragraph",
+      text: "The cost is O(n) time and O(n) for the result.",
     },
     { kind: "code" },
   ]),
@@ -186,7 +358,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "maxWindowSum returns the largest sum of any contiguous block of exactly k elements. If k is less than 1, or larger than the array, there is no such block, so return 0. An empty array returns 0.",
+      text: "maxWindowSum returns the largest sum of any contiguous block of exactly k elements.",
+    },
+    {
+      kind: "paragraph",
+      text: "If k is less than 1, or larger than the array, there is no such block, so return 0.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty array returns 0.",
     },
     {
       kind: "heading",
@@ -194,7 +374,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "For [2, 1, 5, 1, 3, 2] and k = 3, the first window is 2 + 1 + 5 = 8. The next window drops 2 and adds 1, so 8 - 2 + 1 = 7. Then 7 - 1 + 3 = 9. Then 9 - 5 + 2 = 6. The maximum of those sums is 9.",
+      text: "For [2, 1, 5, 1, 3, 2] and k = 3, the first window is 2 + 1 + 5 = 8.",
+    },
+    {
+      kind: "paragraph",
+      text: "The next window drops 2 and adds 1, so 8 - 2 + 1 = 7.",
+    },
+    {
+      kind: "paragraph",
+      text: "Then 7 - 1 + 3 = 9.",
+    },
+    {
+      kind: "paragraph",
+      text: "Then 9 - 5 + 2 = 6.",
+    },
+    {
+      kind: "paragraph",
+      text: "The maximum of those sums is 9.",
     },
     {
       kind: "diagram",
@@ -205,7 +401,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Each step is current - the value that left + the value that entered. You only sum from scratch once. Negatives are allowed: [-1, 4, -2, 5] with k = 2 has windows 3, 2, and 3, so the answer is 3. A window the size of the whole array is just the total.",
+      text: "Each step is current - the value that left + the value that entered.",
+    },
+    {
+      kind: "paragraph",
+      text: "You only sum from scratch once.",
+    },
+    {
+      kind: "paragraph",
+      text: "Negatives are allowed: [-1, 4, -2, 5] with k = 2 has windows 3, 2, and 3, so the answer is 3.",
+    },
+    {
+      kind: "paragraph",
+      text: "A window the size of the whole array is just the total.",
     },
     {
       kind: "heading",
@@ -213,7 +421,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Reject an impossible k before you index the array. Seed the sum with the first window, remember it as the best, then slide. The scan after that first window is O(n).",
+      text: "Reject an impossible k before you index the array.",
+    },
+    {
+      kind: "paragraph",
+      text: "Seed the sum with the first window, remember it as the best, then slide.",
+    },
+    {
+      kind: "paragraph",
+      text: "The scan after that first window is O(n).",
     },
     { kind: "code" },
   ]),
@@ -224,7 +440,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "reverseValues receives an array only so the tests can stay simple. The starter turns that array into nodes. You reverse the nodes by rewiring next, then return the values from the new head to the tail. Reversing the array itself is rejected.",
+      text: "reverseValues receives an array only so the tests can stay simple.",
+    },
+    {
+      kind: "paragraph",
+      text: "The starter turns that array into nodes.",
+    },
+    {
+      kind: "paragraph",
+      text: "You reverse the nodes by rewiring next, then return the values from the new head to the tail.",
+    },
+    {
+      kind: "paragraph",
+      text: "Reversing the array itself is rejected.",
     },
     {
       kind: "heading",
@@ -232,7 +460,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "previous starts as null. current starts at the head. Before you change current.next, copy it into a local called next. Point current.next at previous. Then step forward: previous becomes current, and current becomes the saved next.",
+      text: "previous starts as null. current starts at the head.",
+    },
+    {
+      kind: "paragraph",
+      text: "Before you change current.next, copy it into a local called next.",
+    },
+    {
+      kind: "paragraph",
+      text: "Point current.next at previous.",
+    },
+    {
+      kind: "paragraph",
+      text: "Then step forward: previous becomes current, and current becomes the saved next.",
     },
     {
       kind: "diagram",
@@ -243,7 +483,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "After the first step, 1 points at null, previous is 1, and current is 2. After the second, 2 points at 1. After the third, 3 points at 2 and current is null. previous is the new head. Read it with the starter's toArray and you get [3, 2, 1].",
+      text: "After the first step, 1 points at null, previous is 1, and current is 2.",
+    },
+    {
+      kind: "paragraph",
+      text: "After the second, 2 points at 1.",
+    },
+    {
+      kind: "paragraph",
+      text: "After the third, 3 points at 2 and current is null. previous is the new head.",
+    },
+    {
+      kind: "paragraph",
+      text: "Read it with the starter's toArray and you get [3, 2, 1].",
     },
     {
       kind: "list",
@@ -259,7 +511,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The snippet includes the node helpers so it can run on its own. In the editor, keep those helpers and replace the body of reverseValues. Stop when current itself is null, not when current.next is null, or the last node never gets rewired.",
+      text: "The snippet includes the node helpers so it can run on its own.",
+    },
+    {
+      kind: "paragraph",
+      text: "In the editor, keep those helpers and replace the body of reverseValues.",
+    },
+    {
+      kind: "paragraph",
+      text: "Stop when current itself is null, not when current.next is null, or the last node never gets rewired.",
     },
     { kind: "code" },
   ]),
@@ -270,7 +530,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "isBalanced returns true when every bracket in the string is closed in the right order. The pairs are (), [], and {}. Other characters are not in the input. An empty string is balanced, because nothing was left open.",
+      text: "isBalanced returns true when every bracket in the string is closed in the right order.",
+    },
+    {
+      kind: "paragraph",
+      text: "The pairs are (), [], and {}.",
+    },
+    {
+      kind: "paragraph",
+      text: "Other characters are not in the input.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty string is balanced, because nothing was left open.",
     },
     {
       kind: "heading",
@@ -278,7 +550,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Push (, [, and {. On a closer, pop and check that it is the matching opener. If the stack is empty, or the opener does not match, the string is unbalanced. At the end the stack must be empty. A leftover opener was never closed.",
+      text: "Push (, [, and {.",
+    },
+    {
+      kind: "paragraph",
+      text: "On a closer, pop and check that it is the matching opener.",
+    },
+    {
+      kind: "paragraph",
+      text: "If the stack is empty, or the opener does not match, the string is unbalanced.",
+    },
+    {
+      kind: "paragraph",
+      text: "At the end the stack must be empty.",
+    },
+    {
+      kind: "paragraph",
+      text: "A leftover opener was never closed.",
     },
     {
       kind: "diagram",
@@ -290,7 +578,11 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "([]) follows that picture and returns true. ([)] pushes ( and [, then ) wants ( but the top is [. That is false. {[] closes the square bracket and leaves the brace, so the end check fails. )( tries to pop an empty stack.",
+      text: "([]) follows that picture and returns true.",
+    },
+    {
+      kind: "paragraph",
+      text: "([)] pushes ( and [, then ) wants ( but the top is [. That is false. {[] closes the square bracket and leaves the brace, so the end check fails. )( tries to pop an empty stack.",
     },
     {
       kind: "heading",
@@ -298,7 +590,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "An array is a stack if you only push and pop at the end. A small object maps each closer to its opener. Characters that are not closers are openers, and they go on the stack. The function is one scan, O(n), with O(n) extra space in the worst case.",
+      text: "An array is a stack if you only push and pop at the end.",
+    },
+    {
+      kind: "paragraph",
+      text: "A small object maps each closer to its opener.",
+    },
+    {
+      kind: "paragraph",
+      text: "Characters that are not closers are openers, and they go on the stack.",
+    },
+    {
+      kind: "paragraph",
+      text: "The function is one scan, O(n), with O(n) extra space in the worst case.",
     },
     { kind: "code" },
   ]),
@@ -309,7 +613,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "windowSums walks values from left to right. After each element, the result holds the sum of the last window values. If fewer than window values have arrived, sum everything so far. windowSums([1, 2, 3, 4], 2) is [1, 3, 5, 7].",
+      text: "windowSums walks values from left to right.",
+    },
+    {
+      kind: "paragraph",
+      text: "After each element, the result holds the sum of the last window values.",
+    },
+    {
+      kind: "paragraph",
+      text: "If fewer than window values have arrived, sum everything so far. windowSums([1, 2, 3, 4], 2) is [1, 3, 5, 7].",
     },
     {
       kind: "heading",
@@ -317,7 +629,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Keep a queue of the values inside the window, and a running sum so you do not add them from scratch. Push the new value and add it to the sum. If the queue is now longer than the window, shift the oldest value off and subtract it. Record the sum.",
+      text: "Keep a queue of the values inside the window, and a running sum so you do not add them from scratch.",
+    },
+    {
+      kind: "paragraph",
+      text: "Push the new value and add it to the sum.",
+    },
+    {
+      kind: "paragraph",
+      text: "If the queue is now longer than the window, shift the oldest value off and subtract it.",
+    },
+    {
+      kind: "paragraph",
+      text: "Record the sum.",
     },
     {
       kind: "diagram",
@@ -328,7 +652,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "A window of 1 never holds more than the latest value, so the sums are the values themselves. A window wider than the input never dequeues, so the sums are the growing prefix: [2, 2, 2] with window 10 is [2, 4, 6]. An empty input never loops and returns [].",
+      text: "A window of 1 never holds more than the latest value, so the sums are the values themselves.",
+    },
+    {
+      kind: "paragraph",
+      text: "A window wider than the input never dequeues, so the sums are the growing prefix: [2, 2, 2] with window 10 is [2, 4, 6].",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty input never loops and returns [].",
     },
     {
       kind: "heading",
@@ -336,7 +668,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "push adds at the back and shift removes from the front. shift is O(n) on an array. For these sizes that is the queue the lesson describes. The same shape, with vertices instead of numbers, is the breadth-first search you will write for graphs.",
+      text: "push adds at the back and shift removes from the front. shift is O(n) on an array.",
+    },
+    {
+      kind: "paragraph",
+      text: "For these sizes that is the queue the lesson describes.",
+    },
+    {
+      kind: "paragraph",
+      text: "The same shape, with vertices instead of numbers, is the breadth-first search you will write for graphs.",
     },
     { kind: "code" },
   ]),
@@ -347,7 +687,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "A Nested value is either a number or an array of Nested values. flatten returns the numbers from left to right. flatten([1, [2, [3], 4], 5]) is [1, 2, 3, 4, 5]. A bare number is a one-element array. An empty array flattens to an empty array.",
+      text: "A Nested value is either a number or an array of Nested values. flatten returns the numbers from left to right. flatten([1, [2, [3], 4], 5]) is [1, 2, 3, 4, 5].",
+    },
+    {
+      kind: "paragraph",
+      text: "A bare number is a one-element array.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty array flattens to an empty array.",
     },
     {
       kind: "heading",
@@ -355,7 +703,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "If the value is a number, that number is the whole result. If it is an array, flatten each element and concatenate those results in order. The empty array has no elements, so it contributes nothing. Every recursive call receives a smaller piece: one element of the current array, not the same array again.",
+      text: "If the value is a number, that number is the whole result.",
+    },
+    {
+      kind: "paragraph",
+      text: "If it is an array, flatten each element and concatenate those results in order.",
+    },
+    {
+      kind: "paragraph",
+      text: "The empty array has no elements, so it contributes nothing.",
+    },
+    {
+      kind: "paragraph",
+      text: "Every recursive call receives a smaller piece: one element of the current array, not the same array again.",
     },
     {
       kind: "diagram",
@@ -370,7 +730,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Reading the leaves left to right gives 1, 2, 3, 4, 5. [[[1]], [2]] is the same rule with more empty wrappers around 1 and then 2. Without the number base case, a number would be treated as something you can loop, and the call would not make sense.",
+      text: "Reading the leaves left to right gives 1, 2, 3, 4, 5.",
+    },
+    {
+      kind: "paragraph",
+      text: "[[[1]], [2]] is the same rule with more empty wrappers around 1 and then 2.",
+    },
+    {
+      kind: "paragraph",
+      text: "Without the number base case, a number would be treated as something you can loop, and the call would not make sense.",
     },
     {
       kind: "heading",
@@ -389,7 +757,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "nums is sorted ascending and has no duplicates. search returns the index of target, or -1 when it is absent. The lesson asks for binary search. A linear scan can return the same index and misses the point of the halving.",
+      text: "nums is sorted ascending and has no duplicates. search returns the index of target, or -1 when it is absent.",
+    },
+    {
+      kind: "paragraph",
+      text: "The lesson asks for binary search.",
+    },
+    {
+      kind: "paragraph",
+      text: "A linear scan can return the same index and misses the point of the halving.",
     },
     {
       kind: "heading",
@@ -397,7 +773,31 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "If the target is present, its index is between lo and hi inclusive. Start with lo = 0 and hi = nums.length - 1. While lo <= hi, look at the middle. A match returns that index. A smaller target means the answer is at most mid - 1. A larger target means the answer is at least mid + 1. When the range is empty, return -1.",
+      text: "If the target is present, its index is between lo and hi inclusive.",
+    },
+    {
+      kind: "paragraph",
+      text: "Start with lo = 0 and hi = nums.length - 1.",
+    },
+    {
+      kind: "paragraph",
+      text: "While lo <= hi, look at the middle.",
+    },
+    {
+      kind: "paragraph",
+      text: "A match returns that index.",
+    },
+    {
+      kind: "paragraph",
+      text: "A smaller target means the answer is at most mid - 1.",
+    },
+    {
+      kind: "paragraph",
+      text: "A larger target means the answer is at least mid + 1.",
+    },
+    {
+      kind: "paragraph",
+      text: "When the range is empty, return -1.",
     },
     {
       kind: "diagram",
@@ -408,11 +808,27 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Searching for 4 in that array never hits a match: the range collapses and the function returns -1. The first element is found when mid lands on index 0 and the comparison matches. An empty array starts with hi = -1, so the loop never runs.",
+      text: "Searching for 4 in that array never hits a match: the range collapses and the function returns -1.",
     },
     {
       kind: "paragraph",
-      text: "Use lo + Math.floor((hi - lo) / 2) for the middle. It stays inside the range. Moving to mid instead of mid - 1 or mid + 1 can leave the same index in the range forever.",
+      text: "The first element is found when mid lands on index 0 and the comparison matches.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty array starts with hi = -1, so the loop never runs.",
+    },
+    {
+      kind: "paragraph",
+      text: "Use lo + Math.floor((hi - lo) / 2) for the middle.",
+    },
+    {
+      kind: "paragraph",
+      text: "It stays inside the range.",
+    },
+    {
+      kind: "paragraph",
+      text: "Moving to mid instead of mid - 1 or mid + 1 can leave the same index in the range forever.",
     },
     {
       kind: "heading",
@@ -420,7 +836,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Each step throws away half of the remaining indices, so a long sorted array takes about log n comparisons. The array has to be sorted. The same walk on unsorted data is simply wrong.",
+      text: "Each step throws away half of the remaining indices, so a long sorted array takes about log n comparisons.",
+    },
+    {
+      kind: "paragraph",
+      text: "The array has to be sorted.",
+    },
+    {
+      kind: "paragraph",
+      text: "The same walk on unsorted data is simply wrong.",
     },
     { kind: "code" },
   ]),
@@ -431,7 +855,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "mergeSort returns a new array of the numbers in ascending order. Implement merge sort. Calling .sort() is rejected. The input array is not mutated, so build new arrays as you split and merge.",
+      text: "mergeSort returns a new array of the numbers in ascending order.",
+    },
+    {
+      kind: "paragraph",
+      text: "Implement merge sort.",
+    },
+    {
+      kind: "paragraph",
+      text: "Calling .sort() is rejected.",
+    },
+    {
+      kind: "paragraph",
+      text: "The input array is not mutated, so build new arrays as you split and merge.",
     },
     {
       kind: "heading",
@@ -453,7 +889,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Merging is two pointers. Repeatedly take the smaller head. When one half runs out, append the rest of the other. Duplicates stay: when the heads are equal, taking the left one first is enough, because the tests only care about the sorted values. Negatives compare with the same <=.",
+      text: "Merging is two pointers.",
+    },
+    {
+      kind: "paragraph",
+      text: "Repeatedly take the smaller head.",
+    },
+    {
+      kind: "paragraph",
+      text: "When one half runs out, append the rest of the other.",
+    },
+    {
+      kind: "paragraph",
+      text: "Duplicates stay: when the heads are equal, taking the left one first is enough, because the tests only care about the sorted values.",
+    },
+    {
+      kind: "paragraph",
+      text: "Negatives compare with the same <=.",
     },
     {
       kind: "paragraph",
@@ -465,7 +917,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "slice copies a half without changing nums. The merge function never sorts. It only compares the two heads. An already sorted input still goes through the same splits and comes back unchanged in value.",
+      text: "slice copies a half without changing nums.",
+    },
+    {
+      kind: "paragraph",
+      text: "The merge function never sorts.",
+    },
+    {
+      kind: "paragraph",
+      text: "It only compares the two heads.",
+    },
+    {
+      kind: "paragraph",
+      text: "An already sorted input still goes through the same splits and comes back unchanged in value.",
     },
     { kind: "code" },
   ]),
@@ -476,7 +940,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "values is a binary tree written in level order. null means a missing child. maxDepth returns the number of nodes on the longest path from the root down. An empty list has depth 0. A single node has depth 1. Use the buildTree helper already in the file. You do not need to rewrite it.",
+      text: "values is a binary tree written in level order. null means a missing child. maxDepth returns the number of nodes on the longest path from the root down.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty list has depth 0.",
+    },
+    {
+      kind: "paragraph",
+      text: "A single node has depth 1.",
+    },
+    {
+      kind: "paragraph",
+      text: "Use the buildTree helper already in the file.",
+    },
+    {
+      kind: "paragraph",
+      text: "You do not need to rewrite it.",
     },
     {
       kind: "heading",
@@ -496,7 +976,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "[3, 9, 20, null, null, 15, 7] is that picture. 9 is a leaf, depth 1 from itself. 20's children are leaves, so 20 has depth 2. The root adds one more, and the answer is 3. A left spine [1, 2, null, 3] is three nodes in a line, so the depth is also 3. The null in the middle means 1 has no right child, and 3 hangs under 2.",
+      text: "[3, 9, 20, null, null, 15, 7] is that picture. 9 is a leaf, depth 1 from itself. 20's children are leaves, so 20 has depth 2. The root adds one more, and the answer is 3.",
+    },
+    {
+      kind: "paragraph",
+      text: "A left spine [1, 2, null, 3] is three nodes in a line, so the depth is also 3.",
+    },
+    {
+      kind: "paragraph",
+      text: "The null in the middle means 1 has no right child, and 3 hangs under 2.",
     },
     {
       kind: "heading",
@@ -504,7 +992,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The snippet includes buildTree so it can run here. In the editor, add a depth function and return depth(buildTree(values)) from maxDepth. Compare the two child depths and add 1 to the larger one. Do not add the depths together. That would count both branches, and this exercise wants the longer path only.",
+      text: "The snippet includes buildTree so it can run here.",
+    },
+    {
+      kind: "paragraph",
+      text: "In the editor, add a depth function and return depth(buildTree(values)) from maxDepth.",
+    },
+    {
+      kind: "paragraph",
+      text: "Compare the two child depths and add 1 to the larger one.",
+    },
+    {
+      kind: "paragraph",
+      text: "Do not add the depths together. That would count both branches, and this exercise wants the longer path only.",
     },
     { kind: "code" },
   ]),
@@ -515,7 +1015,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Insert values from left to right into an empty binary search tree. Smaller values go left. Larger values go right. Then return whether target is in the tree. Scanning the array with includes, indexOf, or a Set is rejected.",
+      text: "Insert values from left to right into an empty binary search tree.",
+    },
+    {
+      kind: "paragraph",
+      text: "Smaller values go left.",
+    },
+    {
+      kind: "paragraph",
+      text: "Larger values go right.",
+    },
+    {
+      kind: "paragraph",
+      text: "Then return whether target is in the tree.",
+    },
+    {
+      kind: "paragraph",
+      text: "Scanning the array with includes, indexOf, or a Set is rejected.",
     },
     {
       kind: "heading",
@@ -523,7 +1039,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "An empty spot is where the new node goes. If the value is smaller than the current node, insert on the left. If it is larger, insert on the right. Search starts at the root and uses that same comparison. Hitting null means the target is absent.",
+      text: "An empty spot is where the new node goes.",
+    },
+    {
+      kind: "paragraph",
+      text: "If the value is smaller than the current node, insert on the left.",
+    },
+    {
+      kind: "paragraph",
+      text: "If it is larger, insert on the right.",
+    },
+    {
+      kind: "paragraph",
+      text: "Search starts at the root and uses that same comparison.",
+    },
+    {
+      kind: "paragraph",
+      text: "Hitting null means the target is absent.",
     },
     {
       kind: "diagram",
@@ -535,7 +1067,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "[8, 3, 10, 1, 6] builds that tree. Searching for 6 goes left from 8 to 3, then right to 6, and returns true. Searching for 7 follows the same start, reaches the right of 6, finds null, and returns false. The root matches immediately. An empty value list never inserts, so every target is false.",
+      text: "[8, 3, 10, 1, 6] builds that tree. Searching for 6 goes left from 8 to 3, then right to 6, and returns true. Searching for 7 follows the same start, reaches the right of 6, finds null, and returns false.",
+    },
+    {
+      kind: "paragraph",
+      text: "The root matches immediately.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty value list never inserts, so every target is false.",
     },
     {
       kind: "heading",
@@ -543,7 +1083,27 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Build the tree in the order the array is given. A later search that ignores the tree and reads the array will fail the disallow check even when the boolean happens to be right. The walk is O(h), and h is the height. Sorted inserts make a straight line. The rule is still correct. It is just no longer faster than a scan.",
+      text: "Build the tree in the order the array is given.",
+    },
+    {
+      kind: "paragraph",
+      text: "A later search that ignores the tree and reads the array will fail the disallow check even when the boolean happens to be right.",
+    },
+    {
+      kind: "paragraph",
+      text: "The walk is O(h), and h is the height.",
+    },
+    {
+      kind: "paragraph",
+      text: "Sorted inserts make a straight line.",
+    },
+    {
+      kind: "paragraph",
+      text: "The rule is still correct.",
+    },
+    {
+      kind: "paragraph",
+      text: "It is just no longer faster than a scan.",
     },
     { kind: "code" },
   ]),
@@ -554,7 +1114,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "kthLargest returns the kth largest value in nums. k is at least 1 and at most the length. kthLargest([3, 2, 1, 5, 6, 4], 2) is 5. Duplicates count separately, so the second largest of [2, 2] is 2. The largest of a list is k = 1. The smallest of three values is k = 3.",
+      text: "kthLargest returns the kth largest value in nums. k is at least 1 and at most the length. kthLargest([3, 2, 1, 5, 6, 4], 2) is 5.",
+    },
+    {
+      kind: "paragraph",
+      text: "Duplicates count separately, so the second largest of [2, 2] is 2.",
+    },
+    {
+      kind: "paragraph",
+      text: "The largest of a list is k = 1.",
+    },
+    {
+      kind: "paragraph",
+      text: "The smallest of three values is k = 3.",
     },
     {
       kind: "heading",
@@ -562,7 +1134,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "A min-heap keeps the smallest of those k values at the root. Push each number. When the heap holds more than k values, pop the smallest. You have thrown away something that cannot be in the top k. When the array is finished, the root is the kth largest: k values are at least that large, and every smaller one was removed.",
+      text: "A min-heap keeps the smallest of those k values at the root.",
+    },
+    {
+      kind: "paragraph",
+      text: "Push each number.",
+    },
+    {
+      kind: "paragraph",
+      text: "When the heap holds more than k values, pop the smallest.",
+    },
+    {
+      kind: "paragraph",
+      text: "You have thrown away something that cannot be in the top k.",
+    },
+    {
+      kind: "paragraph",
+      text: "When the array is finished, the root is the kth largest: k values are at least that large, and every smaller one was removed.",
     },
     {
       kind: "diagram",
@@ -575,11 +1163,27 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "In an array heap, the parent of index i is Math.floor((i - 1) / 2), the left child is 2 * i + 1, and the right child is 2 * i + 2. Insert writes at the end and swaps upward while the value is smaller than its parent. Remove-min moves the last value to the root and swaps it downward with the smaller child.",
+      text: "In an array heap, the parent of index i is Math.floor((i - 1) / 2), the left child is 2 * i + 1, and the right child is 2 * i + 2.",
     },
     {
       kind: "paragraph",
-      text: "Sorting a copy and indexing from the end also returns the right number, and the tests allow it. The heap is the practice this lesson is for. Either way, do not assume the values are unique.",
+      text: "Insert writes at the end and swaps upward while the value is smaller than its parent.",
+    },
+    {
+      kind: "paragraph",
+      text: "Remove-min moves the last value to the root and swaps it downward with the smaller child.",
+    },
+    {
+      kind: "paragraph",
+      text: "Sorting a copy and indexing from the end also returns the right number, and the tests allow it.",
+    },
+    {
+      kind: "paragraph",
+      text: "The heap is the practice this lesson is for.",
+    },
+    {
+      kind: "paragraph",
+      text: "Either way, do not assume the values are unique.",
     },
     {
       kind: "heading",
@@ -587,7 +1191,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The snippet is a binary min-heap stored in an array. After the scan, heap[0] is the answer. Each push and pop is O(log k), and you do it once per element, so the cost is O(n log k).",
+      text: "The snippet is a binary min-heap stored in an array.",
+    },
+    {
+      kind: "paragraph",
+      text: "After the scan, heap[0] is the answer.",
+    },
+    {
+      kind: "paragraph",
+      text: "Each push and pop is O(log k), and you do it once per element, so the cost is O(n log k).",
     },
     { kind: "code" },
   ]),
@@ -598,7 +1210,11 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "edges is a list of undirected pairs [from, to]. shortestPath returns the number of edges on the shortest path from start to end. start === end is 0, even when that vertex has no edges. If no path exists, return -1.",
+      text: "edges is a list of undirected pairs [from, to]. shortestPath returns the number of edges on the shortest path from start to end. start === end is 0, even when that vertex has no edges.",
+    },
+    {
+      kind: "paragraph",
+      text: "If no path exists, return -1.",
     },
     {
       kind: "heading",
@@ -606,7 +1222,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Build an adjacency list first. Because the edges are undirected, store each pair in both directions. Then search with a queue. The first time you reach the target, you got there in the fewest edges. That is true here because every edge costs the same.",
+      text: "Build an adjacency list first. Because the edges are undirected, store each pair in both directions.",
+    },
+    {
+      kind: "paragraph",
+      text: "Then search with a queue.",
+    },
+    {
+      kind: "paragraph",
+      text: "The first time you reach the target, you got there in the fewest edges. That is true here because every edge costs the same.",
     },
     {
       kind: "diagram",
@@ -617,7 +1241,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "From 0 to 2 there is a direct edge, so the distance is 1, even though 0-1-2 is longer. A line 0-1-2-3 has distance 3. [[0, 1]] with end 2 never reaches 2, so the answer is -1. Mark a vertex when you first put it on the queue. Marking only when you dequeue lets the same neighbour get queued many times, and a cycle will not finish promptly.",
+      text: "From 0 to 2 there is a direct edge, so the distance is 1, even though 0-1-2 is longer.",
+    },
+    {
+      kind: "paragraph",
+      text: "A line 0-1-2-3 has distance 3.",
+    },
+    {
+      kind: "paragraph",
+      text: "[[0, 1]] with end 2 never reaches 2, so the answer is -1.",
+    },
+    {
+      kind: "paragraph",
+      text: "Mark a vertex when you first put it on the queue.",
+    },
+    {
+      kind: "paragraph",
+      text: "Marking only when you dequeue lets the same neighbour get queued many times, and a cycle will not finish promptly.",
     },
     {
       kind: "heading",
@@ -625,7 +1265,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Carry the distance in the queue next to the vertex. The neighbours of the current vertex are one edge further. Depth-first search answers whether a path exists. It does not answer which path is shortest. Use the queue.",
+      text: "Carry the distance in the queue next to the vertex.",
+    },
+    {
+      kind: "paragraph",
+      text: "The neighbours of the current vertex are one edge further.",
+    },
+    {
+      kind: "paragraph",
+      text: "Depth-first search answers whether a path exists.",
+    },
+    {
+      kind: "paragraph",
+      text: "It does not answer which path is shortest.",
+    },
+    {
+      kind: "paragraph",
+      text: "Use the queue.",
     },
     { kind: "code" },
   ]),
@@ -636,7 +1292,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Each interval is half-open: [start, end) includes start and excludes end. maxNonOverlapping returns how many intervals you can keep with no overlaps. Touching is allowed, so [1, 2] and [2, 4] can both be chosen. An empty list returns 0.",
+      text: "Each interval is half-open: [start, end) includes start and excludes end. maxNonOverlapping returns how many intervals you can keep with no overlaps.",
+    },
+    {
+      kind: "paragraph",
+      text: "Touching is allowed, so [1, 2] and [2, 4] can both be chosen.",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty list returns 0.",
     },
     {
       kind: "heading",
@@ -644,7 +1308,27 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The safe local choice is the interval that frees you soonest. Sort by end, earliest first. Take the first. Then take the next interval whose start is greater than or equal to that finish. Skip the ones that start earlier. Repeat.",
+      text: "The safe local choice is the interval that frees you soonest.",
+    },
+    {
+      kind: "paragraph",
+      text: "Sort by end, earliest first.",
+    },
+    {
+      kind: "paragraph",
+      text: "Take the first.",
+    },
+    {
+      kind: "paragraph",
+      text: "Then take the next interval whose start is greater than or equal to that finish.",
+    },
+    {
+      kind: "paragraph",
+      text: "Skip the ones that start earlier.",
+    },
+    {
+      kind: "paragraph",
+      text: "Repeat.",
     },
     {
       kind: "diagram",
@@ -654,7 +1338,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "That picture keeps 2 intervals. [2, 4) overlaps [1, 3) because 2 is before 3. [3, 5) starts exactly when [1, 3) ends, and half-open intervals may touch. Three intervals that do not overlap at all all get taken. Sorting by start instead can keep a long early interval and block several short ones. That is the rule this problem is not using.",
+      text: "That picture keeps 2 intervals.",
+    },
+    {
+      kind: "paragraph",
+      text: "[2, 4) overlaps [1, 3) because 2 is before 3.",
+    },
+    {
+      kind: "paragraph",
+      text: "[3, 5) starts exactly when [1, 3) ends, and half-open intervals may touch.",
+    },
+    {
+      kind: "paragraph",
+      text: "Three intervals that do not overlap at all all get taken.",
+    },
+    {
+      kind: "paragraph",
+      text: "Sorting by start instead can keep a long early interval and block several short ones. That is the rule this problem is not using.",
     },
     {
       kind: "heading",
@@ -662,7 +1362,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "Copy the list before sorting so you do not rearrange the caller's array. Track the finish of the last interval you kept. A start strictly before that finish is an overlap. Count the ones you keep. The sort dominates the cost, O(n log n), and the scan after it is linear.",
+      text: "Copy the list before sorting so you do not rearrange the caller's array.",
+    },
+    {
+      kind: "paragraph",
+      text: "Track the finish of the last interval you kept.",
+    },
+    {
+      kind: "paragraph",
+      text: "A start strictly before that finish is an overlap.",
+    },
+    {
+      kind: "paragraph",
+      text: "Count the ones you keep.",
+    },
+    {
+      kind: "paragraph",
+      text: "The sort dominates the cost, O(n log n), and the scan after it is linear.",
     },
     { kind: "code" },
   ]),
@@ -673,7 +1389,35 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "subsets returns every subset of nums. The numbers are distinct. Include the empty subset. The order of the subsets, and the order inside each subset, does not matter. The tests compare the collection as a set. [1, 2] has [], [1], [2], and [1, 2]. An empty input has one subset, the empty one. Three values have eight subsets.",
+      text: "subsets returns every subset of nums.",
+    },
+    {
+      kind: "paragraph",
+      text: "The numbers are distinct.",
+    },
+    {
+      kind: "paragraph",
+      text: "Include the empty subset.",
+    },
+    {
+      kind: "paragraph",
+      text: "The order of the subsets, and the order inside each subset, does not matter.",
+    },
+    {
+      kind: "paragraph",
+      text: "The tests compare the collection as a set.",
+    },
+    {
+      kind: "paragraph",
+      text: "[1, 2] has [], [1], [2], and [1, 2].",
+    },
+    {
+      kind: "paragraph",
+      text: "An empty input has one subset, the empty one.",
+    },
+    {
+      kind: "paragraph",
+      text: "Three values have eight subsets.",
     },
     {
       kind: "heading",
@@ -681,7 +1425,27 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "At each index the number is either left out or included. Recurse for the left-out choice first. Then push the number, recurse, and pop it so the next choice starts clean. When the index reaches the length, copy the path into the results. Copying matters. If you save the path array itself, later pops empty the subsets you thought you had kept.",
+      text: "At each index the number is either left out or included.",
+    },
+    {
+      kind: "paragraph",
+      text: "Recurse for the left-out choice first.",
+    },
+    {
+      kind: "paragraph",
+      text: "Then push the number, recurse, and pop it so the next choice starts clean.",
+    },
+    {
+      kind: "paragraph",
+      text: "When the index reaches the length, copy the path into the results.",
+    },
+    {
+      kind: "paragraph",
+      text: "Copying matters.",
+    },
+    {
+      kind: "paragraph",
+      text: "If you save the path array itself, later pops empty the subsets you thought you had kept.",
     },
     {
       kind: "diagram",
@@ -695,7 +1459,11 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "That tree is the four subsets of [1, 2]. Forget the pop and the branch that should have been [2] still contains 1. n distinct numbers have 2ⁿ subsets, so this is the right tool while n is small.",
+      text: "That tree is the four subsets of [1, 2].",
+    },
+    {
+      kind: "paragraph",
+      text: "Forget the pop and the branch that should have been [2] still contains 1. n distinct numbers have 2ⁿ subsets, so this is the right tool while n is small.",
     },
     {
       kind: "heading",
@@ -703,7 +1471,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The snippet uses path.slice() at the leaves and path.pop() after the call that included the current number. Run it and you should see all four subsets. The printed order may differ from the lesson's list. That is fine.",
+      text: "The snippet uses path.slice() at the leaves and path.pop() after the call that included the current number.",
+    },
+    {
+      kind: "paragraph",
+      text: "Run it and you should see all four subsets.",
+    },
+    {
+      kind: "paragraph",
+      text: "The printed order may differ from the lesson's list. That is fine.",
     },
     { kind: "code" },
   ]),
@@ -722,7 +1498,19 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "ways(n) = ways(n - 1) + ways(n - 2). Every climb of n ends in a single step, after a climb of n - 1, or a double step, after a climb of n - 2. Those smaller answers overlap. A naive recursion recomputes them. A loop stores them as it goes.",
+      text: "ways(n) = ways(n - 1) + ways(n - 2).",
+    },
+    {
+      kind: "paragraph",
+      text: "Every climb of n ends in a single step, after a climb of n - 1, or a double step, after a climb of n - 2. Those smaller answers overlap.",
+    },
+    {
+      kind: "paragraph",
+      text: "A naive recursion recomputes them.",
+    },
+    {
+      kind: "paragraph",
+      text: "A loop stores them as it goes.",
     },
     {
       kind: "diagram",
@@ -734,7 +1522,23 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "You only need the last two answers to produce the next one. Start with 1 and 2. Each new step replaces that pair: next = previous + current, then slide the window forward. After you have filled up to n, current is the answer. For n of 1 or 2, return n and do not enter the loop.",
+      text: "You only need the last two answers to produce the next one.",
+    },
+    {
+      kind: "paragraph",
+      text: "Start with 1 and 2.",
+    },
+    {
+      kind: "paragraph",
+      text: "Each new step replaces that pair: next = previous + current, then slide the window forward.",
+    },
+    {
+      kind: "paragraph",
+      text: "After you have filled up to n, current is the answer.",
+    },
+    {
+      kind: "paragraph",
+      text: "For n of 1 or 2, return n and do not enter the loop.",
     },
     {
       kind: "heading",
@@ -742,7 +1546,15 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "The loop is O(n) time and O(1) extra memory. A full array of answers is the same idea and also fine. Both are dynamic programming: the recurrence, the base cases, and a place to reuse the smaller results.",
+      text: "The loop is O(n) time and O(1) extra memory.",
+    },
+    {
+      kind: "paragraph",
+      text: "A full array of answers is the same idea and also fine.",
+    },
+    {
+      kind: "paragraph",
+      text: "Both are dynamic programming: the recurrence, the base cases, and a place to reuse the smaller results.",
     },
     { kind: "code" },
   ]),
@@ -761,7 +1573,31 @@ export const lessonSolutions: readonly LessonSolution[] = [
     },
     {
       kind: "paragraph",
-      text: "A node holds children, keyed by character, and isWord. Insert walks the characters and creates a child when it is missing. Mark isWord on the node where the word ends, not on every node you pass. Search walks the same path. If a character is missing, the word is absent. If the walk finishes, return the flag. The flag is what stops a prefix from counting as a word.",
+      text: "A node holds children, keyed by character, and isWord.",
+    },
+    {
+      kind: "paragraph",
+      text: "Insert walks the characters and creates a child when it is missing.",
+    },
+    {
+      kind: "paragraph",
+      text: "Mark isWord on the node where the word ends, not on every node you pass.",
+    },
+    {
+      kind: "paragraph",
+      text: "Search walks the same path.",
+    },
+    {
+      kind: "paragraph",
+      text: "If a character is missing, the word is absent.",
+    },
+    {
+      kind: "paragraph",
+      text: "If the walk finishes, return the flag.",
+    },
+    {
+      kind: "paragraph",
+      text: "The flag is what stops a prefix from counting as a word.",
     },
     {
       kind: "diagram",

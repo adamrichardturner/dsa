@@ -2,13 +2,21 @@ export const bitesize = {
   complexity: `
 ## Before you start
 
-For an array, the input size \`n\` is its number of elements. **Big O** describes how work or extra storage grows with \`n\`; it is not a stopwatch measurement.
+For an array, the input size \`n\` is its number of elements.
+
+**Big O** describes how work or extra storage grows with \`n\`; it is not a stopwatch measurement.
 
 Constants and smaller terms do not change the growth class, so O(2n + 3) is O(n).
 
 ## Beginner intuition
 
-Count how often each operation can happen. Reading one known index is O(1). Reading all \`n\` values once is O(n). For every value, reading all \`n\` values again is O(n²).
+Count how often each operation can happen.
+
+Reading one known index is O(1).
+
+Reading all \`n\` values once is O(n).
+
+For every value, reading all \`n\` values again is O(n²).
 
 \`\`\`mermaid
 flowchart LR
@@ -19,7 +27,9 @@ flowchart LR
 
 ## Invariant and reasoning
 
-For \`countBelow\`, keep this **loop invariant**: before iteration \`i\`, \`count\` equals the number of qualifying values in indices \`0\` through \`i - 1\`. Inspecting \`nums[i]\` either increases the count once or leaves it unchanged.
+For \`countBelow\`, keep this **loop invariant**: before iteration \`i\`, \`count\` equals the number of qualifying values in indices \`0\` through \`i - 1\`.
+
+Inspecting \`nums[i]\` either increases the count once or leaves it unchanged.
 
 After the final iteration, the processed prefix is the whole array, so the count is correct.
 
@@ -39,15 +49,23 @@ export function countBelow(nums: number[], limit: number): number {
 }
 \`\`\`
 
-The comparison is strictly \`<\`, matching the exclusive limit. Return only after the loop so every value is considered.
+The comparison is strictly \`<\`, matching the exclusive limit.
+
+Return only after the loop so every value is considered.
 
 ## Complexity
 
-The loop performs O(n) time. Only the counter and current value are retained, so **auxiliary space** is O(1).
+The loop performs O(n) time.
+
+Only the counter and current value are retained, so **auxiliary space** is O(1).
 
 ## Edge cases
 
-An empty array returns zero. Negative values and duplicates need no special handling. Values equal to \`limit\` do not count.
+An empty array returns zero.
+
+Negative values and duplicates need no special handling.
+
+Values equal to \`limit\` do not count.
 
 ## Common mistakes
 
@@ -60,13 +78,17 @@ An empty array returns zero. Negative values and duplicates need no special hand
   arrays: `
 ## Before you start
 
-An **array** stores values in order at zero-based indices. Reading a known index is O(1), while inserting or removing at the front can shift many elements.
+An **array** stores values in order at zero-based indices.
+
+Reading a known index is O(1), while inserting or removing at the front can shift many elements.
 
 The rotation exercise builds one new array instead of repeatedly calling \`shift\`.
 
 ## Beginner intuition
 
-A left rotation chooses a new starting point without changing relative order. Rotating \`[A, B, C, D]\` left by 2 makes \`C\` first, then wraps the skipped prefix to the end.
+A left rotation chooses a new starting point without changing relative order.
+
+Rotating \`[A, B, C, D]\` left by 2 makes \`C\` first, then wraps the skipped prefix to the end.
 
 \`\`\`mermaid
 flowchart LR
@@ -79,7 +101,13 @@ flowchart LR
 
 ## Invariant and reasoning
 
-After \`effectiveSteps = steps % nums.length\`, complete rotations have been removed. Copy the suffix beginning at that index, then the prefix before it. During each loop, the result contains exactly the visited source values in rotated order. No input position is skipped or copied twice.
+After \`effectiveSteps = steps % nums.length\`, complete rotations have been removed.
+
+Copy the suffix beginning at that index, then the prefix before it.
+
+During each loop, the result contains exactly the visited source values in rotated order.
+
+No input position is skipped or copied twice.
 
 ## TypeScript approach
 
@@ -110,7 +138,9 @@ export function rotateLeft(nums: number[], steps: number): number[] {
 }
 \`\`\`
 
-The explicit \`undefined\` checks suit strict indexed-access settings. The exercise guarantees non-negative integer steps, so no negative-modulo adjustment is needed.
+The explicit \`undefined\` checks suit strict indexed-access settings.
+
+The exercise guarantees non-negative integer steps, so no negative-modulo adjustment is needed.
 
 ## Complexity
 
@@ -118,7 +148,9 @@ Every value is copied once: O(n) time and O(n) space for the required new result
 
 ## Edge cases
 
-Handle empty input before taking a remainder by zero. Zero steps, a full rotation, and a one-element input still return a distinct array with unchanged order.
+Handle empty input before taking a remainder by zero.
+
+Zero steps, a full rotation, and a one-element input still return a distinct array with unchanged order.
 
 ## Common mistakes
 
@@ -131,13 +163,19 @@ Handle empty input before taking a remainder by zero. Zero steps, a full rotatio
   hashMaps: `
 ## Before you start
 
-A **hash map** associates each key with a value and supports expected O(1) lookup. In Two Sum, the key is a previously seen number and the value is its index.
+A **hash map** associates each key with a value and supports expected O(1) lookup.
 
-A \`Map<number, number>\` preserves numeric key types; a plain object converts keys to strings. This example makes that conversion explicit and uses an object.
+In Two Sum, the key is a previously seen number and the value is its index.
+
+A \`Map<number, number>\` preserves numeric key types; a plain object converts keys to strings.
+
+This example makes that conversion explicit and uses an object.
 
 ## Beginner intuition
 
-If \`current + partner = target\`, then \`partner = target - current\`. Rather than searching all earlier values again, remember each earlier value and ask whether its complement has appeared.
+If \`current + partner = target\`, then \`partner = target - current\`.
+
+Rather than searching all earlier values again, remember each earlier value and ask whether its complement has appeared.
 
 \`\`\`mermaid
 flowchart TD
@@ -153,7 +191,11 @@ flowchart TD
 
 ## Invariant and reasoning
 
-Before index \`i\`, the record contains values from indices \`0\` through \`i - 1\`. Checking before storing prevents one element from pairing with itself. If the complement exists, its stored index is smaller than \`i\`, so the returned order is already correct.
+Before index \`i\`, the record contains values from indices \`0\` through \`i - 1\`.
+
+Checking before storing prevents one element from pairing with itself.
+
+If the complement exists, its stored index is smaller than \`i\`, so the returned order is already correct.
 
 ## TypeScript approach
 
@@ -179,7 +221,11 @@ export function twoSum(nums: number[], target: number): number[] {
 }
 \`\`\`
 
-Use \`!== undefined\`, not truthiness: index \`0\` is valid but falsy. \`String(number)\` documents the object's key conversion. The guaranteed pair means the final empty array is only a defensive fallback.
+Use \`!== undefined\`, not truthiness: index \`0\` is valid but falsy.
+
+\`String(number)\` documents the object's key conversion.
+
+The guaranteed pair means the final empty array is only a defensive fallback.
 
 ## Complexity
 
@@ -187,7 +233,11 @@ The scan is expected O(n) time and the record can hold O(n) keys.
 
 ## Edge cases
 
-Duplicates can pair when they occupy different indices. Zero, negatives, and a match stored at index zero all work. Store indices because the output asks for positions.
+Duplicates can pair when they occupy different indices.
+
+Zero, negatives, and a match stored at index zero all work.
+
+Store indices because the output asks for positions.
 
 ## Common mistakes
 
@@ -200,13 +250,17 @@ Duplicates can pair when they occupy different indices. Zero, negatives, and a m
   twoPointers: `
 ## Before you start
 
-A **pointer** here is an array index. **Inward pointers** help when ordering proves where the next answer must come from.
+A **pointer** here is an array index.
+
+**Inward pointers** help when ordering proves where the next answer must come from.
 
 In a non-decreasing array, the value with the largest absolute magnitude is at one of the two ends.
 
 ## Beginner intuition
 
-Negative numbers reverse their apparent size when squared: \`-7\` becomes \`49\`. Compare both ends, place the larger square in the last unfilled result position, and move only the end that supplied it.
+Negative numbers reverse their apparent size when squared: \`-7\` becomes \`49\`.
+
+Compare both ends, place the larger square in the last unfilled result position, and move only the end that supplied it.
 
 \`\`\`mermaid
 flowchart TD
@@ -222,7 +276,9 @@ flowchart TD
 
 ## Invariant and reasoning
 
-Before each iteration, every position after \`write\` contains its final sorted value, and unprocessed candidates are exactly between \`left\` and \`right\`. The largest remaining square must be at one of those ends, so writing it next preserves the invariant.
+Before each iteration, every position after \`write\` contains its final sorted value, and unprocessed candidates are exactly between \`left\` and \`right\`.
+
+The largest remaining square must be at one of those ends, so writing it next preserves the invariant.
 
 ## TypeScript approach
 
@@ -262,11 +318,17 @@ The strict indexed checks suit TypeScript configurations that treat indexed read
 
 ## Complexity
 
-Each iteration consumes one value, so time is O(n). The result uses O(n) space; pointer state uses O(1).
+Each iteration consumes one value, so time is O(n).
+
+The result uses O(n) space; pointer state uses O(1).
 
 ## Edge cases
 
-Empty input skips the loop. Equal squares may come from either end. All-negative, all-positive, duplicate, and zero values use the same logic.
+Empty input skips the loop.
+
+Equal squares may come from either end.
+
+All-negative, all-positive, duplicate, and zero values use the same logic.
 
 ## Common mistakes
 
@@ -279,13 +341,17 @@ Empty input skips the loop. Equal squares may come from either end. All-negative
   slidingWindow: `
 ## Before you start
 
-A **sliding window** is a contiguous range. A fixed-size window moves right one index at a time.
+A **sliding window** is a contiguous range.
+
+A fixed-size window moves right one index at a time.
 
 Consecutive windows share all but two roles: one value leaves and one enters.
 
 ## Beginner intuition
 
-After summing the first \`k\` values, do not add the next block from scratch. Update the old sum by subtracting the outgoing value and adding the incoming value.
+After summing the first \`k\` values, do not add the next block from scratch.
+
+Update the old sum by subtracting the outgoing value and adding the incoming value.
 
 \`\`\`mermaid
 flowchart LR
@@ -296,7 +362,9 @@ flowchart LR
 
 ## Invariant and reasoning
 
-After each update, \`windowSum\` equals the sum of exactly \`k\` consecutive values ending at the current index. Removing index \`index - k\` and adding index \`index\` moves that invariant forward by one position.
+After each update, \`windowSum\` equals the sum of exactly \`k\` consecutive values ending at the current index.
+
+Removing index \`index - k\` and adding index \`index\` moves that invariant forward by one position.
 
 ## TypeScript approach
 
@@ -327,7 +395,9 @@ export function maxWindowSum(nums: number[], k: number): number {
 }
 \`\`\`
 
-Initialise \`best\` from the first valid sum, not zero. Nullish coalescing does not confuse a legitimate zero with a missing value.
+Initialise \`best\` from the first valid sum, not zero.
+
+Nullish coalescing does not confuse a legitimate zero with a missing value.
 
 ## Complexity
 
@@ -335,7 +405,11 @@ The first sum costs O(k), and later updates total O(n - k), giving O(n) time and
 
 ## Edge cases
 
-Invalid \`k\`, including zero, a negative value, or a width larger than the input, returns zero. A whole-array window has one candidate. All-negative arrays return their least-negative window sum.
+Invalid \`k\`, including zero, a negative value, or a width larger than the input, returns zero.
+
+A whole-array window has one candidate.
+
+All-negative arrays return their least-negative window sum.
 
 ## Common mistakes
 
@@ -348,13 +422,17 @@ Invalid \`k\`, including zero, a negative value, or a width larger than the inpu
   linkedLists: `
 ## Before you start
 
-A singly linked-list node stores a value and a reference to the next node. The **head** is the first node; the final node points to \`null\`.
+A singly linked-list node stores a value and a reference to the next node.
+
+The **head** is the first node; the final node points to \`null\`.
 
 Unlike an array, reaching position \`i\` requires following \`i\` links.
 
 ## Beginner intuition
 
-Reversal turns every arrow around. Before changing \`current.next\`, save its old destination. Otherwise the unvisited suffix becomes unreachable.
+Reversal turns every arrow around.
+
+Before changing \`current.next\`, save its old destination. Otherwise the unvisited suffix becomes unreachable.
 
 \`\`\`mermaid
 flowchart LR
@@ -366,7 +444,9 @@ flowchart LR
 
 ## Invariant and reasoning
 
-At the start of each iteration, \`previous\` is the head of a correctly reversed prefix, while \`current\` is the head of the untouched suffix. Saving \`next\`, reversing one link, and advancing both references moves exactly one node from the suffix to the prefix.
+At the start of each iteration, \`previous\` is the head of a correctly reversed prefix, while \`current\` is the head of the untouched suffix.
+
+Saving \`next\`, reversing one link, and advancing both references moves exactly one node from the suffix to the prefix.
 
 ## TypeScript approach
 
@@ -396,15 +476,23 @@ export function reverse(head: ListNode | null): ListNode | null {
 }
 \`\`\`
 
-In the exercise starter, call this logic after \`fromArray\`, then pass the returned head to \`toArray\`. Reuse the supplied nodes rather than creating replacements.
+In the exercise starter, call this logic after \`fromArray\`, then pass the returned head to \`toArray\`.
+
+Reuse the supplied nodes rather than creating replacements.
 
 ## Complexity
 
-Every node is visited once: O(n) time and O(1) auxiliary space. The exercise's output conversion separately allocates O(n) result space.
+Every node is visited once: O(n) time and O(1) auxiliary space.
+
+The exercise's output conversion separately allocates O(n) result space.
 
 ## Edge cases
 
-For an empty list, both references remain \`null\`. A one-node list performs one safe link assignment and returns the same node. Duplicate and negative values do not affect links.
+For an empty list, both references remain \`null\`.
+
+A one-node list performs one safe link assignment and returns the same node.
+
+Duplicate and negative values do not affect links.
 
 ## Common mistakes
 
@@ -417,13 +505,19 @@ For an empty list, both references remain \`null\`. A one-node list performs one
   stacks: `
 ## Before you start
 
-A **stack** is last in, first out. Array \`push\` adds at the top and \`pop\` removes the newest item.
+A **stack** is last in, first out.
+
+Array \`push\` adds at the top and \`pop\` removes the newest item.
 
 Balanced brackets need this order because the most recently opened group must close first.
 
 ## Beginner intuition
 
-Opening brackets are unfinished obligations. Push each one. A closing bracket must satisfy the obligation at the top; satisfying an older one first would cross the nesting.
+Opening brackets are unfinished obligations.
+
+Push each one.
+
+A closing bracket must satisfy the obligation at the top; satisfying an older one first would cross the nesting.
 
 \`\`\`mermaid
 flowchart TD
@@ -437,7 +531,11 @@ flowchart TD
 
 ## Invariant and reasoning
 
-After each character, the stack contains exactly the unmatched opening brackets from the processed prefix, oldest at the bottom and newest at the top. A mismatch proves no future character can repair the ordering. After the scan, validity additionally requires an empty stack.
+After each character, the stack contains exactly the unmatched opening brackets from the processed prefix, oldest at the bottom and newest at the top.
+
+A mismatch proves no future character can repair the ordering.
+
+After the scan, validity additionally requires an empty stack.
 
 ## TypeScript approach
 
@@ -466,7 +564,9 @@ export function isBalanced(value: string): boolean {
 }
 \`\`\`
 
-The input contract contains only brackets, so a key absent from \`openingByClosing\` is an opener. Strict \`undefined\` checking also handles popping an empty stack.
+The input contract contains only brackets, so a key absent from \`openingByClosing\` is an opener.
+
+Strict \`undefined\` checking also handles popping an empty stack.
 
 ## Complexity
 
@@ -474,7 +574,11 @@ Each character is pushed or popped at most once: O(n) time and O(n) worst-case s
 
 ## Edge cases
 
-The empty string is balanced. A closer at the beginning fails immediately. A string of only openers fails at the final stack check.
+The empty string is balanced.
+
+A closer at the beginning fails immediately.
+
+A string of only openers fails at the final stack check.
 
 ## Common mistakes
 
@@ -493,7 +597,9 @@ The exercise reports the running sum of up to the most recent \`window\` values,
 
 ## Beginner intuition
 
-The oldest value is the first one that must leave when capacity is full. Keep that arrival order and update the sum when an item enters or leaves.
+The oldest value is the first one that must leave when capacity is full.
+
+Keep that arrival order and update the sum when an item enters or leaves.
 
 \`\`\`mermaid
 flowchart LR
@@ -504,7 +610,11 @@ flowchart LR
 
 ## Invariant and reasoning
 
-After processing index \`i\`, the queue contains exactly the final \`min(window, i + 1)\` input values, and \`sum\` equals their total. If full, remove the oldest before inserting the new value. Append the sum after every input, including before the first full window.
+After processing index \`i\`, the queue contains exactly the final \`min(window, i + 1)\` input values, and \`sum\` equals their total.
+
+If full, remove the oldest before inserting the new value.
+
+Append the sum after every input, including before the first full window.
 
 ## TypeScript approach
 
@@ -537,15 +647,23 @@ export function windowSums(values: number[], window: number): number[] {
 }
 \`\`\`
 
-The contract guarantees a positive \`window\`, so modulo by zero cannot occur. The circular indices make both queue ends O(1).
+The contract guarantees a positive \`window\`, so modulo by zero cannot occur.
+
+The circular indices make both queue ends O(1).
 
 ## Complexity
 
-Each value enters once and leaves at most once: O(n) time. The queue uses O(window) auxiliary space, and the required result uses O(n).
+Each value enters once and leaves at most once: O(n) time.
+
+The queue uses O(window) auxiliary space, and the required result uses O(n).
 
 ## Edge cases
 
-Empty input returns an empty result. A window of one reports each value. If the window exceeds the input, no value leaves and the outputs are prefix sums.
+Empty input returns an empty result.
+
+A window of one reports each value.
+
+If the window exceeds the input, no value leaves and the outputs are prefix sums.
 
 ## Common mistakes
 
@@ -558,13 +676,17 @@ Empty input returns an empty result. A window of one reports each value. If the 
   recursion: `
 ## Before you start
 
-**Recursion** lets a function solve smaller instances of the same shape. A nested value is either a number or an array of nested values, so its data definition is already recursive.
+**Recursion** lets a function solve smaller instances of the same shape.
+
+A nested value is either a number or an array of nested values, so its data definition is already recursive.
 
 Every recursive branch must reach a base case before the **call stack** can unwind.
 
 ## Beginner intuition
 
-A number can be appended immediately. An array is a container: open it and apply the same rule to each child from left to right.
+A number can be appended immediately.
+
+An array is a container: open it and apply the same rule to each child from left to right.
 
 \`\`\`mermaid
 flowchart TD
@@ -577,7 +699,11 @@ flowchart TD
 
 ## Invariant and reasoning
 
-Before visiting each child, the accumulator contains the complete flattening of every earlier child in encounter order. A number extends it once; a nested array recursively establishes the same invariant for its children. When a call finishes, its entire subtree has been appended.
+Before visiting each child, the accumulator contains the complete flattening of every earlier child in encounter order.
+
+A number extends it once; a nested array recursively establishes the same invariant for its children.
+
+When a call finishes, its entire subtree has been appended.
 
 ## TypeScript approach
 
@@ -603,15 +729,25 @@ export function flatten(value: Nested): number[] {
 }
 \`\`\`
 
-The type guard narrows \`current\` without an assertion. One shared accumulator avoids repeatedly copying partial arrays.
+The type guard narrows \`current\` without an assertion.
+
+One shared accumulator avoids repeatedly copying partial arrays.
 
 ## Complexity
 
-Time is O(n), where \`n\` counts visited numbers and array entries. Stack space is O(d), where nested-array depth \`d\` counts active array levels: a lone number has depth 0, an outer array has depth 1, and each contained array adds one. This convention is unrelated to tree height or recurrence indices.
+Time is O(n), where \`n\` counts visited numbers and array entries.
+
+Stack space is O(d), where nested-array depth \`d\` counts active array levels: a lone number has depth 0, an outer array has depth 1, and each contained array adds one.
+
+This convention is unrelated to tree height or recurrence indices.
 
 ## Edge cases
 
-A single number returns a one-element array. Empty arrays append nothing. Empty branches, uneven nesting, duplicates, zero, and negatives preserve encounter order.
+A single number returns a one-element array.
+
+Empty arrays append nothing.
+
+Empty branches, uneven nesting, duplicates, zero, and negatives preserve encounter order.
 
 ## Common mistakes
 
@@ -624,11 +760,17 @@ A single number returns a one-element array. Empty arrays append nothing. Empty 
   binarySearch: `
 ## Before you start
 
-**Binary search** requires ascending sorted data. It maintains inclusive bounds around the only indices that could still contain the target.
+**Binary search** requires ascending sorted data.
+
+It maintains inclusive bounds around the only indices that could still contain the target.
 
 ## Beginner intuition
 
-Compare the target with the middle value. If the middle value is smaller, neither it nor anything to its left can be the target. If it is larger, discard it and everything to its right.
+Compare the target with the middle value.
+
+If the middle value is smaller, neither it nor anything to its left can be the target.
+
+If it is larger, discard it and everything to its right.
 
 \`\`\`mermaid
 flowchart TD
@@ -643,7 +785,11 @@ flowchart TD
 
 ## Invariant and reasoning
 
-At loop start: if the target is present, its index lies in \`[left, right]\`. Each comparison either returns the answer or removes the middle and one impossible half while preserving that statement. When \`left > right\`, the candidate range is empty, proving absence.
+At loop start: if the target is present, its index lies in \`[left, right]\`.
+
+Each comparison either returns the answer or removes the middle and one impossible half while preserving that statement.
+
+When \`left > right\`, the candidate range is empty, proving absence.
 
 ## TypeScript approach
 
@@ -672,7 +818,9 @@ export function search(nums: number[], target: number): number {
 }
 \`\`\`
 
-Names distinguish the source range, middle index, middle value, and target. Moving past \`middle\` guarantees progress.
+Names distinguish the source range, middle index, middle value, and target.
+
+Moving past \`middle\` guarantees progress.
 
 ## Complexity
 
@@ -680,7 +828,11 @@ Each step halves the candidate count: O(log n) time and O(1) auxiliary space.
 
 ## Edge cases
 
-Empty input starts with crossed bounds. A one-value range is checked because the condition is \`left <= right\`. The exercise contains no duplicates, so any equality is the unique answer.
+Empty input starts with crossed bounds.
+
+A one-value range is checked because the condition is \`left <= right\`.
+
+The exercise contains no duplicates, so any equality is the unique answer.
 
 ## Common mistakes
 
@@ -697,7 +849,11 @@ Empty input starts with crossed bounds. A one-value range is checked because the
 
 ## Beginner intuition
 
-Merging is like combining two sorted queues. Compare their front values, take the smaller one, and repeat. Once one side is empty, all remaining values on the other side are already in order.
+Merging is like combining two sorted queues.
+
+Compare their front values, take the smaller one, and repeat.
+
+Once one side is empty, all remaining values on the other side are already in order.
 
 \`\`\`mermaid
 flowchart TD
@@ -709,7 +865,11 @@ flowchart TD
 
 ## Invariant and reasoning
 
-During merge, \`result\` is sorted and contains exactly the consumed values from both halves. The smallest unconsumed value must be at one of the two current indices. Taking the smaller front preserves the invariant until both halves are exhausted.
+During merge, \`result\` is sorted and contains exactly the consumed values from both halves.
+
+The smallest unconsumed value must be at one of the two current indices.
+
+Taking the smaller front preserves the invariant until both halves are exhausted.
 
 ## TypeScript approach
 
@@ -745,7 +905,9 @@ export function mergeSort(nums: number[]): number[] {
 }
 \`\`\`
 
-Returning a copy in the base case preserves the requirement that the result be distinct from the input. \`<=\` takes equal values from the left first.
+Returning a copy in the base case preserves the requirement that the result be distinct from the input.
+
+\`<=\` takes equal values from the left first.
 
 ## Complexity
 
@@ -755,7 +917,9 @@ Temporary arrays use O(n) auxiliary space, plus O(log n) call-stack space.
 
 ## Edge cases
 
-The length-less-than-two base case covers both empty and singleton arrays. Duplicates, negatives, zero, and already sorted inputs need no special branch.
+The length-less-than-two base case covers both empty and singleton arrays.
+
+Duplicates, negatives, zero, and already sorted inputs need no special branch.
 
 ## Common mistakes
 
@@ -768,13 +932,19 @@ The length-less-than-two base case covers both empty and singleton arrays. Dupli
   trees: `
 ## Before you start
 
-A binary tree has a root and at most two children per node. In this course, **tree height** is the number of nodes on the longest root-to-leaf path: an empty tree is 0 and a leaf is 1. The \`maxDepth\` exercise returns that same node-counted tree-height measure.
+A binary tree has a root and at most two children per node.
+
+In this course, **tree height** is the number of nodes on the longest root-to-leaf path: an empty tree is 0 and a leaf is 1.
+
+The \`maxDepth\` exercise returns that same node-counted tree-height measure.
 
 **Node depth is not tree height.** Node depth counts edges from the root to one particular node, so the root has node depth 0 and a leaf in a height-3 tree can have node depth 2.
 
 ## Beginner intuition
 
-At each node, ask which child has the deeper subtree. The answer is one node for the current node plus that deeper child result.
+At each node, ask which child has the deeper subtree.
+
+The answer is one node for the current node plus that deeper child result.
 
 \`\`\`mermaid
 flowchart TD
@@ -786,9 +956,13 @@ flowchart TD
 
 ## Invariant and reasoning
 
-Define \`height(null) = 0\`. For a real node, every downward path starts with that node and then continues through exactly one child, so \`height(node) = 1 + max(height(left), height(right))\`.
+Define \`height(null) = 0\`.
 
-The helper below retains the exercise-oriented name \`depth\`, but it computes this node-counted tree height. Structural recursion computes the definition directly.
+For a real node, every downward path starts with that node and then continues through exactly one child, so \`height(node) = 1 + max(height(left), height(right))\`.
+
+The helper below retains the exercise-oriented name \`depth\`, but it computes this node-counted tree height.
+
+Structural recursion computes the definition directly.
 
 ## TypeScript approach
 
@@ -810,15 +984,21 @@ export function depth(node: TreeNode | null): number {
 }
 \`\`\`
 
-In the exercise's supplied \`maxDepth(values)\`, call \`buildTree(values)\` once and pass its root to this recursive logic. Node values never affect tree height.
+In the exercise's supplied \`maxDepth(values)\`, call \`buildTree(values)\` once and pass its root to this recursive logic.
+
+Node values never affect tree height.
 
 ## Complexity
 
-Every node is visited once: O(n) time. The call stack is O(h), where \`h\` is the node-counted tree height above; a balanced tree has O(log n) height and a spine has O(n).
+Every node is visited once: O(n) time.
+
+The call stack is O(h), where \`h\` is the node-counted tree height above; a balanced tree has O(log n) height and a spine has O(n).
 
 ## Edge cases
 
-An empty root returns 0, a leaf returns 1, and a one-sided tree follows its existing child. Zero and negative node values still count as nodes.
+An empty root returns 0, a leaf returns 1, and a one-sided tree follows its existing child.
+
+Zero and negative node values still count as nodes.
 
 ## Common mistakes
 
@@ -831,11 +1011,17 @@ An empty root returns 0, a leaf returns 1, and a one-sided tree follows its exis
   binarySearchTrees: `
 ## Before you start
 
-A **binary search tree** (BST) orders every subtree: smaller values are left and larger values are right. This exercise ignores duplicate insertions. The ordering—not merely having two children—is what enables directed search.
+A **binary search tree** (BST) orders every subtree: smaller values are left and larger values are right.
+
+This exercise ignores duplicate insertions.
+
+The ordering—not merely having two children—is what enables directed search.
 
 ## Beginner intuition
 
-At a node, one comparison chooses the only possible branch. A smaller target cannot occur in the right subtree; a larger target cannot occur in the left.
+At a node, one comparison chooses the only possible branch.
+
+A smaller target cannot occur in the right subtree; a larger target cannot occur in the left.
 
 \`\`\`mermaid
 flowchart TD
@@ -851,7 +1037,11 @@ flowchart TD
 
 ## Invariant and reasoning
 
-During search, if the target exists, it lies in the subtree rooted at \`current\`. The BST rule proves which opposite subtree can be discarded. During insertion, the same comparisons preserve the ordering when a new node is attached at the first null child.
+During search, if the target exists, it lies in the subtree rooted at \`current\`.
+
+The BST rule proves which opposite subtree can be discarded.
+
+During insertion, the same comparisons preserve the ordering when a new node is attached at the first null child.
 
 ## TypeScript approach
 
@@ -902,15 +1092,27 @@ export function bstContains(values: number[], target: number): boolean {
 }
 \`\`\`
 
-Nullable references model absent children without assertions. Equality ends insertion, implementing the duplicate policy.
+Nullable references model absent children without assertions.
+
+Equality ends insertion, implementing the duplicate policy.
 
 ## Complexity
 
-One operation costs O(h). Building costs O(nh): O(n log n) for balanced shapes but O(n²) for a sorted insertion order. Stored nodes use O(n) space.
+One operation costs O(h).
+
+Building costs O(nh): O(n log n) for balanced shapes but O(n²) for a sorted insertion order.
+
+Stored nodes use O(n) space.
 
 ## Edge cases
 
-Empty input returns false. The root may be the target. Repeated values do not create nodes. Negative, zero, and sorted values follow ordinary comparisons.
+Empty input returns false.
+
+The root may be the target.
+
+Repeated values do not create nodes.
+
+Negative, zero, and sorted values follow ordinary comparisons.
 
 ## Common mistakes
 
@@ -923,13 +1125,19 @@ Empty input returns false. The root may be the target. Repeated values do not cr
   heaps: `
 ## Before you start
 
-A binary **min-heap** is a complete tree stored in an array. Index \`0\` is the root; index \`i\` has parent \`floor((i - 1) / 2)\`, left child index \`2i + 1\`, and right child index \`2i + 2\`.
+A binary **min-heap** is a complete tree stored in an array.
+
+Index \`0\` is the root; index \`i\` has parent \`floor((i - 1) / 2)\`, left child index \`2i + 1\`, and right child index \`2i + 2\`.
 
 Only the root is guaranteed globally smallest.
 
 ## Beginner intuition
 
-For the kth largest value, keep only the best \`k\` candidates seen so far. A min-heap makes the weakest candidate—the smallest of those \`k\`—available at the root. A larger arrival replaces that root; a smaller arrival cannot belong in the final top \`k\`.
+For the kth largest value, keep only the best \`k\` candidates seen so far.
+
+A min-heap makes the weakest candidate—the smallest of those \`k\`—available at the root.
+
+A larger arrival replaces that root; a smaller arrival cannot belong in the final top \`k\`.
 
 \`\`\`mermaid
 flowchart TD
@@ -945,7 +1153,11 @@ flowchart TD
 
 ## Invariant and reasoning
 
-After each input, the heap contains the largest \`min(k, processedCount)\` occurrences seen so far, including duplicates. Its root is their minimum. Once all values are processed, exactly \`k\` candidates remain, so their minimum is the kth value in descending order.
+After each input, the heap contains the largest \`min(k, processedCount)\` occurrences seen so far, including duplicates.
+
+Its root is their minimum.
+
+Once all values are processed, exactly \`k\` candidates remain, so their minimum is the kth value in descending order.
 
 ## TypeScript approach
 
@@ -1020,11 +1232,17 @@ Array formulas connect the tree picture to operations: insertion appends at the 
 
 ## Complexity
 
-The heap never exceeds \`k\`. Each insertion or replacement is O(log k), so total time is O(n log k) and space is O(k).
+The heap never exceeds \`k\`.
+
+Each insertion or replacement is O(log k), so total time is O(n log k) and space is O(k).
 
 ## Edge cases
 
-\`k = 1\` tracks the maximum; \`k = nums.length\` leaves the minimum at the root. Duplicate occurrences count separately, as required. Negative and multi-digit numbers use numeric comparisons.
+\`k = 1\` tracks the maximum; \`k = nums.length\` leaves the minimum at the root.
+
+Duplicate occurrences count separately, as required.
+
+Negative and multi-digit numbers use numeric comparisons.
 
 ## Common mistakes
 
@@ -1037,13 +1255,19 @@ The heap never exceeds \`k\`. Each insertion or replacement is O(log k), so tota
   graphs: `
 ## Before you start
 
-A graph has vertices connected by edges. This exercise uses unweighted, undirected edges and arbitrary integer vertex ids.
+A graph has vertices connected by edges.
 
-An **adjacency list** stores neighbours. This implementation uses an object whose keys are strings, so numeric ids are converted deliberately with \`String(vertex)\`.
+This exercise uses unweighted, undirected edges and arbitrary integer vertex ids.
+
+An **adjacency list** stores neighbours.
+
+This implementation uses an object whose keys are strings, so numeric ids are converted deliberately with \`String(vertex)\`.
 
 ## Beginner intuition
 
-Breadth-first search (BFS) explores concentric layers: distance 0, then 1, then 2. A FIFO queue ensures an item at distance \`d + 1\` cannot be processed before all earlier queued distance-\`d\` items.
+Breadth-first search (BFS) explores concentric layers: distance 0, then 1, then 2.
+
+A FIFO queue ensures an item at distance \`d + 1\` cannot be processed before all earlier queued distance-\`d\` items.
 
 \`\`\`mermaid
 flowchart LR
@@ -1054,9 +1278,13 @@ flowchart LR
 
 ## Invariant and reasoning
 
-Queue items are processed in nondecreasing distance. When discovering a neighbour from distance \`d\`, enqueue it with \`d + 1\` and add it to the **visited set** immediately.
+Queue items are processed in nondecreasing distance.
 
-That timing gives each vertex one queue entry at its earliest possible distance. Marking on dequeue would allow duplicate edges and cycles to enqueue it repeatedly.
+When discovering a neighbour from distance \`d\`, enqueue it with \`d + 1\` and add it to the **visited set** immediately.
+
+That timing gives each vertex one queue entry at its earliest possible distance.
+
+Marking on dequeue would allow duplicate edges and cycles to enqueue it repeatedly.
 
 ## TypeScript approach
 
@@ -1116,15 +1344,23 @@ export function shortestPath(
 }
 \`\`\`
 
-Nullish coalescing distinguishes a missing adjacency entry from a valid empty list. Strict \`undefined\` checks do not confuse vertex id \`0\` with absence.
+Nullish coalescing distinguishes a missing adjacency entry from a valid empty list.
+
+Strict \`undefined\` checks do not confuse vertex id \`0\` with absence.
 
 ## Complexity
 
-Building and searching take O(V + E) time. The adjacency lists use O(V + E) space; queue and visited state use O(V).
+Building and searching take O(V + E) time.
+
+The adjacency lists use O(V + E) space; queue and visited state use O(V).
 
 ## Edge cases
 
-Equal start and end returns zero even if absent from the edge list. Duplicate edges and self-loops are harmless because visited marking occurs at enqueue time. Disconnected targets return \`-1\`; negative and nonconsecutive ids work as keys.
+Equal start and end returns zero even if absent from the edge list.
+
+Duplicate edges and self-loops are harmless because visited marking occurs at enqueue time.
+
+Disconnected targets return \`-1\`; negative and nonconsecutive ids work as keys.
 
 ## Common mistakes
 
@@ -1137,13 +1373,17 @@ Equal start and end returns zero even if absent from the edge list. Duplicate ed
   greedy: `
 ## Before you start
 
-A **greedy algorithm** commits to a local choice without backtracking. It is correct only when a proof shows that choice cannot reduce the best final result.
+A **greedy algorithm** commits to a local choice without backtracking.
+
+It is correct only when a proof shows that choice cannot reduce the best final result.
 
 Here each **half-open interval** \`[start, end)\` includes its start and excludes its end, so touching endpoints are compatible.
 
 ## Beginner intuition
 
-Choose the compatible interval that finishes earliest. It frees the timeline as soon as possible, leaving at least as much room for future intervals as any other first choice.
+Choose the compatible interval that finishes earliest.
+
+It frees the timeline as soon as possible, leaving at least as much room for future intervals as any other first choice.
 
 \`\`\`mermaid
 flowchart TD
@@ -1157,7 +1397,9 @@ flowchart TD
 
 ## Invariant and reasoning
 
-After scanning a prefix of finish-time order, the accepted intervals are compatible, and their count can be achieved with the earliest possible finishing boundary. Exchange argument: if an optimal schedule starts with a later-finishing compatible interval, replace it with the earlier-finishing choice; no later interval becomes unavailable.
+After scanning a prefix of finish-time order, the accepted intervals are compatible, and their count can be achieved with the earliest possible finishing boundary.
+
+Exchange argument: if an optimal schedule starts with a later-finishing compatible interval, replace it with the earlier-finishing choice; no later interval becomes unavailable.
 
 ## TypeScript approach
 
@@ -1185,7 +1427,9 @@ export function maxNonOverlapping(intervals: number[][]): number {
 }
 \`\`\`
 
-Sort a shallow copy so the caller's outer array is not reordered. Strict indexed checks make the tuple assumptions explicit; the exercise guarantees valid pairs.
+Sort a shallow copy so the caller's outer array is not reordered.
+
+Strict indexed checks make the tuple assumptions explicit; the exercise guarantees valid pairs.
 
 ## Complexity
 
@@ -1193,7 +1437,11 @@ Sorting costs O(n log n), the scan costs O(n), and the copied reference array co
 
 ## Edge cases
 
-Empty input returns zero. Negative endpoints work because the initial boundary is negative infinity. Duplicate intervals overlap each other, while \`start === previousEnd\` is accepted.
+Empty input returns zero.
+
+Negative endpoints work because the initial boundary is negative infinity.
+
+Duplicate intervals overlap each other, while \`start === previousEnd\` is accepted.
 
 ## Common mistakes
 
@@ -1206,11 +1454,17 @@ Empty input returns zero. Negative endpoints work because the initial boundary i
   backtracking: `
 ## Before you start
 
-**Backtracking** performs depth-first search over decisions. For each input value, a subset has two branches: exclude it or include it. After exploring inclusion, undo that choice before returning.
+**Backtracking** performs depth-first search over decisions.
+
+For each input value, a subset has two branches: exclude it or include it.
+
+After exploring inclusion, undo that choice before returning.
 
 ## Beginner intuition
 
-The mutable \`path\` is a whiteboard for the current branch. Write a choice, explore below it, then erase the choice so the sibling branch starts clean.
+The mutable \`path\` is a whiteboard for the current branch.
+
+Write a choice, explore below it, then erase the choice so the sibling branch starts clean.
 
 \`\`\`mermaid
 flowchart TD
@@ -1223,7 +1477,13 @@ flowchart TD
 
 ## Invariant and reasoning
 
-On entry to \`walk(index)\`, \`path\` contains exactly the choices made for indices before \`index\`. The two calls enumerate all subsets without and with the current value. The \`pop\` restores the entry state. At \`index === nums.length\`, every decision is complete, so save a copy.
+On entry to \`walk(index)\`, \`path\` contains exactly the choices made for indices before \`index\`.
+
+The two calls enumerate all subsets without and with the current value.
+
+The \`pop\` restores the entry state.
+
+At \`index === nums.length\`, every decision is complete, so save a copy.
 
 ## TypeScript approach
 
@@ -1253,15 +1513,25 @@ export function subsets(nums: number[]): number[][] {
 }
 \`\`\`
 
-The copied array freezes each completed choice. The exercise guarantees distinct inputs, so no duplicate-skipping policy is needed.
+The copied array freezes each completed choice.
+
+The exercise guarantees distinct inputs, so no duplicate-skipping policy is needed.
 
 ## Complexity
 
-There are 2ⁿ leaves. Copying paths of up to \`n\` values makes output-sensitive time and output space O(n × 2ⁿ). Active recursion and the path use O(n) additional space.
+There are 2ⁿ leaves.
+
+Copying paths of up to \`n\` values makes output-sensitive time and output space O(n × 2ⁿ).
+
+Active recursion and the path use O(n) additional space.
 
 ## Edge cases
 
-Empty input has one subset, \`[]\`. One value produces two subsets. Negative, zero, and unsorted values do not change the decision structure.
+Empty input has one subset, \`[]\`.
+
+One value produces two subsets.
+
+Negative, zero, and unsorted values do not change the decision structure.
 
 ## Common mistakes
 
@@ -1274,7 +1544,9 @@ Empty input has one subset, \`[]\`. One value produces two subsets. Negative, ze
   dynamicProgramming: `
 ## Before you start
 
-**Dynamic programming** stores answers to overlapping subproblems. **Memoisation** stores them during top-down recursion; a **bottom-up table** fills them from known base cases.
+**Dynamic programming** stores answers to overlapping subproblems.
+
+**Memoisation** stores them during top-down recursion; a **bottom-up table** fills them from known base cases.
 
 For stairs, define \`ways(n)\` as the number of ordered sequences of 1-step and 2-step moves that total exactly \`n\`.
 
@@ -1292,9 +1564,15 @@ flowchart LR
 
 ## Invariant and reasoning
 
-The recurrence is \`ways(n) = ways(n - 1) + ways(n - 2)\` with exercise bases \`ways(1) = 1\` and \`ways(2) = 2\`. Before each loop iteration, \`previous\` and \`current\` hold the answers for the two preceding stair numbers. Compute \`next\` before shifting them.
+The recurrence is \`ways(n) = ways(n - 1) + ways(n - 2)\` with exercise bases \`ways(1) = 1\` and \`ways(2) = 2\`.
 
-This sequence is Fibonacci-shaped but uses a different index convention: with \`F(0) = 0\` and \`F(1) = 1\`, \`ways(n) = F(n + 1)\`. Some combinatorics texts define \`ways(0) = 1\`; this exercise starts at \`n = 1\`, so its stated bases control the implementation.
+Before each loop iteration, \`previous\` and \`current\` hold the answers for the two preceding stair numbers.
+
+Compute \`next\` before shifting them.
+
+This sequence is Fibonacci-shaped but uses a different index convention: with \`F(0) = 0\` and \`F(1) = 1\`, \`ways(n) = F(n + 1)\`.
+
+Some combinatorics texts define \`ways(0) = 1\`; this exercise starts at \`n = 1\`, so its stated bases control the implementation.
 
 ## TypeScript approach
 
@@ -1323,11 +1601,17 @@ The exercise guarantees \`1 <= n <= 45\`, so no out-of-domain branch or big-inte
 
 ## Complexity
 
-The loop takes O(n) time. Keeping two prior answers uses O(1) auxiliary space; a memo table would use O(n).
+The loop takes O(n) time.
+
+Keeping two prior answers uses O(1) auxiliary space; a memo table would use O(n).
 
 ## Edge cases
 
-\`n = 1\` and \`n = 2\` return directly. Order matters, so \`1 + 2\` and \`2 + 1\` are separate ways. The maximum exercise result remains a safe JavaScript integer.
+\`n = 1\` and \`n = 2\` return directly.
+
+Order matters, so \`1 + 2\` and \`2 + 1\` are separate ways.
+
+The maximum exercise result remains a safe JavaScript integer.
 
 ## Common mistakes
 
@@ -1340,11 +1624,17 @@ The loop takes O(n) time. Keeping two prior answers uses O(1) auxiliary space; a
   tries: `
 ## Before you start
 
-A **trie** stores strings one character per edge. Nodes hold character-keyed \`children\` and an \`isWord\` flag. The flag distinguishes a complete inserted word from a prefix that merely has descendants.
+A **trie** stores strings one character per edge.
+
+Nodes hold character-keyed \`children\` and an \`isWord\` flag.
+
+The flag distinguishes a complete inserted word from a prefix that merely has descendants.
 
 ## Beginner intuition
 
-\`cat\` and \`car\` share the path \`c → a\`, then branch. Following every character proves that a prefix path exists; only \`isWord === true\` proves the complete query was inserted.
+\`cat\` and \`car\` share the path \`c → a\`, then branch.
+
+Following every character proves that a prefix path exists; only \`isWord === true\` proves the complete query was inserted.
 
 \`\`\`mermaid
 flowchart TD
@@ -1356,7 +1646,13 @@ flowchart TD
 
 ## Invariant and reasoning
 
-During insertion or lookup, after processing \`i\` characters, \`current\` is the node representing the prefix ending at index \`i - 1\`. Insertion creates a missing child before moving. Lookup fails immediately on a missing child. After all characters, exact lookup returns \`current.isWord\`.
+During insertion or lookup, after processing \`i\` characters, \`current\` is the node representing the prefix ending at index \`i - 1\`.
+
+Insertion creates a missing child before moving.
+
+Lookup fails immediately on a missing child.
+
+After all characters, exact lookup returns \`current.isWord\`.
 
 ## TypeScript approach
 
@@ -1399,15 +1695,23 @@ export function wordsFound(words: string[], queries: string[]): boolean[] {
 }
 \`\`\`
 
-The field name is consistently \`isWord\`, matching the lesson. Character strings are natural object keys, and strict undefined checks distinguish a missing child from an existing node.
+The field name is consistently \`isWord\`, matching the lesson.
+
+Character strings are natural object keys, and strict undefined checks distinguish a missing child from an existing node.
 
 ## Complexity
 
-Insertion and lookup are O(L) per string of length \`L\`. Across the exercise, time is O(total characters in words and queries), and trie space is O(total distinct inserted-prefix characters).
+Insertion and lookup are O(L) per string of length \`L\`.
+
+Across the exercise, time is O(total characters in words and queries), and trie space is O(total distinct inserted-prefix characters).
 
 ## Edge cases
 
-The empty string uses the root's \`isWord\` flag. Duplicate words simply set the same flag again. Matching is case-sensitive, and duplicate queries produce duplicate booleans in output order.
+The empty string uses the root's \`isWord\` flag.
+
+Duplicate words simply set the same flag again.
+
+Matching is case-sensitive, and duplicate queries produce duplicate booleans in output order.
 
 ## Common mistakes
 

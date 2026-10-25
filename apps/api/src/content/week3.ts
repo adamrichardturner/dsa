@@ -123,7 +123,11 @@ For example, \`[3, 9, 20, null, null, 15, 7]\` has depth \`3\`.
 
 Visit each node once: \`O(n)\` time and \`O(h)\` call-stack space, where \`h\` is the tree depth.
 
-**Do not** derive an answer from \`values.length\`, count the non-null entries, or use array-index logarithms. Missing children make those shortcuts incorrect. Do not rewrite \`buildTree\`.
+**Do not** derive an answer from \`values.length\`, count the non-null entries, or use array-index logarithms.
+
+Missing children make those shortcuts incorrect.
+
+Do not rewrite \`buildTree\`.
           `.trim(),
           starterCode: treeStarter,
           tests: [
@@ -215,11 +219,17 @@ Implement \`bstContains(values, target)\` by building and searching a binary sea
 
 **Complexity**
 
-Each insertion and the final search take \`O(h)\` time, where \`h\` is the current tree height. Building is \`O(nh)\` in general: \`O(n log n)\` for a balanced shape and \`O(n²)\` for a sorted input. The tree uses \`O(n)\` space.
+Each insertion and the final search take \`O(h)\` time, where \`h\` is the current tree height.
+
+Building is \`O(nh)\` in general: \`O(n log n)\` for a balanced shape and \`O(n²)\` for a sorted input.
+
+The tree uses \`O(n)\` space.
 
 **Forbidden shortcuts**
 
-Do not answer by scanning \`values\` directly or by using \`.includes\`, \`.indexOf\`, \`.find\`, \`.findIndex\`, \`.some\`, \`.filter\`, or \`Set\`. The purpose is to practise BST insertion and its comparison-guided search.
+Do not answer by scanning \`values\` directly or by using \`.includes\`, \`.indexOf\`, \`.find\`, \`.findIndex\`, \`.some\`, \`.filter\`, or \`Set\`.
+
+The purpose is to practise BST insertion and its comparison-guided search.
           `.trim(),
           starterCode: bstStarter,
           tests: [
@@ -310,11 +320,15 @@ Implement \`kthLargest(nums, k)\`.
 
 **Algorithm and complexity**
 
-Use a size-\`k\` min-heap: push each value and remove the minimum whenever the heap grows beyond \`k\`. This takes \`O(n log k)\` time and \`O(k)\` space.
+Use a size-\`k\` min-heap: push each value and remove the minimum whenever the heap grows beyond \`k\`.
+
+This takes \`O(n log k)\` time and \`O(k)\` space.
 
 **Avoid incorrect shortcuts**
 
-Do not remove duplicates with a \`Set\`, and do not sort the input or a copy. The runner rejects \`.sort()\` and \`.toSorted()\` because this lesson specifically assesses the heap.
+Do not remove duplicates with a \`Set\`, and do not sort the input or a copy.
+
+The runner rejects \`.sort()\` and \`.toSorted()\` because this lesson specifically assesses the heap.
           `.trim(),
           starterCode: `export function kthLargest(nums: number[], k: number): number {
   return 0;
@@ -414,7 +428,11 @@ Run in \`O(V + E)\` time and use \`O(V + E)\` space for the adjacency list, queu
 
 **Forbidden shortcuts**
 
-Do not use depth-first search and return the first path it finds; that path is not necessarily shortest. Do not generate every possible path. This is an unweighted shortest-path exercise, so BFS is the required technique.
+Do not use depth-first search and return the first path it finds; that path is not necessarily shortest.
+
+Do not generate every possible path.
+
+This is an unweighted shortest-path exercise, so BFS is the required technique.
           `.trim(),
           starterCode: `export function shortestPath(
   edges: number[][],
