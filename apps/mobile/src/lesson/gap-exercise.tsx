@@ -16,6 +16,7 @@ import type { GapChip, GapGrade, GapPart, GapSubmission, ProblemView } from "@/a
 import { CodeLine, CodeWindow } from "@/lesson/code-window";
 import { useCodeTheme } from "@/lesson/code-theme";
 import { GapOutline } from "@/lesson/completion";
+import { initialGapFills } from "@/lesson/gap-fills";
 import { exerciseStatus, StatusMark, statusLabel } from "@/course/status-mark";
 import { exerciseHighlightLanguage } from "@/lesson/highlight";
 import { HighlightedCode } from "@/lesson/highlighted-code";
@@ -191,6 +192,7 @@ function GapSlot({
 
 export function GapExercise({
   lessonSkipped,
+  onFillsSaved,
   onNextExercise,
   onOpenGuide,
   onPassed,
@@ -199,6 +201,7 @@ export function GapExercise({
   token,
 }: {
   readonly lessonSkipped: boolean;
+  readonly onFillsSaved: (fills: Readonly<Record<string, string>>) => void;
   readonly onNextExercise: (() => void) | null;
   readonly onOpenGuide: () => void;
   readonly onPassed: () => void;
@@ -208,7 +211,9 @@ export function GapExercise({
 }) {
   const { colors } = useTheme();
   const puzzle = problem.gap;
-  const [fills, setFills] = useState<Record<string, string>>({});
+  const [fills, setFills] = useState<Record<string, string>>(() =>
+    initialGapFills(puzzle?.parts ?? [], puzzle?.chips ?? [], problem.gapFills ?? null),
+  );
   const [activeGap, setActiveGap] = useState<string | null>(null);
   const [grades, setGrades] = useState<Readonly<Record<string, boolean>> | null>(null);
   const [pending, setPending] = useState(false);
@@ -310,6 +315,7 @@ export function GapExercise({
       for (const grade of data.submitGap.gaps) {
         next[grade.gapId] = data.submitGap.passed ? true : grade.correct;
       }
+      onFillsSaved(fills);
       setGrades(next);
       setPassed(data.submitGap.passed);
       if (data.submitGap.passed) {

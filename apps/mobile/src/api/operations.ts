@@ -67,6 +67,7 @@ export const LESSON_QUERY = `
         failedAttempts
         passingCode
         latestCode
+        gapFills { gapId chipId }
         examples { call output }
         gap {
           parts { kind text gapId }

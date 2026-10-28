@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useColorScheme } from "react-native";
+import { Appearance, useColorScheme } from "react-native";
 import {
   darkPalette,
   lightPalette,
@@ -52,6 +52,11 @@ export function ThemeProvider({ children }: { readonly children: ReactNode }) {
     setPreferenceState(next);
     void AsyncStorage.setItem(themeStorageKey, next);
   }, []);
+
+  useEffect(() => {
+    const override = preference === "system" ? "auto" : preference;
+    Appearance.setColorScheme(override);
+  }, [preference]);
 
   const scheme: ColorScheme =
     preference === "system" ? (system === "dark" ? "dark" : "light") : preference;

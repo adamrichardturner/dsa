@@ -180,7 +180,7 @@
   overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
-  background: oklch(0.985 0 0);
+  background: var(--card);
   padding: 1rem 1.1rem;
   min-height: 6rem;
 }
@@ -876,7 +876,8 @@
 }
 
 @media (min-width: 1024px) {
-  .lesson-shell:has([data-slot="sidebar"][data-state="expanded"]) .lesson-header-row {
+  .lesson-shell:has([data-slot="sidebar"][data-state="expanded"])
+    .lesson-header-row {
     padding-left: calc(16rem + 0.75rem);
   }
 }

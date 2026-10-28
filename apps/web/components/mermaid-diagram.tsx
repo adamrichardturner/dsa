@@ -2,22 +2,32 @@
 
 import { useEffect, useId, useState } from "react";
 
-let configured = false;
+type DiagramTheme = "dark" | "neutral";
 
-const loadMermaid = async () => {
+let configuredTheme: DiagramTheme | null = null;
+
+const diagramTheme = (): DiagramTheme => {
+  if (document.documentElement.classList.contains("dark")) {
+    return "dark";
+  }
+  return "neutral";
+};
+
+const loadMermaid = async (theme: DiagramTheme) => {
   const mermaidModule = await import("mermaid");
   const mermaid = mermaidModule.default;
-  if (!configured) {
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: "strict",
-      theme: "neutral",
-      fontFamily: "ui-sans-serif, system-ui, sans-serif",
-      htmlLabels: false,
-      suppressErrorRendering: true,
-    });
-    configured = true;
+  if (configuredTheme === theme) {
+    return mermaid;
   }
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: "strict",
+    theme,
+    fontFamily: "ui-sans-serif, system-ui, sans-serif",
+    htmlLabels: false,
+    suppressErrorRendering: true,
+  });
+  configuredTheme = theme;
   return mermaid;
 };
 
@@ -28,35 +38,61 @@ export function MermaidDiagram({ chart }: { readonly chart: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    const renderId = `diagram-${reactId}-${Math.random().toString(36).slice(2)}`;
+    let renderGeneration = 0;
+    let drawnTheme: DiagramTheme | null = null;
 
     const draw = async () => {
-      const mermaid = await loadMermaid();
-      const result = await mermaid.render(renderId, chart);
-      if (cancelled) {
+      const theme = diagramTheme();
+      if (theme === drawnTheme) {
         return;
       }
-      setFailed(false);
-      setSvg(result.svg);
+      const generation = renderGeneration + 1;
+      renderGeneration = generation;
+      drawnTheme = theme;
+      try {
+        const mermaid = await loadMermaid(theme);
+        const renderId = `diagram-${reactId}-${generation}`;
+        const result = await mermaid.render(renderId, chart);
+        if (cancelled || generation !== renderGeneration) {
+          return;
+        }
+        setFailed(false);
+        setSvg(result.svg);
+      } catch {
+        if (generation !== renderGeneration) {
+          return;
+        }
+        drawnTheme = null;
+        if (cancelled) {
+          return;
+        }
+        setSvg(null);
+        setFailed(true);
+      }
     };
 
-    draw().catch(() => {
-      if (cancelled) {
-        return;
-      }
-      setSvg(null);
-      setFailed(true);
+    const observer = new MutationObserver(() => {
+      void draw();
     });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    void draw();
 
     return () => {
       cancelled = true;
+      observer.disconnect();
     };
   }, [chart, reactId]);
 
   if (failed) {
     return (
       <div className="mermaid-frame">
-        <p className="text-sm text-muted-foreground">Diagram failed to render.</p>
+        <p className="text-sm text-muted-foreground">
+          Diagram failed to render.
+        </p>
       </div>
     );
   }

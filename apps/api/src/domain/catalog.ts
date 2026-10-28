@@ -1,5 +1,6 @@
 import { Context, Effect, Layer, Schema } from "effect";
 import { SqlClient, SqlSchema } from "effect/sql";
+import { savedGapFills } from "../content/gaps.js";
 import { NotFound, Unexpected } from "./errors.js";
 import { openLessonSlugs } from "./gating.js";
 import {
@@ -10,6 +11,7 @@ import {
 } from "./progress-client.js";
 import type {
   ExampleView,
+  GapFill,
   LessonView,
   ModuleView,
   ProblemView,
@@ -22,6 +24,7 @@ interface ProblemStat {
   readonly solved: boolean;
   readonly passingCode: string | null;
   readonly latestCode: string | null;
+  readonly gapFills: readonly GapFill[] | null;
 }
 
 const OutlineRow = Schema.Struct({
@@ -66,6 +69,8 @@ const StatRow = Schema.Struct({
   failedAttempts: Schema.Number,
   solved: Schema.Boolean,
   passingCode: Schema.NullOr(Schema.String),
+  latestFillsJson: Schema.NullOr(Schema.String),
+  passingFillsJson: Schema.NullOr(Schema.String),
 });
 
 const CodeRow = Schema.Struct({
@@ -88,6 +93,7 @@ const emptyStat = (): ProblemStat => ({
   solved: false,
   passingCode: null,
   latestCode: null,
+  gapFills: null,
 });
 
 interface OrderedLesson {
@@ -303,7 +309,9 @@ export class Catalog extends Context.Service<
               COUNT(*)::int AS "attempts",
               COUNT(*) FILTER (WHERE NOT passed)::int AS "failedAttempts",
               BOOL_OR(passed) AS "solved",
-              (ARRAY_AGG(code ORDER BY created_at DESC) FILTER (WHERE passed))[1] AS "passingCode"
+              (ARRAY_AGG(code ORDER BY created_at DESC) FILTER (WHERE passed))[1] AS "passingCode",
+              (ARRAY_AGG(fills_json ORDER BY created_at DESC))[1] AS "latestFillsJson",
+              (ARRAY_AGG(fills_json ORDER BY created_at DESC) FILTER (WHERE passed))[1] AS "passingFillsJson"
             FROM ${sql(tables.submissions)}
             WHERE user_id = ${request.userId}
             GROUP BY problem_id
@@ -458,6 +466,11 @@ export class Catalog extends Context.Service<
               solved: stat.solved,
               passingCode: stat.passingCode,
               latestCode: null,
+              gapFills: savedGapFills(
+                stat.solved,
+                stat.latestFillsJson,
+                stat.passingFillsJson,
+              ),
             };
           }
 
@@ -653,6 +666,7 @@ export class Catalog extends Context.Service<
             failedAttempts: stat.failedAttempts,
             passingCode: stat.passingCode,
             latestCode: stat.latestCode,
+            gapFills: stat.gapFills,
           });
         }
 

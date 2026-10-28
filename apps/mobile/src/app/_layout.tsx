@@ -6,10 +6,10 @@ import { Geist_600SemiBold } from "@expo-google-fonts/geist/600SemiBold";
 import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono/400Regular";
 import { JetBrainsMono_400Regular_Italic } from "@expo-google-fonts/jetbrains-mono/400Regular_Italic";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider as NavigationThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SessionProvider, useSession } from "@/auth/session";
@@ -43,23 +43,41 @@ function RootStack() {
     void SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
+  const navigationTheme = useMemo(() => {
+    const base = scheme === "dark" ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        primary: colors.foreground,
+        background: colors.background,
+        card: colors.card,
+        text: colors.foreground,
+        border: colors.border,
+        notification: colors.destructive,
+      },
+    };
+  }, [colors, scheme]);
+
   if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-      {ready ? (
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
-      ) : null}
-      {splashVisible ? <BrandSplash onFinished={hideSplash} sessionReady={ready} /> : null}
-    </View>
+    <NavigationThemeProvider value={navigationTheme}>
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        {ready ? (
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
+        ) : null}
+        {splashVisible ? <BrandSplash onFinished={hideSplash} sessionReady={ready} /> : null}
+      </View>
+    </NavigationThemeProvider>
   );
 }
 

@@ -71,6 +71,7 @@ export interface ProblemView {
   readonly failedAttempts: number;
   readonly passingCode: string | null;
   readonly latestCode: string | null;
+  readonly gapFills: readonly GapFill[] | null;
   readonly gap: GapPuzzle | null;
 }
 
@@ -95,6 +96,11 @@ export interface LessonView {
 export interface GapGrade {
   readonly gapId: string;
   readonly correct: boolean;
+}
+
+export interface GapFill {
+  readonly gapId: string;
+  readonly chipId: string;
 }
 
 export interface GapSubmission {

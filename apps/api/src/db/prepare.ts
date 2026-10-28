@@ -98,8 +98,10 @@ const statements: readonly string[] = [
     tests_total INTEGER NOT NULL,
     feedback TEXT NOT NULL,
     results_json TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    fills_json TEXT
   )`,
+  `ALTER TABLE submissions ADD COLUMN IF NOT EXISTS fills_json TEXT`,
   `CREATE INDEX IF NOT EXISTS submissions_user_problem_idx
     ON submissions (user_id, problem_id, created_at DESC)`,
   `ALTER TABLE submissions DROP COLUMN IF EXISTS stars`,
@@ -126,8 +128,10 @@ const statements: readonly string[] = [
     tests_total INTEGER NOT NULL,
     feedback TEXT NOT NULL,
     results_json TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    fills_json TEXT
   )`,
+  `ALTER TABLE ${mobileTables.submissions} ADD COLUMN IF NOT EXISTS fills_json TEXT`,
   `CREATE INDEX IF NOT EXISTS ${mobileTables.submissions}_user_problem_idx
     ON ${mobileTables.submissions} (user_id, problem_id, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS ${mobileTables.lessonSkips} (

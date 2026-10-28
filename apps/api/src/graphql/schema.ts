@@ -147,6 +147,14 @@ const GapGradeType = new GraphQLObjectType({
   },
 });
 
+const GapFillType = new GraphQLObjectType({
+  name: "GapFill",
+  fields: {
+    gapId: { type: new GraphQLNonNull(GraphQLString) },
+    chipId: { type: new GraphQLNonNull(GraphQLString) },
+  },
+});
+
 const GuideBlockType = new GraphQLObjectType({
   name: "GuideBlock",
   fields: {
@@ -201,6 +209,9 @@ const ProblemType = new GraphQLObjectType({
     failedAttempts: { type: new GraphQLNonNull(GraphQLInt) },
     passingCode: { type: GraphQLString },
     latestCode: { type: GraphQLString },
+    gapFills: {
+      type: new GraphQLList(new GraphQLNonNull(GapFillType)),
+    },
     gap: {
       type: GapPuzzleType,
       resolve: (problem: { readonly id?: unknown }) => {
@@ -1048,6 +1059,7 @@ export const schema = new GraphQLSchema({
                 problemId,
                 requireString(args.code, "Missing solution."),
                 "web",
+                null,
               );
             }),
           ),
@@ -1126,6 +1138,7 @@ export const schema = new GraphQLSchema({
                 problemId,
                 code,
                 "mobile",
+                JSON.stringify(fills),
               );
               const gapsCorrect = grades.every((grade) => grade.correct);
               return {

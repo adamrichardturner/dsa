@@ -55,6 +55,7 @@ export class Solutions extends Context.Service<
       problemId: string,
       code: string,
       client: ProgressClient,
+      fillsJson: string | null,
     ): Effect.Effect<SubmissionView, NotFound | Unexpected>;
     saveDraft(
       userId: string,
@@ -103,6 +104,7 @@ export class Solutions extends Context.Service<
           resultsJson: Schema.String,
           createdAt: Schema.String,
           client: ProgressClientSchema,
+          fillsJson: Schema.NullOr(Schema.String),
         }),
         execute: (request) => {
           const tables = progressTables(progressClientFrom(request.client));
@@ -117,7 +119,8 @@ export class Solutions extends Context.Service<
               tests_total,
               feedback,
               results_json,
-              created_at
+              created_at,
+              fills_json
             )
             VALUES (
               ${request.id},
@@ -129,7 +132,8 @@ export class Solutions extends Context.Service<
               ${request.testsTotal},
               ${request.feedback},
               ${request.resultsJson},
-              ${request.createdAt}::timestamptz
+              ${request.createdAt}::timestamptz,
+              ${request.fillsJson}
             )
           `;
         },
@@ -219,6 +223,7 @@ export class Solutions extends Context.Service<
         problemId: string,
         code: string,
         client: ProgressClient,
+        fillsJson: string | null,
       ) {
         if (code.trim().length === 0) {
           return yield* new Unexpected({
@@ -248,6 +253,7 @@ export class Solutions extends Context.Service<
           resultsJson: JSON.stringify(outcome.results),
           createdAt,
           client,
+          fillsJson,
         }).pipe(failUnexpected("Could not save the submission."));
 
         return {

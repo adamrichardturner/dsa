@@ -2,27 +2,53 @@ import { useState } from "react";
 import { Linking, StyleSheet } from "react-native";
 import { WebView } from "react-native-webview";
 import { webUrl } from "@/api/config";
-import { chromeFreeUrl, shouldOpenOutside } from "@/content/embed-url";
+import {
+  chromeFreeUrl,
+  embedThemeLockScript,
+  nextEmbedUrl,
+  withEmbedTheme,
+} from "@/content/embed-url";
+import { themeStorageKey, type ColorScheme } from "@/theme/palette";
 import { useTheme } from "@/theme/theme";
+
+const themedDocumentUrl = (url: string, scheme: ColorScheme): string => {
+  return withEmbedTheme(chromeFreeUrl(url, webUrl), scheme);
+};
 
 export function ContentWebView({ uri }: { readonly uri: string }) {
   const { scheme } = useTheme();
-  const initial = chromeFreeUrl(uri, webUrl);
   const [sourceUri, setSourceUri] = useState(uri);
-  const [location, setLocation] = useState(initial);
+  const [appliedScheme, setAppliedScheme] = useState(scheme);
+  const [location, setLocation] = useState(() =>
+    themedDocumentUrl(uri, scheme),
+  );
   if (uri !== sourceUri) {
     setSourceUri(uri);
-    setLocation(chromeFreeUrl(uri, webUrl));
+    setAppliedScheme(scheme);
+    setLocation(themedDocumentUrl(uri, scheme));
+  }
+  const schemeLocation = themedDocumentUrl(location, scheme);
+  if (uri === sourceUri && scheme !== appliedScheme) {
+    setAppliedScheme(scheme);
+  }
+  if (
+    uri === sourceUri &&
+    scheme !== appliedScheme &&
+    schemeLocation !== location
+  ) {
+    setLocation(schemeLocation);
   }
 
-  const onShouldStartLoadWithRequest = (request: { readonly url: string }): boolean => {
-    const next = chromeFreeUrl(request.url, webUrl);
-    if (next !== request.url) {
-      setLocation(next);
+  const onShouldStartLoadWithRequest = (request: {
+    readonly url: string;
+  }): boolean => {
+    const next = nextEmbedUrl(request.url, webUrl, scheme);
+    if (next === null) {
+      void Linking.openURL(request.url);
       return false;
     }
-    if (shouldOpenOutside(request.url, webUrl)) {
-      void Linking.openURL(request.url);
+    if (next !== request.url) {
+      setLocation(next);
       return false;
     }
     return true;
@@ -30,11 +56,20 @@ export function ContentWebView({ uri }: { readonly uri: string }) {
 
   return (
     <WebView
+      forceDarkOn={false}
+      injectedJavaScriptBeforeContentLoaded={embedThemeLockScript(
+        scheme,
+        themeStorageKey,
+      )}
+      key={scheme}
       onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
       originWhitelist={["*"]}
       setSupportMultipleWindows={false}
       source={{ uri: location }}
-      style={[styles.web, { backgroundColor: scheme === "dark" ? "#0a0a0a" : "#ffffff" }]}
+      style={[
+        styles.web,
+        { backgroundColor: scheme === "dark" ? "#0a0a0a" : "#ffffff" },
+      ]}
     />
   );
 }

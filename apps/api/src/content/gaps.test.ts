@@ -6,7 +6,9 @@ import {
   chipText,
   gradeGap,
   puzzleForProblem,
+  savedGapFills,
   type GapPuzzle,
+  type StoredGapFill,
 } from "./gaps.js";
 import { runSolution } from "../domain/runner.js";
 
@@ -100,4 +102,78 @@ test("every exercise is a gap puzzle whose solution passes the tests", () => {
       }
     }
   }
+});
+
+const fillsRecord = (
+  stored: readonly StoredGapFill[] | null,
+): Record<string, string> => {
+  const fills: Record<string, string> = {};
+  if (stored === null) {
+    return fills;
+  }
+  for (const fill of stored) {
+    fills[fill.gapId] = fill.chipId;
+  }
+  return fills;
+};
+
+test("gap fills restore from the attempt the lesson shows", () => {
+  const latest = JSON.stringify({ g0: "c-latest" });
+  const passing = JSON.stringify({ g1: "c-passing" });
+  assert.deepEqual(savedGapFills(false, latest, passing), [
+    { gapId: "g0", chipId: "c-latest" },
+  ]);
+  assert.deepEqual(savedGapFills(true, latest, passing), [
+    { gapId: "g1", chipId: "c-passing" },
+  ]);
+  assert.equal(savedGapFills(true, latest, null), null);
+  assert.equal(savedGapFills(false, null, null), null);
+  assert.equal(savedGapFills(false, "{", null), null);
+  assert.deepEqual(savedGapFills(false, "{}", null), []);
+});
+
+test("every exercise can restore the gap fills from its submission", () => {
+  let exercises = 0;
+  for (const module of course) {
+    for (const lesson of module.lessons) {
+      for (const problem of lesson.problems) {
+        const puzzle = puzzleForProblem(problem.id);
+        assert.ok(puzzle !== null, problem.id);
+        if (puzzle === null) {
+          continue;
+        }
+        exercises += 1;
+        const fills = correctFills(puzzle);
+        const open = savedGapFills(false, JSON.stringify(fills), null);
+        assert.deepEqual(fillsRecord(open), fills, problem.id);
+        const solved = savedGapFills(true, null, JSON.stringify(fills));
+        assert.deepEqual(fillsRecord(solved), fills, problem.id);
+
+        const first = puzzle.reveals[0];
+        assert.ok(first !== undefined, problem.id);
+        if (first === undefined) {
+          continue;
+        }
+        let distractorId: string | null = null;
+        for (const chip of puzzle.chips) {
+          if (chip.text === first.text) {
+            continue;
+          }
+          distractorId = chip.id;
+          break;
+        }
+        assert.ok(distractorId !== null, problem.id);
+        if (distractorId === null) {
+          continue;
+        }
+        const wrong: Record<string, string> = {
+          ...fills,
+          [first.gapId]: distractorId,
+        };
+        const restored = savedGapFills(false, JSON.stringify(wrong), null);
+        assert.equal(fillsRecord(restored)[first.gapId], distractorId, problem.id);
+      }
+    }
+  }
+  assert.ok(exercises > 1);
 });

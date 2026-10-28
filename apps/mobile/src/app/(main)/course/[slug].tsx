@@ -8,6 +8,7 @@ import type { LessonView, ProblemView, SkipResult } from "@/api/types";
 import { useSession } from "@/auth/session";
 import { exerciseStatus, StatusMark, statusLabel } from "@/course/status-mark";
 import { GapExercise } from "@/lesson/gap-exercise";
+import { gapFillsFromRecord } from "@/lesson/gap-fills";
 import { GuideSheet } from "@/lesson/guide-sheet";
 import { nextExerciseTarget } from "@/lesson/next-exercise";
 import { Reading } from "@/lesson/reading";
@@ -62,6 +63,24 @@ export default function LessonScreen() {
     lesson === null || problem === null
       ? null
       : nextExerciseTarget(lesson.problems, problem.id, lesson.nextSlug, lesson.nextAvailable);
+
+  const rememberGapFills = (problemId: string, fills: Readonly<Record<string, string>>) => {
+    const gapFills = gapFillsFromRecord(fills);
+    setLesson((current) => {
+      if (current === null) {
+        return current;
+      }
+      const problems: ProblemView[] = [];
+      for (const item of current.problems) {
+        if (item.id !== problemId) {
+          problems.push(item);
+          continue;
+        }
+        problems.push({ ...item, gapFills });
+      }
+      return { ...current, problems };
+    });
+  };
 
   const openNextExercise = () => {
     if (nextExercise === null) {
@@ -146,6 +165,9 @@ export default function LessonScreen() {
           <GapExercise
             key={problem.id}
             lessonSkipped={lesson.skipped}
+            onFillsSaved={(fills) => {
+              rememberGapFills(problem.id, fills);
+            }}
             onNextExercise={nextExercise === null ? null : openNextExercise}
             onOpenGuide={() => setGuideOpen(true)}
             onPassed={() => void load()}

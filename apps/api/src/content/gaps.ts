@@ -656,3 +656,40 @@ export const gradeGap = (
   }
   return grades;
 };
+
+export interface StoredGapFill {
+  readonly gapId: string;
+  readonly chipId: string;
+}
+
+const gapFillsFromJson = (
+  value: string | null,
+): readonly StoredGapFill[] | null => {
+  if (value === null) {
+    return null;
+  }
+  const fills = readFills(value);
+  if (fills === null) {
+    return null;
+  }
+  const stored: StoredGapFill[] = [];
+  for (const gapId of Object.keys(fills)) {
+    const chipId = fills[gapId];
+    if (chipId === undefined) {
+      continue;
+    }
+    stored.push({ gapId, chipId });
+  }
+  return stored;
+};
+
+export const savedGapFills = (
+  solved: boolean,
+  latestFillsJson: string | null,
+  passingFillsJson: string | null,
+): readonly StoredGapFill[] | null => {
+  if (solved) {
+    return gapFillsFromJson(passingFillsJson);
+  }
+  return gapFillsFromJson(latestFillsJson);
+};

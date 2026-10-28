@@ -29,6 +29,11 @@ export interface ExampleView {
   readonly output: string;
 }
 
+export interface GapFill {
+  readonly gapId: string;
+  readonly chipId: string;
+}
+
 export interface ProblemView {
   readonly id: string;
   readonly title: string;
@@ -42,6 +47,7 @@ export interface ProblemView {
   readonly failedAttempts: number;
   readonly passingCode: string | null;
   readonly latestCode: string | null;
+  readonly gapFills: readonly GapFill[] | null;
 }
 
 export interface LessonSummary {
