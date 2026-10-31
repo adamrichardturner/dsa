@@ -6,6 +6,7 @@ export const creatorName = "Adam Richard Turner";
 export const creatorUrl = "https://adamrichardturner.dev";
 export const contactEmail = "hello@adamrichardturner.dev";
 export const legalUpdated = "17 October 2026";
+export const privacyUpdated = "31 October 2026";
 export const siteDescription =
   "A 100% free TypeScript course in data structures and algorithms. Four weeks of short lessons with an editor and tests, progress on your account, and articles on the terms the lessons use.";
 
