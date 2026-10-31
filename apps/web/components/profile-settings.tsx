@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation } from "urql";
 import { cn } from "cn";
 import { PageMain } from "@/components/page-frame";
@@ -38,6 +38,66 @@ interface DeleteAccountData {
   readonly deleteAccount: boolean;
 }
 
+const SUBMIT_COOLDOWN_MS = 2000;
+const NAME_MAX_LENGTH = 80;
+
+interface SubmitLock {
+  current: boolean;
+}
+
+const releaseAfterCooldown = (lock: SubmitLock, setLocked: (locked: boolean) => void) => {
+  setTimeout(() => {
+    lock.current = false;
+    setLocked(false);
+  }, SUBMIT_COOLDOWN_MS);
+};
+
+const profileDiffers = (name: string, email: string, avatarUrl: string, user: User): boolean => {
+  if (name.trim() !== user.name.trim()) {
+    return true;
+  }
+  if (email.trim() !== user.email.trim()) {
+    return true;
+  }
+  const savedAvatar = user.avatarUrl ?? "";
+  return avatarUrl.trim() !== savedAvatar.trim();
+};
+
+const profileIsSaveable = (name: string, email: string, avatarUrl: string, user: User): boolean => {
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0 || trimmedName.length > NAME_MAX_LENGTH) {
+    return false;
+  }
+  if (email.trim().length === 0) {
+    return false;
+  }
+  return profileDiffers(name, email, avatarUrl, user);
+};
+
+const passwordFieldsReady = (
+  hasPassword: boolean,
+  currentPassword: string,
+  nextPassword: string,
+): boolean => {
+  if (nextPassword.length === 0) {
+    return false;
+  }
+  if (!hasPassword) {
+    return true;
+  }
+  return currentPassword.length > 0;
+};
+
+const passwordButtonLabel = (pending: boolean, hasPassword: boolean): string => {
+  if (pending) {
+    return "Saving…";
+  }
+  if (hasPassword) {
+    return "Change password";
+  }
+  return "Set password";
+};
+
 function ProfileForm({
   user,
   updateUser,
@@ -50,8 +110,12 @@ function ProfileForm({
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl ?? "");
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const lock = useRef(false);
   const [result, update] = useMutation<UpdateProfileData>(UPDATE_PROFILE);
   const preview = avatarUrl.trim();
+  const profileReady = profileIsSaveable(name, email, avatarUrl, user);
   const shownName = name.trim().length === 0 ? "Your name" : name.trim();
   const shownEmail = email.trim().length === 0 ? user.email : email.trim();
 
@@ -72,20 +136,34 @@ function ProfileForm({
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSaved(false);
-    const trimmedAvatar = avatarUrl.trim();
-    const response = await update({
-      name: name.trim(),
-      email: email.trim(),
-      avatarUrl: trimmedAvatar.length === 0 ? null : trimmedAvatar,
-    });
-    const next = response.data?.updateProfile;
-    if (next === undefined) {
+    if (lock.current) {
       return;
     }
-    setDirty(false);
-    updateUser(next);
-    setSaved(true);
+    if (!profileIsSaveable(name, email, avatarUrl, user)) {
+      return;
+    }
+    lock.current = true;
+    setLocked(true);
+    setPending(true);
+    setSaved(false);
+    const trimmedAvatar = avatarUrl.trim();
+    try {
+      const response = await update({
+        name: name.trim(),
+        email: email.trim(),
+        avatarUrl: trimmedAvatar.length === 0 ? null : trimmedAvatar,
+      });
+      const next = response.data?.updateProfile;
+      if (next === undefined) {
+        return;
+      }
+      setDirty(false);
+      updateUser(next);
+      setSaved(true);
+    } finally {
+      setPending(false);
+      releaseAfterCooldown(lock, setLocked);
+    }
   };
 
   return (
@@ -153,8 +231,8 @@ function ProfileForm({
               <AlertDescription>Profile saved.</AlertDescription>
             </Alert>
           ) : null}
-          <Button type="submit" disabled={result.fetching}>
-            {result.fetching ? "Saving…" : "Save profile"}
+          <Button type="submit" disabled={!profileReady || locked}>
+            {pending ? "Saving…" : "Save profile"}
           </Button>
         </form>
       </CardContent>
@@ -172,22 +250,40 @@ function PasswordForm({
   const [currentPassword, setCurrentPassword] = useState("");
   const [nextPassword, setNextPassword] = useState("");
   const [saved, setSaved] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const lock = useRef(false);
   const [result, change] = useMutation<ChangePasswordData>(CHANGE_PASSWORD);
+  const fieldsReady = passwordFieldsReady(user.hasPassword, currentPassword, nextPassword);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSaved(false);
-    const response = await change({
-      currentPassword: user.hasPassword ? currentPassword : "",
-      nextPassword,
-    });
-    if (response.data?.changePassword !== true) {
+    if (lock.current) {
       return;
     }
-    setCurrentPassword("");
-    setNextPassword("");
-    updateUser({ ...user, hasPassword: true });
-    setSaved(true);
+    if (!passwordFieldsReady(user.hasPassword, currentPassword, nextPassword)) {
+      return;
+    }
+    lock.current = true;
+    setLocked(true);
+    setPending(true);
+    setSaved(false);
+    try {
+      const response = await change({
+        currentPassword: user.hasPassword ? currentPassword : "",
+        nextPassword,
+      });
+      if (response.data?.changePassword !== true) {
+        return;
+      }
+      setCurrentPassword("");
+      setNextPassword("");
+      updateUser({ ...user, hasPassword: true });
+      setSaved(true);
+    } finally {
+      setPending(false);
+      releaseAfterCooldown(lock, setLocked);
+    }
   };
 
   return (
@@ -245,8 +341,8 @@ function PasswordForm({
               <AlertDescription>Password updated.</AlertDescription>
             </Alert>
           ) : null}
-          <Button type="submit" disabled={result.fetching}>
-            {result.fetching ? "Saving…" : user.hasPassword ? "Change password" : "Set password"}
+          <Button type="submit" disabled={!fieldsReady || locked}>
+            {passwordButtonLabel(pending, user.hasPassword)}
           </Button>
         </form>
       </CardContent>

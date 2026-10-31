@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiError, request } from "@/api/client";
@@ -13,11 +13,36 @@ import { UserAvatar } from "@/ui/avatar";
 import type { ThemePreference } from "@/theme/palette";
 import { Body, Button, Field, Notice, Title } from "@/ui/primitives";
 
+const SUBMIT_COOLDOWN_MS = 2000;
+const NAME_MAX_LENGTH = 80;
+
 const preferences: readonly { readonly id: ThemePreference; readonly label: string }[] = [
   { id: "system", label: "System" },
   { id: "light", label: "Light" },
   { id: "dark", label: "Dark" },
 ];
+
+interface SubmitLock {
+  current: boolean;
+}
+
+const releaseAfterCooldown = (lock: SubmitLock, setLocked: (locked: boolean) => void) => {
+  setTimeout(() => {
+    lock.current = false;
+    setLocked(false);
+  }, SUBMIT_COOLDOWN_MS);
+};
+
+const nameIsSaveable = (trimmedName: string, savedName: string): boolean => {
+  if (trimmedName.length === 0 || trimmedName.length > NAME_MAX_LENGTH) {
+    return false;
+  }
+  return trimmedName !== savedName.trim();
+};
+
+const passwordFieldsReady = (currentPassword: string, nextPassword: string): boolean => {
+  return currentPassword.length > 0 && nextPassword.length > 0;
+};
 
 export default function SettingsScreen() {
   const { user, token, updateUser, signOut } = useSession();
@@ -31,7 +56,15 @@ export default function SettingsScreen() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [legal, setLegal] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [namePending, setNamePending] = useState(false);
+  const [passwordPending, setPasswordPending] = useState(false);
+  const [nameLocked, setNameLocked] = useState(false);
+  const [passwordLocked, setPasswordLocked] = useState(false);
+  const nameLock = useRef(false);
+  const passwordLock = useRef(false);
+  const savedName = user?.name ?? "";
+  const nameReady = nameIsSaveable(name.trim(), savedName);
+  const passwordReady = passwordFieldsReady(currentPassword, nextPassword);
 
   if (legal !== null) {
     return (
@@ -45,26 +78,39 @@ export default function SettingsScreen() {
   }
 
   const saveName = async () => {
+    if (nameLock.current) {
+      return;
+    }
     if (user === null || token === null) {
       return;
     }
-    setPending(true);
+    const trimmedName = name.trim();
+    if (!nameIsSaveable(trimmedName, user.name)) {
+      return;
+    }
+    nameLock.current = true;
+    setNameLocked(true);
+    setNamePending(true);
     setError(null);
+    setMessage(null);
     try {
       const data = await request<{ updateProfile: unknown }>(
         UPDATE_PROFILE,
-        { name, email: user.email, avatarUrl: user.avatarUrl },
+        { name: trimmedName, email: user.email, avatarUrl: user.avatarUrl },
         token,
       );
       const next = readUser(data.updateProfile);
       if (next !== null) {
         updateUser(next);
+        setName(next.name);
       }
       setMessage("Name saved.");
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Could not save your name.");
+    } finally {
+      setNamePending(false);
+      releaseAfterCooldown(nameLock, setNameLocked);
     }
-    setPending(false);
   };
 
   const saveAudit = async (enabled: boolean) => {
@@ -83,11 +129,20 @@ export default function SettingsScreen() {
   };
 
   const savePassword = async () => {
+    if (passwordLock.current) {
+      return;
+    }
     if (token === null) {
       return;
     }
-    setPending(true);
+    if (!passwordFieldsReady(currentPassword, nextPassword)) {
+      return;
+    }
+    passwordLock.current = true;
+    setPasswordLocked(true);
+    setPasswordPending(true);
     setError(null);
+    setMessage(null);
     try {
       await request(CHANGE_PASSWORD, { currentPassword, nextPassword }, token);
       setCurrentPassword("");
@@ -95,8 +150,10 @@ export default function SettingsScreen() {
       setMessage("Password updated.");
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : "Could not change the password.");
+    } finally {
+      setPasswordPending(false);
+      releaseAfterCooldown(passwordLock, setPasswordLocked);
     }
-    setPending(false);
   };
 
   return (
@@ -161,13 +218,25 @@ export default function SettingsScreen() {
       </View>
       <Body muted>Open any lesson without finishing the ones before it.</Body>
       <Field label="Name" onChangeText={setName} value={name} />
-      <Button label="Save name" onPress={() => void saveName()} pending={pending} variant="secondary" />
+      <Button
+        disabled={!nameReady || nameLocked}
+        label="Save name"
+        onPress={() => void saveName()}
+        pending={namePending}
+        variant="secondary"
+      />
       {user?.hasPassword ? (
         <>
           <Text style={[styles.section, { color: colors.foreground }]}>Password</Text>
           <Field label="Current password" onChangeText={setCurrentPassword} secure value={currentPassword} />
           <Field label="New password" onChangeText={setNextPassword} secure value={nextPassword} />
-          <Button label="Update password" onPress={() => void savePassword()} pending={pending} variant="secondary" />
+          <Button
+            disabled={!passwordReady || passwordLocked}
+            label="Update password"
+            onPress={() => void savePassword()}
+            pending={passwordPending}
+            variant="secondary"
+          />
         </>
       ) : null}
       {message === null ? null : <Notice>{message}</Notice>}
