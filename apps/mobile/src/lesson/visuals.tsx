@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { WebView } from "react-native-webview";
+import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import {
   parseVisualization,
   type ArrayVisualization,
@@ -9,6 +9,7 @@ import {
   type LinkedListVisualization,
   type VisualizationState,
 } from "../../../api/src/content/visualizations";
+import { diagramDocument, readDiagramMessage } from "@/lesson/mermaid-document";
 import { useTheme } from "@/theme/theme";
 
 const stateColor = (
@@ -215,41 +216,121 @@ export function VisualizationBlock({ source }: { readonly source: string }) {
   return <GraphDiagram visualization={parsed.visualization} />;
 }
 
+const diagramPadding = 16;
+
+interface DiagramLoadingLayout {
+  readonly status: "loading";
+}
+
+interface DiagramReadyLayout {
+  readonly status: "ready";
+  readonly width: number;
+  readonly height: number;
+}
+
+interface DiagramFailedLayout {
+  readonly status: "failed";
+}
+
+type DiagramLayout = DiagramLoadingLayout | DiagramReadyLayout | DiagramFailedLayout;
+
+const diagramFrame = (layout: DiagramLayout): { readonly width: number; readonly height: number } => {
+  if (layout.status !== "ready") {
+    return { width: 280, height: 120 };
+  }
+  return { width: layout.width, height: layout.height };
+};
+
 export function MermaidBlock({ chart }: { readonly chart: string }) {
   const { colors, scheme } = useTheme();
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  html, body { margin: 0; background: ${colors.card}; color: ${colors.foreground}; }
-  #root { padding: 12px; }
-  svg { max-width: 100%; height: auto; }
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="module">
-  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-  mermaid.initialize({ startOnLoad: false, theme: ${JSON.stringify(scheme === "dark" ? "dark" : "neutral")}, securityLevel: "strict" });
-  const source = ${JSON.stringify(chart)};
-  try {
-    const drawn = await mermaid.render("diagram", source);
-    document.getElementById("root").innerHTML = drawn.svg;
-  } catch (error) {
-    document.getElementById("root").textContent = "The diagram could not be drawn.";
+  const theme = scheme === "dark" ? "dark" : "neutral";
+  const signature = `${theme}\0${colors.card}\0${chart}`;
+  const [drawn, setDrawn] = useState(signature);
+  const [layout, setLayout] = useState<DiagramLayout>({ status: "loading" });
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const stale = drawn !== signature;
+  if (stale) {
+    setDrawn(signature);
+    setLayout({ status: "loading" });
   }
-</script>
-</body>
-</html>`;
+  const shown: DiagramLayout = stale ? { status: "loading" } : layout;
+  const frame = diagramFrame(shown);
+  const contentWidth = frame.width + diagramPadding * 2;
+  const centered = shown.status === "ready" && viewportWidth > 0 && contentWidth <= viewportWidth;
+
+  const onViewportLayout = (event: LayoutChangeEvent) => {
+    const next = Math.round(event.nativeEvent.layout.width);
+    if (next === viewportWidth) {
+      return;
+    }
+    setViewportWidth(next);
+  };
+
+  const onMessage = (event: WebViewMessageEvent) => {
+    const message = readDiagramMessage(event.nativeEvent.data);
+    if (message === null) {
+      return;
+    }
+    if (!message.ok) {
+      setLayout({ status: "failed" });
+      return;
+    }
+    setLayout({ status: "ready", width: message.width, height: message.height });
+  };
+
+  if (shown.status === "failed") {
+    return (
+      <View style={[styles.mermaid, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.mermaidError, { color: colors.mutedForeground }]}>
+          The diagram could not be drawn.
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.mermaid, { borderColor: colors.border, backgroundColor: colors.card }]}>
-      <WebView
-        originWhitelist={["*"]}
-        scrollEnabled={false}
-        source={{ html }}
-        style={{ backgroundColor: "transparent", height: 240 }}
-      />
+    <View
+      accessibilityLabel="Diagram"
+      accessibilityRole="image"
+      accessibilityState={{ busy: shown.status !== "ready" }}
+      onLayout={onViewportLayout}
+      style={[styles.mermaid, { backgroundColor: colors.card, borderColor: colors.border }]}
+    >
+      <ScrollView
+        contentContainerStyle={centered ? styles.mermaidScrollCentered : styles.mermaidScroll}
+        directionalLockEnabled
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator={shown.status === "ready" && !centered}
+        style={{ height: frame.height + diagramPadding * 2, opacity: shown.status === "ready" ? 1 : 0 }}
+      >
+        <WebView
+          bounces={false}
+          dataDetectorTypes="none"
+          forceDarkOn={false}
+          key={signature}
+          onMessage={onMessage}
+          originWhitelist={["*"]}
+          overScrollMode="never"
+          pointerEvents="none"
+          scalesPageToFit={false}
+          scrollEnabled={false}
+          setBuiltInZoomControls={false}
+          setSupportMultipleWindows={false}
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          source={{
+            baseUrl: "https://cdn.jsdelivr.net/",
+            html: diagramDocument({
+              chart,
+              theme,
+              background: colors.card,
+              foreground: colors.foreground,
+            }),
+          }}
+          style={{ backgroundColor: colors.card, height: frame.height, width: frame.width }}
+        />
+      </ScrollView>
     </View>
   );
 }
@@ -353,5 +434,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: "hidden",
     marginTop: 8,
+  },
+  mermaidScroll: {
+    alignItems: "center",
+    padding: diagramPadding,
+  },
+  mermaidScrollCentered: {
+    alignItems: "center",
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: diagramPadding,
+  },
+  mermaidError: {
+    fontFamily: "Geist_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    padding: 16,
   },
 });
