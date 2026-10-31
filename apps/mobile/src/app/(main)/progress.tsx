@@ -30,7 +30,12 @@ export default function ProgressScreen() {
   }, [token]);
 
   useEffect(() => {
-    void load();
+    const handle = setTimeout(() => {
+      void load();
+    }, 0);
+    return () => {
+      clearTimeout(handle);
+    };
   }, [load]);
 
   return (

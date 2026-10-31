@@ -54,6 +54,7 @@ export function InfinityMark({
     }
     started.current = true;
     if (reduceMotion) {
+      // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are written from effects
       offset.value = 0;
       notify();
       return;

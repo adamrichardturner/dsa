@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
@@ -108,12 +108,12 @@ export function GapOutline({
   const progress = useSharedValue(animate ? 0 : 1);
   const span = useSharedValue(geometry.length);
   const head = useSharedValue(geometry.head);
-  const started = useRef(false);
+  const [started, setStarted] = useState(false);
   span.value = geometry.length;
   head.value = geometry.head;
 
-  if (!started.current) {
-    started.current = true;
+  if (!started) {
+    setStarted(true);
     progress.value = animate
       ? withDelay(
           delay,
@@ -201,9 +201,9 @@ export function CompleteTick({
   readonly color: string;
 }) {
   const progress = useSharedValue(animate ? 0 : 1);
-  const started = useRef(false);
-  if (animate && !started.current) {
-    started.current = true;
+  const [started, setStarted] = useState(false);
+  if (animate && !started) {
+    setStarted(true);
     progress.value = withTiming(1, { duration: 640, easing: Easing.out(Easing.cubic) });
   }
   const ringProps = useAnimatedProps(() => ({

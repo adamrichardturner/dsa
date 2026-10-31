@@ -43,6 +43,8 @@ export default function CourseScreen() {
     if (token === null) {
       return;
     }
+    // Audit mode is read so a toggle refreshes this screen while it stays focused.
+    void auditMode;
     loadGeneration.current += 1;
     const generation = loadGeneration.current;
     try {
@@ -58,13 +60,13 @@ export default function CourseScreen() {
       }
       setError(caught instanceof ApiError ? caught.message : "Could not load the course.");
     }
-  }, [token]);
+  }, [auditMode, token]);
 
   // Reload when this screen is shown, including after audit mode changes while it stays focused.
   useFocusEffect(
     useCallback(() => {
       void load();
-    }, [auditMode, load]),
+    }, [load]),
   );
 
   return (

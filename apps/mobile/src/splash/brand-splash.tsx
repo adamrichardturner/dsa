@@ -57,6 +57,7 @@ export function BrandSplash({
       onFinished();
       return;
     }
+    // eslint-disable-next-line react-hooks/immutability -- Reanimated shared values are written from effects
     opacity.value = withTiming(
       0,
       {
