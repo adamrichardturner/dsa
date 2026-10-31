@@ -183,6 +183,12 @@ export const CHANGE_PASSWORD = `
   }
 `;
 
+export const DELETE_ACCOUNT = `
+  mutation DeleteAccount($password: String, $confirmation: String) {
+    deleteAccount(password: $password, confirmation: $confirmation)
+  }
+`;
+
 export const SUBMIT_GAP = `
   mutation SubmitGap($problemId: ID!, $fillsJson: String!) {
     submitGap(problemId: $problemId, fillsJson: $fillsJson) {

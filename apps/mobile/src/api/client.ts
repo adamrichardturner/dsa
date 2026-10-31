@@ -11,6 +11,8 @@ const messages: Record<string, string> = {
   VERIFY_USED: "That verification link has already been used.",
   COURSE_UNVERIFIED: "Verify your email before using the course.",
   PASSWORD_INCORRECT: "Password is incorrect.",
+  DELETE_PASSWORD_REQUIRED: "Enter your password to confirm.",
+  CONFIRM_EMAIL: "Type your email address to confirm.",
   OAUTH_ACCOUNT:
     "This email uses Google, GitHub, or Apple sign-in. Continue with one of those. You can add a password afterward from settings.",
   INVALID_CREDENTIALS: "Email or password is incorrect.",

@@ -382,7 +382,8 @@ export default function PrivacyPage() {
           The theme and the code colours stay on the phone. Our servers do not
           receive them. Signing out removes <LegalCode>dsa.token</LegalCode>{" "}
           from the keychain. That signs you out of the app. It does not delete
-          the account.
+          the account. Delete account in Settings deletes the account on the
+          server and removes the token from the phone.
         </p>
       </LegalSection>
 
@@ -489,10 +490,11 @@ export default function PrivacyPage() {
         </LegalList>
         <p>
           Deleting the account deletes the user and, with it, the sessions, the
-          linked providers, and the submissions. The copy in the browser is
-          removed when that deletion signs you out. Display preferences can
-          remain on the device until you clear them. They do not identify the
-          deleted account to us.
+          linked providers, the submissions, drafts, skips, and course
+          notifications. The copy in the browser is removed when that deletion
+          signs you out. On the iPhone, the session token is removed from the
+          keychain. Display preferences can remain on the device until you clear
+          them. They do not identify the deleted account to us.
         </p>
         <p>
           If a host keeps backups, they age out on that host&apos;s backup
@@ -506,7 +508,7 @@ export default function PrivacyPage() {
           are hashed with scrypt. Session tokens are stored as SHA-256 hashes,
           so a copy of the database is not a list of usable tokens. Google and
           GitHub are linked only from a verified email. You can delete the
-          account yourself in Settings on the website.
+          account yourself in Settings on the website or in the iOS app.
         </p>
         <p>
           If a breach creates a risk to your rights, we will tell the relevant
@@ -531,11 +533,12 @@ export default function PrivacyPage() {
             password when one is set.
           </li>
           <li>
-            Delete it. On the website, Settings includes Delete account. You can
-            also email us. Deletion covers the account the website and the iOS
-            app both use, including the submissions, the sessions, the linked
-            providers, and the course notifications. Signing out of the app
-            removes the token from the phone. It does not delete the account.
+            Delete it. Settings on the website and in the iOS app each include
+            Delete account. You can also email us. Deletion covers the account
+            the website and the iOS app both use, including the submissions, the
+            sessions, the linked providers, and the course notifications. Signing
+            out of the app removes the token from the phone. It does not delete
+            the account.
           </li>
           <li>
             Restrict what we do with it while a correction or an objection is

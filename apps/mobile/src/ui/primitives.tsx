@@ -10,7 +10,43 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
+import type { ColorScheme, Palette } from "@/theme/palette";
 import { useTheme } from "@/theme/theme";
+
+type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
+
+const buttonTone = (
+  variant: ButtonVariant,
+  colors: Palette,
+  scheme: ColorScheme,
+): { readonly background: string; readonly color: string; readonly borderColor: string } => {
+  if (variant === "primary") {
+    return {
+      background: colors.primary,
+      color: colors.primaryForeground,
+      borderColor: colors.border,
+    };
+  }
+  if (variant === "secondary") {
+    return {
+      background: colors.secondary,
+      color: colors.foreground,
+      borderColor: colors.border,
+    };
+  }
+  if (variant === "destructive") {
+    return {
+      background: colors.destructive,
+      color: scheme === "dark" ? "#171717" : "#ffffff",
+      borderColor: colors.destructive,
+    };
+  }
+  return {
+    background: "transparent",
+    color: colors.foreground,
+    borderColor: "transparent",
+  };
+};
 
 export function Title({ children }: { readonly children: ReactNode }) {
   const { colors } = useTheme();
@@ -45,13 +81,10 @@ export function Button({
   readonly onPress: () => void;
   readonly disabled?: boolean;
   readonly pending?: boolean;
-  readonly variant?: "primary" | "secondary" | "ghost";
+  readonly variant?: ButtonVariant;
 }) {
-  const { colors } = useTheme();
-  const background =
-    variant === "primary" ? colors.primary : variant === "secondary" ? colors.secondary : "transparent";
-  const color = variant === "primary" ? colors.primaryForeground : colors.foreground;
-  const borderColor = variant === "ghost" ? "transparent" : colors.border;
+  const { colors, scheme } = useTheme();
+  const tone = buttonTone(variant, colors, scheme);
   return (
     <Pressable
       accessibilityRole="button"
@@ -60,16 +93,16 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: background,
-          borderColor,
+          backgroundColor: tone.background,
+          borderColor: tone.borderColor,
           opacity: disabled ? 0.45 : pressed ? 0.82 : 1,
         },
       ]}
     >
       {pending ? (
-        <ActivityIndicator color={color} />
+        <ActivityIndicator color={tone.color} />
       ) : (
-        <Text style={[styles.buttonLabel, { color }]}>{label}</Text>
+        <Text style={[styles.buttonLabel, { color: tone.color }]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -82,6 +115,7 @@ export function Field({
   secure = false,
   keyboard = "default",
   autoCapitalize = "sentences",
+  placeholder,
 }: {
   readonly label: string;
   readonly value: string;
@@ -89,6 +123,7 @@ export function Field({
   readonly secure?: boolean;
   readonly keyboard?: "default" | "email-address";
   readonly autoCapitalize?: "none" | "words" | "sentences";
+  readonly placeholder?: string;
 }) {
   const { colors } = useTheme();
   return (
@@ -99,6 +134,7 @@ export function Field({
         autoCorrect={false}
         keyboardType={keyboard}
         onChangeText={onChangeText}
+        placeholder={placeholder}
         placeholderTextColor={colors.mutedForeground}
         secureTextEntry={secure}
         style={[

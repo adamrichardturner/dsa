@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { DeleteAccount } from "@/account/delete-account";
 import { ApiError, request } from "@/api/client";
 import { webUrl } from "@/api/config";
 import { ContentWebView } from "@/content/content-webview";
@@ -254,6 +255,11 @@ export default function SettingsScreen() {
         }}
         variant="secondary"
       />
+      <Text style={[styles.section, { color: colors.foreground }]}>Account</Text>
+      <Body muted>
+        Deleting your account removes your profile and every piece of course data stored with it.
+      </Body>
+      <DeleteAccount />
     </ScrollView>
   );
 }
