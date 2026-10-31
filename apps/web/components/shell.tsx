@@ -14,7 +14,9 @@ import { MobileMenu } from "@/components/landing-menu";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { pageFrameClassName } from "@/components/page-frame";
 import { buttonVariants } from "@/components/ui/button";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/lib/auth";
+import { courseAccessOpen } from "@/lib/verification";
 import { isEmbedPath } from "@/lib/embed";
 import { siteName, siteShortName } from "@/lib/site";
 
@@ -37,6 +39,13 @@ const authRoutes: Record<string, true> = {
   "/reset-password": true,
   "/verify-email": true,
 };
+
+function NotificationWatcher() {
+  const { ready, user } = useAuth();
+  const open = ready && user !== null && courseAccessOpen(user);
+  useNotifications(open, { watchNavigation: true });
+  return null;
+}
 
 const isAuthRoute = (pathname: string): boolean => {
   if (authRoutes[pathname] === true) {
@@ -184,6 +193,7 @@ export function Shell({ children }: { readonly children: ReactNode }) {
         {children}
       </div>
       {lessonPage ? null : <PageFooter pathname={pathname} />}
+      <NotificationWatcher />
       <Onboarding />
     </div>
   );

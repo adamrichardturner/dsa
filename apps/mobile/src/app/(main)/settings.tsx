@@ -7,7 +7,9 @@ import { webUrl } from "@/api/config";
 import { ContentWebView } from "@/content/content-webview";
 import { CHANGE_PASSWORD, SET_AUDIT_MODE, UPDATE_PROFILE } from "@/api/operations";
 import { readUser, useSession } from "@/auth/session";
+import { badgeLabel, useNotifications } from "@/notifications/centre";
 import { useTheme } from "@/theme/theme";
+import { UserAvatar } from "@/ui/avatar";
 import type { ThemePreference } from "@/theme/palette";
 import { Body, Button, Field, Notice, Title } from "@/ui/primitives";
 
@@ -19,7 +21,9 @@ const preferences: readonly { readonly id: ThemePreference; readonly label: stri
 
 export default function SettingsScreen() {
   const { user, token, updateUser, signOut } = useSession();
+  const { centre } = useNotifications();
   const { colors, preference, setPreference } = useTheme();
+  const badge = badgeLabel(centre?.unreadCount ?? 0);
   const insets = useSafeAreaInsets();
   const [name, setName] = useState(user?.name ?? "");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -100,6 +104,25 @@ export default function SettingsScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
       style={{ backgroundColor: colors.background }}
     >
+      {user === null ? null : (
+        <Pressable
+          accessibilityLabel={badge === null ? "Notifications" : `Notifications, ${badge} new`}
+          accessibilityRole="button"
+          onPress={() => router.navigate("/notifications")}
+          style={[styles.identity, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <UserAvatar avatarUrl={user.avatarUrl} name={user.name} size={44} />
+          <View style={styles.identityCopy}>
+            <Text style={[styles.identityName, { color: colors.foreground }]}>{user.name}</Text>
+            <Text style={[styles.identityHint, { color: colors.mutedForeground }]}>Notifications</Text>
+          </View>
+          {badge === null ? null : (
+            <View style={[styles.count, { backgroundColor: colors.foreground }]}>
+              <Text style={[styles.countLabel, { color: colors.background }]}>{badge}</Text>
+            </View>
+          )}
+        </Pressable>
+      )}
       <Title>Settings</Title>
       <Body muted>{user?.email ?? ""}</Body>
       <Text style={[styles.section, { color: colors.foreground }]}>Appearance</Text>
@@ -170,6 +193,37 @@ const styles = StyleSheet.create({
   content: {
     gap: 14,
     paddingHorizontal: 24,
+  },
+  identity: {
+    alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    padding: 12,
+  },
+  identityCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  identityName: {
+    fontFamily: "Geist_500Medium",
+    fontSize: 16,
+  },
+  identityHint: {
+    fontFamily: "Geist_400Regular",
+    fontSize: 14,
+  },
+  count: {
+    alignItems: "center",
+    borderRadius: 999,
+    minWidth: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  countLabel: {
+    fontFamily: "Geist_500Medium",
+    fontSize: 12,
   },
   section: {
     fontFamily: "Fraunces_500Medium",

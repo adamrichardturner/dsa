@@ -40,6 +40,7 @@ SQL rows are decoded with `SqlSchema`.
 | `Catalog` | Modules, lessons, and whether the next lesson is open |
 | `Solutions` | Drafts, runs, and submissions |
 | `Insights` | Progress totals, pass rate, and the topics still to pass |
+| `Notifications` | A short list of milestones and the occasional study nudge, stored until dismissed |
 | `Admin` | The maintainer overview, and deleting another account |
 
 `src/domain/errors.ts` is the tagged error set (`Unauthorized`, `BadInput`, `NotFound`, `Unexpected`, and the rest).
@@ -55,6 +56,7 @@ Match on the tag at the boundary. A resolver should leave raw driver errors insi
 | `modules` | The syllabus, with each lesson marked completed, skipped, and available. Optional `client` selects the desk or the phone |
 | `lesson(slug)` | Reading, exercises, starter code, draft, and passing solution for that client |
 | `analytics` | Lessons completed, pass rate, skips, and topic totals for that client |
+| `notifications` | Notes still in the centre for that client, with the unread count |
 | `adminOverview` | Account and progress totals for the maintainer |
 
 Sign-up and session mutations are `signUp`, `verifyEmail`, `resendVerificationEmail`, `signIn`, `redeemOAuthCode`, and `signOut`.
@@ -63,7 +65,9 @@ Profile mutations are `completeOnboarding`, `setAuditMode`, `updateProfile`, `ch
 
 Desk mutations are `saveProgress`, `runCode`, `submitSolution`, and `skipLesson`. They read and write the desk tables only. `runSnippet` is the public snippet runner. `adminDeleteAccount` is limited to the maintainer.
 
-The phone adds `submitGap` and `solutionGuide`. A problem's `gap` field is the template and the unlabelled snippets. The answers stay on the server. `submitGap` assembles the function, runs the same tests as `submitSolution`, stores the attempt on `mobile_submissions`, and reports which blanks matched. `solutionGuide` returns the written explanation after two failed submissions, or after the exercise has been solved, counted on the client that asked. `modules`, `lesson`, `analytics`, `skipLesson`, and `solutionGuide` take an optional `client` string. Omitted, or any value other than `mobile`, means the desk. The phone passes `mobile`.
+The phone adds `submitGap` and `solutionGuide`. A problem's `gap` field is the template and the unlabelled snippets. The answers stay on the server. `submitGap` assembles the function, runs the same tests as `submitSolution`, stores the attempt on `mobile_submissions`, and reports which blanks matched. `solutionGuide` returns the written explanation after two failed submissions, or after the exercise has been solved, counted on the client that asked. `modules`, `lesson`, `analytics`, `skipLesson`, `solutionGuide`, `notifications`, `dismissNotification`, `clearNotifications`, and `markNotificationsRead` take an optional `client` string. Omitted, or any value other than `mobile`, means the desk. The phone passes `mobile`.
+
+`notifications` syncs a small set of notes from that client's progress: the first pass, the first lesson, each finished week, halfway, the finished course, a three-day streak, a seven-day streak, and one note after a week away. Each note is stored once. Dismissing or clearing it leaves the row in place so it is not sent again. A later absence can leave one more return note, and only after the previous one is two weeks old.
 
 `signInWithApple` accepts an Apple identity token. Google and GitHub also accept `client=mobile` on `/auth/:provider`, which only redirects to the `dsa://` scheme instead of the website. That query parameter does not choose a progress table.
 

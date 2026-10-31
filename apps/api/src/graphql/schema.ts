@@ -16,6 +16,7 @@ import { Admin } from "../domain/admin.js";
 import { OAuth } from "../domain/oauth.js";
 import { Catalog } from "../domain/catalog.js";
 import { Insights } from "../domain/insights.js";
+import { Notifications } from "../domain/notifications.js";
 import { progressClientFrom } from "../domain/progress-client.js";
 import { runSnippet } from "../domain/runner.js";
 import { Solutions } from "../domain/solutions.js";
@@ -553,6 +554,31 @@ const AdminOverviewType = new GraphQLObjectType({
   },
 });
 
+const StudyNotificationType = new GraphQLObjectType({
+  name: "StudyNotification",
+  fields: {
+    id: { type: new GraphQLNonNull(GraphQLID) },
+    kind: { type: new GraphQLNonNull(GraphQLString) },
+    title: { type: new GraphQLNonNull(GraphQLString) },
+    body: { type: new GraphQLNonNull(GraphQLString) },
+    href: { type: GraphQLString },
+    createdAt: { type: new GraphQLNonNull(GraphQLString) },
+    read: { type: new GraphQLNonNull(GraphQLBoolean) },
+  },
+});
+
+const NotificationCentreType = new GraphQLObjectType({
+  name: "NotificationCentre",
+  fields: {
+    unreadCount: { type: new GraphQLNonNull(GraphQLInt) },
+    items: {
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(StudyNotificationType)),
+      ),
+    },
+  },
+});
+
 const requireString = (value: unknown, message: string): string => {
   if (typeof value !== "string") {
     throw new Error(message);
@@ -702,6 +728,29 @@ export const schema = new GraphQLSchema({
               const insights = yield* Insights;
               const user = yield* auth.currentUser;
               return yield* insights.forUser(
+                user.id,
+                progressClientFrom(args.client),
+              );
+            }),
+          ),
+      },
+      notifications: {
+        type: new GraphQLNonNull(NotificationCentreType),
+        args: {
+          client: { type: GraphQLString },
+        },
+        resolve: (
+          _parent,
+          args: { client?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const notifications = yield* Notifications;
+              const user = yield* auth.currentUser;
+              return yield* notifications.centre(
                 user.id,
                 progressClientFrom(args.client),
               );
@@ -1146,6 +1195,78 @@ export const schema = new GraphQLSchema({
                 gaps: grades,
                 submission,
               };
+            }),
+          ),
+      },
+      dismissNotification: {
+        type: new GraphQLNonNull(NotificationCentreType),
+        args: {
+          id: { type: new GraphQLNonNull(GraphQLID) },
+          client: { type: GraphQLString },
+        },
+        resolve: (
+          _parent,
+          args: { id?: unknown; client?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const notifications = yield* Notifications;
+              const user = yield* auth.currentUser;
+              const id = typeof args.id === "string" ? args.id : "";
+              return yield* notifications.dismiss(
+                user.id,
+                progressClientFrom(args.client),
+                id,
+              );
+            }),
+          ),
+      },
+      clearNotifications: {
+        type: new GraphQLNonNull(NotificationCentreType),
+        args: {
+          client: { type: GraphQLString },
+        },
+        resolve: (
+          _parent,
+          args: { client?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const notifications = yield* Notifications;
+              const user = yield* auth.currentUser;
+              return yield* notifications.clear(
+                user.id,
+                progressClientFrom(args.client),
+              );
+            }),
+          ),
+      },
+      markNotificationsRead: {
+        type: new GraphQLNonNull(NotificationCentreType),
+        args: {
+          client: { type: GraphQLString },
+        },
+        resolve: (
+          _parent,
+          args: { client?: unknown },
+          context: GraphQLContext,
+        ) =>
+          execute(
+            context.token,
+            Effect.gen(function* () {
+              const auth = yield* Auth;
+              const notifications = yield* Notifications;
+              const user = yield* auth.currentUser;
+              return yield* notifications.markRead(
+                user.id,
+                progressClientFrom(args.client),
+              );
             }),
           ),
       },

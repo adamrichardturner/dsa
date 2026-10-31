@@ -346,6 +346,43 @@ export const ADMIN_OVERVIEW = `
   }
 `;
 
+const notificationFields = `
+  unreadCount
+  items {
+    id
+    kind
+    title
+    body
+    href
+    createdAt
+    read
+  }
+`;
+
+export const NOTIFICATIONS_QUERY = `
+  query Notifications {
+    notifications {${notificationFields}}
+  }
+`;
+
+export const DISMISS_NOTIFICATION = `
+  mutation DismissNotification($id: ID!) {
+    dismissNotification(id: $id) {${notificationFields}}
+  }
+`;
+
+export const CLEAR_NOTIFICATIONS = `
+  mutation ClearNotifications {
+    clearNotifications {${notificationFields}}
+  }
+`;
+
+export const MARK_NOTIFICATIONS_READ = `
+  mutation MarkNotificationsRead {
+    markNotificationsRead {${notificationFields}}
+  }
+`;
+
 export const ADMIN_DELETE_ACCOUNT = `
   mutation AdminDeleteAccount($userId: ID!) {
     adminDeleteAccount(userId: $userId)

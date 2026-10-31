@@ -1,7 +1,9 @@
-import { Redirect } from "expo-router";
+import { Redirect, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { NativeTabs } from "expo-router/native-tabs";
 import { DynamicColorIOS, Platform, type ColorValue } from "react-native";
 import { useSession } from "@/auth/session";
+import { badgeLabel, NotificationProvider, useNotifications } from "@/notifications/centre";
 import { darkPalette, lightPalette, type ColorScheme } from "@/theme/palette";
 import { useTheme } from "@/theme/theme";
 
@@ -26,14 +28,17 @@ const adaptiveColor = (
   return light;
 };
 
-export default function MainLayout() {
-  const { user } = useSession();
+function MainTabs() {
   const { colors, scheme } = useTheme();
+  const { centre, refresh } = useNotifications();
+  const badge = badgeLabel(centre?.unreadCount ?? 0);
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
   const activeColor = adaptiveColor(scheme, lightPalette.foreground, darkPalette.foreground);
   const inactiveColor = adaptiveColor(scheme, "#525252", "#d4d4d4", "#000000", "#ffffff");
-  if (user === null) {
-    return <Redirect href="/sign-in" />;
-  }
   return (
     <NativeTabs
       backgroundColor={Platform.OS === "ios" ? undefined : colors.card}
@@ -60,10 +65,27 @@ export default function MainLayout() {
         <NativeTabs.Trigger.Label>Progress</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon md="insights" sf="chart.bar" />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="notifications">
+        <NativeTabs.Trigger.Label>Alerts</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon md="notifications" sf="bell" />
+        {badge === null ? null : <NativeTabs.Trigger.Badge>{badge}</NativeTabs.Trigger.Badge>}
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon md="settings" sf="gearshape" />
       </NativeTabs.Trigger>
     </NativeTabs>
+  );
+}
+
+export default function MainLayout() {
+  const { user } = useSession();
+  if (user === null) {
+    return <Redirect href="/sign-in" />;
+  }
+  return (
+    <NotificationProvider>
+      <MainTabs />
+    </NotificationProvider>
   );
 }

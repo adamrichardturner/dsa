@@ -146,6 +146,21 @@ export interface TopicStat {
   readonly attempted: number;
 }
 
+export interface StudyNotification {
+  readonly id: string;
+  readonly kind: string;
+  readonly title: string;
+  readonly body: string;
+  readonly href: string | null;
+  readonly createdAt: string;
+  readonly read: boolean;
+}
+
+export interface NotificationCentre {
+  readonly unreadCount: number;
+  readonly items: readonly StudyNotification[];
+}
+
 export interface AnalyticsView {
   readonly lessonsCompleted: number;
   readonly lessonsTotal: number;

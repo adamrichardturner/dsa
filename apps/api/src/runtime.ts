@@ -8,6 +8,7 @@ import { Mail } from "./domain/mail.js";
 import { OAuth } from "./domain/oauth.js";
 import { Catalog } from "./domain/catalog.js";
 import { Insights } from "./domain/insights.js";
+import { Notifications } from "./domain/notifications.js";
 import { Solutions } from "./domain/solutions.js";
 
 const DbLive = Layer.unwrap(
@@ -34,6 +35,7 @@ export const AppLayer = Layer.mergeAll(
   Catalog.layer,
   Solutions.layer,
   Insights.layer,
+  Notifications.layer,
   AppConfig.layer,
 ).pipe(
   Layer.provideMerge(DbLive),
@@ -50,6 +52,7 @@ type AppRequirements =
   | Catalog
   | Solutions
   | Insights
+  | Notifications
   | AppConfig
   | RequestAuth;
 

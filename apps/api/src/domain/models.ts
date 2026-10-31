@@ -159,6 +159,23 @@ export interface SkippedLesson {
   readonly title: string;
 }
 
+export type StudyNotificationKind = "achievement" | "habit";
+
+export interface StudyNotification {
+  readonly id: string;
+  readonly kind: StudyNotificationKind;
+  readonly title: string;
+  readonly body: string;
+  readonly href: string | null;
+  readonly createdAt: string;
+  readonly read: boolean;
+}
+
+export interface NotificationCentre {
+  readonly unreadCount: number;
+  readonly items: readonly StudyNotification[];
+}
+
 export interface SkipResult {
   readonly slug: string;
   readonly skipped: boolean;

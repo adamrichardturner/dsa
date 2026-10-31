@@ -6,6 +6,7 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import { useMutation } from "urql";
 import { cn } from "cn";
 import {
+  Bell,
   BookOpen,
   ChartColumn,
   CircleQuestionMark,
@@ -44,7 +45,9 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { unreadLabel, useNotifications } from "@/hooks/use-notifications";
 import { useAuth } from "@/lib/auth";
+import { courseAccessOpen } from "@/lib/verification";
 import {
   articleCategoryPath,
   categoryByTopic,
@@ -119,6 +122,12 @@ const accountLinks: readonly MenuLink[] = [
     label: "Progress",
     detail: "What still needs a pass",
     icon: ChartColumn,
+  },
+  {
+    href: "/notifications",
+    label: "Notifications",
+    detail: "Milestones, and a rare nudge",
+    icon: Bell,
   },
   {
     href: "/settings",
@@ -393,7 +402,9 @@ function ExploreLinkItem({
 function MenuAccount({ onDone }: { readonly onDone: () => void }) {
   const router = useRouter();
   const { ready, user, signOut } = useAuth();
+  const { centre } = useNotifications(ready && user !== null && courseAccessOpen(user));
   const [, runSignOut] = useMutation(SIGN_OUT);
+  const unread = unreadLabel(centre?.unreadCount ?? 0);
 
   const onSignOut = (): void => {
     onDone();
@@ -426,11 +437,24 @@ function MenuAccount({ onDone }: { readonly onDone: () => void }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3 px-1">
-        <UserAvatar
-          name={user.name}
-          avatarUrl={user.avatarUrl}
-          className="size-10"
-        />
+        <Link
+          href="/notifications"
+          onClick={onDone}
+          aria-label={unread === null ? "Notifications" : `Notifications, ${unread} new`}
+          className="relative shrink-0 rounded-full"
+        >
+          <UserAvatar
+            name={user.name}
+            avatarUrl={user.avatarUrl}
+            className="size-10"
+          />
+          {unread === null ? null : (
+            <span
+              aria-hidden
+              className="absolute top-0 right-0 size-2.5 rounded-full bg-foreground ring-2 ring-background"
+            />
+          )}
+        </Link>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{user.name}</p>
           <p className="truncate text-xs text-muted-foreground">{user.email}</p>

@@ -121,12 +121,13 @@ The callback redirects to the web app with a one-time code. `redeemOAuthCode` tu
 | `email_verifications`, `password_resets` | Hashed, expiring, single-use tokens |
 | `modules`, `lessons`, `problems` | The course, upserted from TypeScript on boot |
 | `drafts`, `submissions`, `lesson_skips` | In-progress code, test runs, and skips |
+| `notifications` | Study notes for each client, kept until dismissed |
 
 ### GraphQL, in brief
 
-Queries: `oauthProviders`, `me`, `modules`, `lesson`, `analytics`, `adminOverview`.
+Queries: `oauthProviders`, `me`, `modules`, `lesson`, `analytics`, `notifications`, `adminOverview`.
 
-Mutations cover sign-up, sign-in, email verification, OAuth redemption, profile and password changes, drafts (`saveProgress`), `runCode`, `submitSolution`, and `skipLesson`.
+Mutations cover sign-up, sign-in, email verification, OAuth redemption, profile and password changes, drafts (`saveProgress`), `runCode`, `submitSolution`, and `skipLesson`. `dismissNotification`, `clearNotifications`, and `markNotificationsRead` update the notification centre. A note is stored once per client, so dismissing it does not bring it back.
 
 `runSnippet` is public. TypeScript fences in the reading, the articles, and the written solutions call it.
 

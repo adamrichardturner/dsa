@@ -214,6 +214,43 @@ export const SKIP_LESSON = `
   }
 `;
 
+const notificationFields = `
+  unreadCount
+  items {
+    id
+    kind
+    title
+    body
+    href
+    createdAt
+    read
+  }
+`;
+
+export const NOTIFICATIONS_QUERY = `
+  query Notifications {
+    notifications(client: "mobile") {${notificationFields}}
+  }
+`;
+
+export const DISMISS_NOTIFICATION = `
+  mutation DismissNotification($id: ID!) {
+    dismissNotification(id: $id, client: "mobile") {${notificationFields}}
+  }
+`;
+
+export const CLEAR_NOTIFICATIONS = `
+  mutation ClearNotifications {
+    clearNotifications(client: "mobile") {${notificationFields}}
+  }
+`;
+
+export const MARK_NOTIFICATIONS_READ = `
+  mutation MarkNotificationsRead {
+    markNotificationsRead(client: "mobile") {${notificationFields}}
+  }
+`;
+
 export const RUN_SNIPPET = `
   mutation RunSnippet($code: String!) {
     runSnippet(code: $code) {

@@ -105,6 +105,7 @@ function useRunnerTheme(): readonly [
 export function CodeRunner({ code }: { readonly code: string }) {
   const initial = code.endsWith("\n") ? code.slice(0, -1) : code;
   const [source, setSource] = useState(initial);
+  const [revision, setRevision] = useState(0);
   const [terminal, setTerminal] = useState<CodeTerminalState>({ kind: "idle" });
   const [resetOpen, setResetOpen] = useState(false);
   const [themeId, setThemeId] = useRunnerTheme();
@@ -151,6 +152,7 @@ export function CodeRunner({ code }: { readonly code: string }) {
 
   const onReset = () => {
     request.current += 1;
+    setRevision((current) => current + 1);
     setSource(initial);
     setTerminal({ kind: "idle" });
     setResetOpen(false);
@@ -175,6 +177,7 @@ export function CodeRunner({ code }: { readonly code: string }) {
       <div style={{ height: editorHeight(source) }}>
         <CodeEditor
           value={source}
+          revision={revision}
           onChange={setSource}
           themeId={themeId}
           autoFocus={false}

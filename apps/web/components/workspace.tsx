@@ -219,6 +219,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
 
   const lesson = result.data?.lesson ?? null;
   const [code, setCode] = useState("");
+  const [revision, setRevision] = useState(0);
   const [outcome, setOutcome] = useState<SubmissionView | null>(null);
   const [notice, setNotice] = useState<SolutionNoticeState | null>(null);
   const [holdingCheck, setHoldingCheck] = useState(false);
@@ -266,14 +267,29 @@ export function Workspace({ slug }: { readonly slug: string }) {
     if (!switching && result.stale) {
       return;
     }
+    const baseline = readCode(problem.id);
+    const live = editorRef.current?.getModel()?.getValue();
+    if (
+      !switching &&
+      live !== undefined &&
+      baseline !== null &&
+      live !== baseline
+    ) {
+      return;
+    }
     if (!switching && !isClean(problem.id)) {
       return;
     }
-    if (!switching && readCode(problem.id) === initial) {
+    if (
+      !switching &&
+      baseline === initial &&
+      (live === undefined || live === initial)
+    ) {
       return;
     }
     if (!switching) {
       remember(problem.id, initial);
+      setRevision((current) => current + 1);
       setCode(initial);
       if (problem.solved && problem.passingCode !== null) {
         setPassedCode({ problemId: problem.id, code: problem.passingCode });
@@ -283,6 +299,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
 
     loadedProblemId.current = problem.id;
     remember(problem.id, initial);
+    setRevision((current) => current + 1);
     setCode(initial);
     setOutcome(null);
     setNotice(null);
@@ -455,6 +472,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
 
   const onReset = () => {
     track(problem.starterCode);
+    setRevision((current) => current + 1);
     setCode(problem.starterCode);
     setOutcome(null);
     setNotice(null);
@@ -693,6 +711,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
             <div className="relative min-h-0 flex-1">
               <CodeEditor
                 value={code}
+                revision={revision}
                 onChange={(next) => {
                   track(next);
                   setCode(next);

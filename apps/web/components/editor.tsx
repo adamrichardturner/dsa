@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -17,6 +19,7 @@ import {
   getEditorTheme,
   type EditorThemeId,
 } from "@/lib/editor-themes";
+import { planEditorSync } from "@/lib/editor-sync";
 
 const editorLineWidths = [
   "w-2/3",
@@ -66,7 +69,13 @@ const useMonacoOverflowHost = (): HTMLDivElement | null => {
   return host;
 };
 
+let editorPrepared = false;
+
 const prepareEditor: BeforeMount = (monaco) => {
+  if (editorPrepared) {
+    return;
+  }
+  editorPrepared = true;
   const typescript = monaco.languages.typescript;
   typescript.typescriptDefaults.setCompilerOptions({
     strict: true,
@@ -141,6 +150,34 @@ const editorOptions = (
   };
 };
 
+const modelPathFor = (reactId: string): string => {
+  const suffix = reactId.replace(/[^a-zA-Z0-9]/g, "");
+  if (suffix.length > 0) {
+    return `dsa/${suffix}.ts`;
+  }
+  return "dsa/editor.ts";
+};
+
+const replaceEditorText = (
+  instance: CodeEditorInstance,
+  next: string,
+): void => {
+  const model = instance.getModel();
+  if (model === null || model.getValue() === next) {
+    return;
+  }
+  const viewState = instance.saveViewState();
+  const hadFocus = instance.hasTextFocus() || instance.hasWidgetFocus();
+  instance.setValue(next);
+  if (viewState !== null) {
+    instance.restoreViewState(viewState);
+  }
+  if (!hadFocus) {
+    return;
+  }
+  instance.focus();
+};
+
 export function CodeEditor({
   value,
   onChange,
@@ -149,6 +186,7 @@ export function CodeEditor({
   editorRef,
   lineNumbers = "on",
   wordWrap = "on",
+  revision = 0,
 }: {
   readonly value: string;
   readonly onChange: (value: string) => void;
@@ -157,14 +195,29 @@ export function CodeEditor({
   readonly editorRef?: RefObject<CodeEditorInstance | null>;
   readonly lineNumbers?: EditorLineNumbers;
   readonly wordWrap?: EditorWordWrap;
+  readonly revision?: number;
 }) {
   const theme = getEditorTheme(themeId);
   const overflowHost = useMonacoOverflowHost();
+  const reactId = useId();
+  const modelPath = modelPathFor(reactId);
   const instanceRef = useRef<CodeEditorInstance | null>(null);
   const emittedValue = useRef(value);
-  const valueRef = useRef(value);
+  const appliedRevision = useRef(revision);
   const applyingExternal = useRef(false);
-  valueRef.current = value;
+  const onChangeRef = useRef(onChange);
+  const autoFocusRef = useRef(autoFocus);
+  const editorRefProp = useRef(editorRef);
+  const seededValue = useRef(value);
+  const seededRevision = useRef(revision);
+  const [mounted, setMounted] = useState(false);
+  onChangeRef.current = onChange;
+  autoFocusRef.current = autoFocus;
+  editorRefProp.current = editorRef;
+  if (seededRevision.current !== revision) {
+    seededRevision.current = revision;
+    seededValue.current = value;
+  }
   const options = useMemo(() => {
     if (overflowHost === null) {
       return null;
@@ -172,63 +225,79 @@ export function CodeEditor({
     return editorOptions(overflowHost, lineNumbers, wordWrap);
   }, [lineNumbers, overflowHost, wordWrap]);
 
+  const handleChange = useCallback((next: string | undefined) => {
+    if (applyingExternal.current) {
+      return;
+    }
+    const text = next ?? "";
+    emittedValue.current = text;
+    onChangeRef.current(text);
+  }, []);
+
+  const handleMount = useCallback((instance: CodeEditorInstance) => {
+    instanceRef.current = instance;
+    const external = editorRefProp.current;
+    if (external !== undefined) {
+      external.current = instance;
+    }
+    setMounted(true);
+    if (!autoFocusRef.current) {
+      return;
+    }
+    instance.focus();
+  }, []);
+
   useEffect(() => {
     const instance = instanceRef.current;
     if (instance === null) {
       return;
     }
-    if (value === emittedValue.current) {
+    const model = instance.getModel();
+    if (model === null) {
       return;
     }
-    const model = instance.getModel();
-    if (model === null || model.getValue() === value) {
+    const current = model.getValue();
+    const plan = planEditorSync({
+      modelValue: current,
+      propValue: value,
+      emittedValue: emittedValue.current,
+      revision,
+      appliedRevision: appliedRevision.current,
+    });
+    if (plan === "keep") {
       emittedValue.current = value;
+      appliedRevision.current = revision;
+      return;
+    }
+    if (plan === "echo") {
+      onChangeRef.current(current);
       return;
     }
     applyingExternal.current = true;
     emittedValue.current = value;
-    instance.setValue(value);
+    appliedRevision.current = revision;
+    replaceEditorText(instance, value);
     applyingExternal.current = false;
-  }, [value]);
+  }, [mounted, revision, value]);
 
   if (overflowHost === null || options === null) {
     return <EditorSkeleton />;
   }
 
   return (
-    <Editor
-      height="100%"
-      language="typescript"
-      theme={theme.monacoId}
-      defaultValue={value}
-      onChange={(next) => {
-        if (applyingExternal.current) {
-          return;
-        }
-        const text = next ?? "";
-        emittedValue.current = text;
-        onChange(text);
-      }}
-      loading={<EditorSkeleton />}
-      beforeMount={prepareEditor}
-      onMount={(instance) => {
-        instanceRef.current = instance;
-        if (editorRef !== undefined) {
-          editorRef.current = instance;
-        }
-        const model = instance.getModel();
-        if (model !== null && model.getValue() !== valueRef.current) {
-          applyingExternal.current = true;
-          emittedValue.current = valueRef.current;
-          instance.setValue(valueRef.current);
-          applyingExternal.current = false;
-        }
-        if (!autoFocus) {
-          return;
-        }
-        instance.focus();
-      }}
-      options={options}
-    />
+    <div className="h-full min-h-0 overflow-hidden">
+      <Editor
+        height="100%"
+        language="typescript"
+        path={modelPath}
+        theme={theme.monacoId}
+        defaultValue={seededValue.current}
+        onChange={handleChange}
+        loading={<EditorSkeleton />}
+        beforeMount={prepareEditor}
+        onMount={handleMount}
+        options={options}
+      />
+    </div>
   );
 }
