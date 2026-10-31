@@ -7,11 +7,13 @@ export function ExerciseNav({
   activeId,
   activePassed,
   hrefFor,
+  onNavigate,
 }: {
   readonly problems: readonly ProblemView[];
   readonly activeId: string;
   readonly activePassed: boolean;
   readonly hrefFor: (id: string) => string;
+  readonly onNavigate: () => void;
 }) {
   if (problems.length < 2) {
     return null;
@@ -26,6 +28,7 @@ export function ExerciseNav({
           <li key={item.id}>
             <Link
               href={hrefFor(item.id)}
+              onClick={onNavigate}
               aria-current={active ? "step" : undefined}
               className={cn(
                 "flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",

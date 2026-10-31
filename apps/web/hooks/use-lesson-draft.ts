@@ -17,7 +17,9 @@ export function useLessonDraft({
   readonly code: string;
   readonly armed: boolean;
 }) {
-  const [, saveProgress] = useMutation<{ saveProgress: boolean }>(SAVE_PROGRESS);
+  const [, saveProgress] = useMutation<{ saveProgress: boolean }>(
+    SAVE_PROGRESS,
+  );
   const saveProgressRef = useRef(saveProgress);
   const latest = useRef<Record<string, string>>({});
   const saved = useRef<Record<string, string>>({});
@@ -84,11 +86,17 @@ export function useLessonDraft({
     sending.current = false;
   };
 
-  const remember = useCallback((id: string, baseline: string) => {
+  const remember = useCallback((id: string, baseline: string): string => {
+    const current = latest.current[id];
+    const clean = current === undefined || saved.current[id] === current;
+    const next = clean ? baseline : current;
     problemIdRef.current = id;
-    codeRef.current = baseline;
-    latest.current[id] = baseline;
-    saved.current[id] = baseline;
+    codeRef.current = next;
+    latest.current[id] = next;
+    if (clean) {
+      saved.current[id] = next;
+    }
+    return next;
   }, []);
 
   const track = useCallback((next: string) => {
@@ -109,6 +117,14 @@ export function useLessonDraft({
   }, []);
 
   const readCode = useCallback((id: string) => latest.current[id] ?? null, []);
+
+  const saveNow = useCallback(() => {
+    const id = problemIdRef.current;
+    if (id === null) {
+      return;
+    }
+    void persistRef.current(id);
+  }, []);
 
   useEffect(() => {
     if (!armed || problemId === null) {
@@ -155,5 +171,5 @@ export function useLessonDraft({
     };
   }, []);
 
-  return { tick, remember, track, isClean, readCode };
+  return { tick, remember, track, isClean, readCode, saveNow };
 }

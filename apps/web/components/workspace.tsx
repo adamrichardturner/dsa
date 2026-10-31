@@ -184,7 +184,8 @@ export function Workspace({ slug }: { readonly slug: string }) {
   const [result, reexecute] = useQuery<{ lesson: LessonView | null }>({
     query: LESSON_QUERY,
     variables: { slug },
-    pause: auth.user === null || !courseAccessOpen(auth.user) || slug.length === 0,
+    pause:
+      auth.user === null || !courseAccessOpen(auth.user) || slug.length === 0,
     requestPolicy: "cache-and-network",
   });
   const [submitState, submit] = useMutation<{ submitSolution: SubmissionView }>(
@@ -250,7 +251,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
           lesson.problems,
           requestedExercise ?? heldProblemId.current,
         );
-  const { tick, remember, track, isClean, readCode } = useLessonDraft({
+  const { tick, remember, track, isClean, readCode, saveNow } = useLessonDraft({
     problemId: problem?.id ?? null,
     code,
     armed: problem !== undefined && loadedProblemId.current === problem.id,
@@ -261,8 +262,9 @@ export function Workspace({ slug }: { readonly slug: string }) {
       return;
     }
 
-    const initial = problem.latestCode ?? problem.starterCode;
     const switching = loadedProblemId.current !== problem.id;
+    const savedCode = problem.latestCode ?? problem.starterCode;
+    const initial = switching ? (readCode(problem.id) ?? savedCode) : savedCode;
 
     if (!switching && result.stale) {
       return;
@@ -288,9 +290,9 @@ export function Workspace({ slug }: { readonly slug: string }) {
       return;
     }
     if (!switching) {
-      remember(problem.id, initial);
+      const next = remember(problem.id, initial);
       setRevision((current) => current + 1);
-      setCode(initial);
+      setCode(next);
       if (problem.solved && problem.passingCode !== null) {
         setPassedCode({ problemId: problem.id, code: problem.passingCode });
       }
@@ -298,9 +300,9 @@ export function Workspace({ slug }: { readonly slug: string }) {
     }
 
     loadedProblemId.current = problem.id;
-    remember(problem.id, initial);
+    const next = remember(problem.id, initial);
     setRevision((current) => current + 1);
-    setCode(initial);
+    setCode(next);
     setOutcome(null);
     setNotice(null);
     setSolutionOpen(false);
@@ -599,6 +601,7 @@ export function Workspace({ slug }: { readonly slug: string }) {
                 activeId={problem.id}
                 activePassed={hasPassed}
                 hrefFor={exerciseHref}
+                onNavigate={saveNow}
               />
               <Card>
                 <CardHeader>
