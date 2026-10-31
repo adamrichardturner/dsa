@@ -12,7 +12,7 @@
         "CFBundleDisplayName": "DSA"
       },
       "bundleIdentifier": "com.datastructuresandalgorithms.app",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false
