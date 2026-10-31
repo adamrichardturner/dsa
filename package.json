@@ -6,6 +6,8 @@
     "dev:api": "npm run dev --prefix apps/api",
     "dev:web": "npm run dev --prefix apps/web",
     "dev:mobile": "npm run start --prefix apps/mobile",
+    "dev:ios": "npm run ios --prefix apps/mobile",
+    "dev:ios:device": "npm run ios:device --prefix apps/mobile",
     "build:ios:dev": "npm run build:ios:dev --prefix apps/mobile",
     "build:ios:dev:device": "npm run build:ios:dev:device --prefix apps/mobile",
     "build:ios:prod": "npm run build:ios:prod --prefix apps/mobile",

@@ -13,10 +13,10 @@ The API has to be running. From the repository root:
 ```bash
 npm run dev:db
 npm run dev:api
-npm run dev:mobile
+npm run dev:ios
 ```
 
-From this directory, `npm start` is the same Expo command.
+`npm run dev:ios` compiles the development build and installs it on the simulator. After that, `npm run dev:mobile` (or `npm start` from this directory) is enough to reload JavaScript.
 
 Copy the env file before starting the app. The GraphQL client reads `EXPO_PUBLIC_GRAPHQL_URL` and throws if it is missing.
 
@@ -34,4 +34,14 @@ Sign-in is email and password, plus Google and GitHub when the API has those pro
 npm run typecheck
 ```
 
-`npm run ios` and `npm run android` open a simulator. Sign in with Apple and the drag-and-drop gestures need a development build once you leave Expo Go, because they use native modules.
+This app uses a development build (`expo-dev-client`), so Expo Go cannot open it. From the repository root, compile and install that build on the iOS Simulator, then start Metro:
+
+```bash
+npm run dev:ios
+```
+
+The first run generates the native project, compiles it with Xcode, and installs `com.datastructuresandalgorithms.app`. Later JavaScript changes only need `npm run dev:mobile`; open the installed app, or press `i` in that terminal. Run `npm run dev:ios` again after a native dependency, an `app.json` change, or an SDK upgrade.
+
+Sign in with Apple’s entitlement makes Xcode require a development certificate, including on the simulator. Local `expo run:ios` builds omit that entitlement so they can compile without one. EAS builds still include it. `npm run dev:ios:device` installs on a plugged-in iPhone and needs that certificate.
+
+Sign in with Apple and the drag-and-drop gestures need this development build, because they use native modules.

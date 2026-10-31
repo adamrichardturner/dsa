@@ -227,7 +227,9 @@ npm run dev:mobile
 | `npm run dev:docker:detach` | Same, in the background |
 | `npm run dev:logs` | Follows the container logs |
 | `npm run dev:down` | Stops the stack |
-| `npm run dev:mobile` | Starts the Expo app in `apps/mobile` |
+| `npm run dev:mobile` | Starts the Expo dev server for an already installed development build |
+| `npm run dev:ios` | Compiles the iOS development build, installs it on the simulator, and starts Metro |
+| `npm run dev:ios:device` | Same build, installed on a plugged-in iPhone |
 
 The app is at [http://localhost:3000](http://localhost:3000).
 
