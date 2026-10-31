@@ -43,6 +43,22 @@ export const initialGapFills = (
   return fills;
 };
 
+export const sameGapFills = (
+  left: Readonly<Record<string, string>>,
+  right: Readonly<Record<string, string>>,
+): boolean => {
+  const leftKeys = Object.keys(left);
+  if (leftKeys.length !== Object.keys(right).length) {
+    return false;
+  }
+  for (const key of leftKeys) {
+    if (left[key] !== right[key]) {
+      return false;
+    }
+  }
+  return true;
+};
+
 export const gapFillsFromRecord = (
   fills: Readonly<Record<string, string>>,
 ): readonly GapFill[] => {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { gapFillsFromRecord, initialGapFills } from "./gap-fills.ts";
+import { gapFillsFromRecord, initialGapFills, sameGapFills } from "./gap-fills.ts";
 
 const parts = [
   { kind: "text", text: "return ", gapId: null },
@@ -43,6 +43,14 @@ test("a chip is only placed in the first gap that saved it", () => {
     { gapId: "g0", chipId: "c2" },
   ]);
   assert.deepEqual(fills, { g0: "c1" });
+});
+
+test("gap fills match only when every gap holds the same snippet", () => {
+  assert.equal(sameGapFills({}, {}), true);
+  assert.equal(sameGapFills({ g0: "c1" }, { g0: "c1" }), true);
+  assert.equal(sameGapFills({}, { g0: "c1" }), false);
+  assert.equal(sameGapFills({ g0: "c1" }, { g0: "c2" }), false);
+  assert.equal(sameGapFills({ g0: "c1" }, { g0: "c1", g1: "c2" }), false);
 });
 
 test("submitted fills become the list the lesson stores", () => {

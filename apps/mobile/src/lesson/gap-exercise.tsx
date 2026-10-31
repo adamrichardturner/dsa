@@ -1,5 +1,5 @@
 import * as Haptics from "expo-haptics";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, {
   Easing,
@@ -16,7 +16,7 @@ import type { GapChip, GapGrade, GapPart, GapSubmission, ProblemView } from "@/a
 import { CodeLine, CodeWindow } from "@/lesson/code-window";
 import { useCodeTheme } from "@/lesson/code-theme";
 import { GapOutline } from "@/lesson/completion";
-import { initialGapFills } from "@/lesson/gap-fills";
+import { initialGapFills, sameGapFills } from "@/lesson/gap-fills";
 import { exerciseStatus, StatusMark, statusLabel } from "@/course/status-mark";
 import { exerciseHighlightLanguage } from "@/lesson/highlight";
 import { HighlightedCode } from "@/lesson/highlighted-code";
@@ -92,6 +92,7 @@ function GapSlot({
   delay,
   gapId,
   language,
+  locked,
   onClear,
   onDrop,
   onFocus,
@@ -103,6 +104,7 @@ function GapSlot({
   readonly delay: number;
   readonly gapId: string;
   readonly language: ReturnType<typeof exerciseHighlightLanguage>;
+  readonly locked: boolean;
   readonly onClear: () => void;
   readonly onDrop: (data: ChipData) => void;
   readonly onFocus: () => void;
@@ -111,8 +113,8 @@ function GapSlot({
   const [bounds, setBounds] = useState<{ readonly height: number; readonly width: number } | null>(null);
   const target = toneTarget(correct);
   const tone = useSharedValue(target);
-  const seen = useRef(correct);
-  const showedCorrect = useRef(false);
+  const [seen, setSeen] = useState(correct);
+  const [showedCorrect, setShowedCorrect] = useState(false);
   const idleBorder = useSharedValue(active ? palette.gapActive : palette.gapBorder);
   const goodBorder = useSharedValue(palette.success);
   const badBorder = useSharedValue(palette.danger);
@@ -120,10 +122,10 @@ function GapSlot({
   const goodFill = useSharedValue(palette.successFill);
   const badFill = useSharedValue(palette.dangerFill);
   const restingBorder = active ? palette.gapActive : palette.gapBorder;
-  if (correct === true && !celebrate) {
-    showedCorrect.current = true;
+  if (correct === true && !celebrate && !showedCorrect) {
+    setShowedCorrect(true);
   }
-  const traceFromRest = celebrate && !showedCorrect.current;
+  const traceFromRest = celebrate && !showedCorrect;
   idleBorder.value = restingBorder;
   goodBorder.value = traceFromRest ? restingBorder : palette.success;
   badBorder.value = palette.danger;
@@ -131,8 +133,8 @@ function GapSlot({
   goodFill.value = palette.successFill;
   badFill.value = palette.dangerFill;
 
-  if (seen.current !== correct) {
-    seen.current = correct;
+  if (seen !== correct) {
+    setSeen(correct);
     tone.value = withTiming(target, { duration: 480, easing: Easing.out(Easing.cubic) });
   }
 
@@ -163,8 +165,17 @@ function GapSlot({
       <Pressable
         accessibilityLabel={chip === null ? "Empty gap" : chip.text}
         accessibilityRole="button"
-        accessibilityState={{ checked: correct === true }}
-        onPress={chip === null ? onFocus : onClear}
+        accessibilityState={{ checked: correct === true, disabled: locked }}
+        onPress={() => {
+          if (locked) {
+            return;
+          }
+          if (chip === null) {
+            onFocus();
+            return;
+          }
+          onClear();
+        }}
         style={styles.gapHost}
       >
         <Animated.View collapsable={false} onLayout={onFrame} style={[styles.gap, frame]}>
@@ -211,14 +222,16 @@ export function GapExercise({
 }) {
   const { colors } = useTheme();
   const puzzle = problem.gap;
-  const [fills, setFills] = useState<Record<string, string>>(() =>
-    initialGapFills(puzzle?.parts ?? [], puzzle?.chips ?? [], problem.gapFills ?? null),
-  );
+  const startingFills = initialGapFills(puzzle?.parts ?? [], puzzle?.chips ?? [], problem.gapFills ?? null);
+  const [fills, setFills] = useState<Record<string, string>>(startingFills);
+  const [baseline, setBaseline] = useState<Record<string, string>>(startingFills);
   const [activeGap, setActiveGap] = useState<string | null>(null);
   const [grades, setGrades] = useState<Readonly<Record<string, boolean>> | null>(null);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [passed, setPassed] = useState(problem.solved);
+  const [solved, setSolved] = useState(problem.solved);
+  const [revising, setRevising] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
   const [fails, setFails] = useState(problem.failedAttempts);
   const language = exerciseHighlightLanguage(problem.starterCode);
@@ -239,6 +252,8 @@ export function GapExercise({
     return null;
   };
 
+  const reviewing = passed && !revising;
+  const dirty = !sameGapFills(fills, baseline);
   const used: Record<string, true> = {};
   for (const gapId of Object.keys(fills)) {
     const chipId = fills[gapId];
@@ -248,6 +263,9 @@ export function GapExercise({
   }
 
   const place = (gapId: string, chip: ChipData) => {
+    if (reviewing) {
+      return;
+    }
     setFills((current) => {
       const next: Record<string, string> = {};
       for (const key of Object.keys(current)) {
@@ -270,6 +288,9 @@ export function GapExercise({
   };
 
   const clearGap = (gapId: string) => {
+    if (reviewing) {
+      return;
+    }
     setFills((current) => {
       const next: Record<string, string> = {};
       for (const key of Object.keys(current)) {
@@ -288,12 +309,15 @@ export function GapExercise({
   };
 
   const focusGap = (gapId: string) => {
+    if (reviewing) {
+      return;
+    }
     setActiveGap(gapId);
     scrollToEnd();
   };
 
   const gapCorrect = (gapId: string): boolean | null => {
-    if (passed) {
+    if (reviewing) {
       return true;
     }
     if (grades === null) {
@@ -317,8 +341,11 @@ export function GapExercise({
       }
       onFillsSaved(fills);
       setGrades(next);
+      setBaseline(fills);
       setPassed(data.submitGap.passed);
+      setRevising(false);
       if (data.submitGap.passed) {
+        setSolved(true);
         setActiveGap(null);
         setCelebrate(true);
         setMessage("That passes.");
@@ -340,6 +367,28 @@ export function GapExercise({
     }
   };
 
+  const retry = () => {
+    setRevising(true);
+    setCelebrate(false);
+    setGrades(null);
+    setActiveGap(null);
+    setMessage(null);
+    void Haptics.selectionAsync();
+  };
+
+  const hint = (): string => {
+    if (reviewing) {
+      return "This attempt passes. Retry to change a gap and submit again.";
+    }
+    if (revising && !dirty) {
+      return "Change a gap, then submit again.";
+    }
+    if (activeGap === null) {
+      return "Drag a snippet into a gap, or tap a gap and then tap a snippet.";
+    }
+    return "Tap a snippet to fill the gap you selected.";
+  };
+
   const lines = linesFrom(puzzle.parts);
   const gapDelay: Record<string, number> = {};
   let gapOrdinal = 0;
@@ -352,7 +401,7 @@ export function GapExercise({
       gapOrdinal += 1;
     }
   }
-  const status = exerciseStatus({ solved: passed, attempts: problem.attempts }, lessonSkipped);
+  const status = exerciseStatus({ solved, attempts: problem.attempts }, lessonSkipped);
   const label = statusLabel(status);
 
   return (
@@ -374,7 +423,7 @@ export function GapExercise({
             ))}
           </Card>
         )}
-        <CodeWindow celebrate={celebrate} languageLabel={languageLabel(problem.starterCode)} passed={passed}>
+        <CodeWindow celebrate={celebrate} languageLabel={languageLabel(problem.starterCode)} passed={reviewing}>
           {lines.map((line, lineIndex) => (
             <CodeLine key={`line-${lineIndex}`}>
               {line.map((piece, pieceIndex) => {
@@ -392,6 +441,7 @@ export function GapExercise({
                     delay={gapDelay[gapId] ?? 0}
                     gapId={gapId}
                     language={language}
+                    locked={reviewing}
                     onClear={() => clearGap(gapId)}
                     onDrop={(data) => place(gapId, data)}
                     onFocus={() => focusGap(gapId)}
@@ -401,15 +451,29 @@ export function GapExercise({
             </CodeLine>
           ))}
         </CodeWindow>
-        <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-          {activeGap === null
-            ? "Drag a snippet into a gap, or tap a gap and then tap a snippet."
-            : "Tap a snippet to fill the gap you selected."}
-        </Text>
+        <Text style={[styles.hint, { color: colors.mutedForeground }]}>{hint()}</Text>
         <View style={styles.chips}>
           {puzzle.chips.map((chip) => {
             if (used[chip.id] === true) {
               return null;
+            }
+            const body = (
+              <View
+                style={[
+                  styles.chip,
+                  { borderColor: colors.border, backgroundColor: colors.card },
+                  reviewing ? styles.chipIdle : null,
+                ]}
+              >
+                <Text style={[styles.chipText, { color: colors.foreground }]}>{chip.text}</Text>
+              </View>
+            );
+            if (reviewing) {
+              return (
+                <View key={chip.id} accessibilityState={{ disabled: true }}>
+                  {body}
+                </View>
+              );
             }
             return (
               <Draggable<ChipData>
@@ -427,9 +491,7 @@ export function GapExercise({
                     place(activeGap, chip);
                   }}
                 >
-                  <View style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                    <Text style={[styles.chipText, { color: colors.foreground }]}>{chip.text}</Text>
-                  </View>
+                  {body}
                 </Pressable>
               </Draggable>
             );
@@ -438,7 +500,7 @@ export function GapExercise({
         {message === null ? null : (
           <Text
             accessibilityLiveRegion="polite"
-            style={[styles.message, { color: passed ? colors.success : colors.destructive }]}
+            style={[styles.message, { color: reviewing ? colors.success : colors.destructive }]}
           >
             {message}
           </Text>
@@ -450,8 +512,16 @@ export function GapExercise({
             </Pressable>
           </Animated.View>
         ) : null}
-        <Button disabled={passed} label={passed ? "Passed" : "Submit"} onPress={() => void submit()} pending={pending} />
-        {passed && onNextExercise !== null ? (
+        {reviewing ? (
+          <Button
+            label="Retry Exercise"
+            onPress={retry}
+            variant={onNextExercise === null ? "primary" : "secondary"}
+          />
+        ) : (
+          <Button disabled={!dirty} label="Submit" onPress={() => void submit()} pending={pending} />
+        )}
+        {solved && onNextExercise !== null ? (
           <View
             onLayout={() => {
               if (!celebrate) {
@@ -544,6 +614,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  chipIdle: {
+    opacity: 0.55,
   },
   chipText: {
     fontFamily: "JetBrainsMono_400Regular",
