@@ -179,10 +179,10 @@ const bigO = () => {
   return `<div class="eyebrow">Cost as n grows</div><svg viewBox="0 0 172 100" class="w-plot">
     <line x1="12" y1="92" x2="166" y2="92" class="ax"/><line x1="12" y1="6" x2="12" y2="92" class="ax"/>
     <path d="${curve((x) => (x * x) / 100)}" class="curve c-n2"/>
-    <path d="${curve((x) => x * 0.62)}" class="curve c-n"/>
-    <path d="${curve((x) => 14 * Math.log2(1 + x / 6))}" class="curve c-log"/>
-    <path d="${curve(() => 8)}" class="curve c-1"/>
-    <text x="104" y="16" class="lbl">n²</text><text x="146" y="44" class="lbl">n</text><text x="140" y="54" class="lbl">log n</text><text x="150" y="80" class="lbl">1</text>
+    <path d="${curve((x) => x * 0.7)}" class="curve c-n"/>
+    <path d="${curve((x) => 4.2 * Math.log2(1 + x))}" class="curve c-log"/>
+    <path d="${curve(() => 6)}" class="curve c-1"/>
+    <text x="100" y="12" class="lbl">n²</text><text x="157" y="36" class="lbl">n</text><text x="150" y="62" class="lbl">log n</text><text x="160" y="83" class="lbl">1</text>
   </svg>`;
 };
 
@@ -243,12 +243,12 @@ export const cards = (name) => (motifs[name] ? motifs[name]().join("") : "");
 export const creativeCards = {
   header: () =>
     [
-      at(pointers(), 20, 58, -5),
-      at(bigO(), 80, 54, 5),
+      at(pointers(), 17, 52, -5),
+      at(bigO(), 83, 50, 5),
       at(list(), 31, 18, 4),
       at(ring(12, 38, "12 of 38 lessons", "Four weeks, in order"), 70, 17, -3),
-      at(passed("All tests pass", "5 of 5 on the server"), 65, 86, 3),
-      at(gap("return ", "seen.has(x)", ";"), 35, 86, -3),
+      at(passed("All tests pass", "5 of 5 on the server"), 76, 86, 3),
+      at(gap("return ", "seen.has(x)", ";"), 24, 88, -3),
     ].join(""),
   search: () =>
     [card(tree(), { side: "right", top: 18, rot: 4 }), card(passed("All tests pass", "5 of 5, hidden cases included"), { side: "left", top: 74, rot: -3 })].join(""),

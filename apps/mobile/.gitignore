@@ -50,3 +50,6 @@ build-*.tar.gz
 
 # raw simulator captures for the store screenshots (compose from these)
 /store/screenshots/raw/
+
+# capture build output
+/build/

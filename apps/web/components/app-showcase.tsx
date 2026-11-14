@@ -370,7 +370,7 @@ function Glyph({
   return (
     <motion.span className="absolute" style={{ left: glyph.x, top: glyph.y, y: still ? 0 : y }}>
       <motion.span
-        className={`block font-mono ${glyph.size} ${glyph.tone}`}
+        className={`block font-mono whitespace-nowrap ${glyph.size} ${glyph.tone}`}
         animate={still ? undefined : { y: [0, -12, 0], rotate: [0, 6, 0] }}
         transition={{ duration: glyph.duration, repeat: Infinity, ease: "easeInOut" }}
       >

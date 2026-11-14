@@ -60,10 +60,10 @@ Screens put their content in `frame(layout, measure.*)`, a centred column capped
 
 ## App Store listing
 
-`store.config.json` holds the name, subtitle, promotional text, description, keywords, release notes and the screenshot sets for EAS Metadata. Push it with:
+`store.config.json` holds the name, subtitle, promotional text, description, keywords and release notes for EAS Metadata:
 
 ```bash
 npx eas-cli@latest metadata:push --profile production
 ```
 
-The screenshots are real simulator captures, set in device frames by `store/compose/compose.mjs` (see `store/README.md`). EAS Metadata does not know the iPhone Duo display type or the product page's Header and Search Results creatives, so upload `store/screenshots/duo` and `store/screenshots/creatives` in App Store Connect by hand.
+The screenshots and the product page's Header and Search Results creatives are real simulator captures, set in device frames by `store/compose/compose.mjs`. They are uploaded through App Store Connect's asset library, which also covers the iPhone Duo slot that EAS Metadata does not know. See `store/README.md`.

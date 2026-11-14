@@ -55,7 +55,7 @@ const listing = [
   { name: "03-practice", title: "Fill the gap, *pass* the tests", sub: "Drag a snippet into the function, then submit", theme: "ink" },
   { name: "04-passed", title: "Checked by *real* tests", sub: "The same hidden tests as the website", theme: "dusk" },
   { name: "05-progress", title: "See what still needs a *pass*", sub: "Lessons, pass rate and every topic's progress", theme: "paper" },
-  { name: "06-articles", title: "64 explainers, *diagrams* included", sub: "Arrays to graphs, readable before you start", theme: "ink" },
+  { name: "06-articles", title: "Articles with *diagrams*", sub: "64 explainers, from arrays to graphs", theme: "ink" },
 ];
 const shots = { iphone: listing, "iphone-6.3": listing, ipad: listing, duo: listing };
 
