@@ -86,7 +86,8 @@ export function AppShowcase() {
           </span>
           <h2
             id="app-heading"
-            className="mt-4 font-serif text-4xl leading-[1.08] tracking-tight sm:text-5xl"
+            tabIndex={-1}
+            className="mt-4 outline-nonefont-serif text-4xl leading-[1.08] tracking-tight sm:text-5xl"
           >
             The course,{" "}
             <em className="bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text pr-1 text-transparent dark:from-emerald-400 dark:to-sky-400">
