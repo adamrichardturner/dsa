@@ -6,12 +6,14 @@ import { ApiError, request } from "@/api/client";
 import { RESET_PASSWORD } from "@/api/operations";
 import { useTheme } from "@/theme/theme";
 import { Body, Button, Field, Notice, Title } from "@/ui/primitives";
+import { frame, measure, useLayout } from "@/ui/layout";
 
 export default function ResetPasswordScreen() {
   const params = useLocalSearchParams<{ token?: string }>();
   const token = typeof params.token === "string" ? params.token : "";
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -31,7 +33,11 @@ export default function ResetPasswordScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }]}
+      contentContainerStyle={[
+        styles.content,
+        frame(layout, measure.form),
+        { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 },
+      ]}
       style={{ backgroundColor: colors.background }}
     >
       <Title>Choose a new password</Title>
@@ -45,7 +51,12 @@ export default function ResetPasswordScreen() {
           <Body muted>Use at least 8 characters.</Body>
           <Field label="New password" onChangeText={setPassword} secure value={password} />
           {error === null ? null : <Notice>{error}</Notice>}
-          <Button disabled={token.length < 20} label="Update password" onPress={() => void submit()} pending={pending} />
+          <Button
+            disabled={token.length < 20}
+            label="Update password"
+            onPress={() => void submit()}
+            pending={pending}
+          />
         </>
       )}
     </ScrollView>
@@ -55,6 +66,5 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 16,
-    paddingHorizontal: 24,
   },
 });

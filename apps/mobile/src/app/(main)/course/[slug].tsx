@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ComponentRef, useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ApiError, request } from "@/api/client";
@@ -13,6 +13,7 @@ import { GuideSheet } from "@/lesson/guide-sheet";
 import { nextExerciseTarget } from "@/lesson/next-exercise";
 import { Reading } from "@/lesson/reading";
 import { useTheme } from "@/theme/theme";
+import { frame, measure, useLayout } from "@/ui/layout";
 import { Badge, Body, Notice, Title } from "@/ui/primitives";
 
 const readSlug = (value: string | string[] | undefined): string => {
@@ -28,6 +29,7 @@ export default function LessonScreen() {
   const { token } = useSession();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const scrollToEnd = useRef<() => void>(() => undefined);
   const [lesson, setLesson] = useState<LessonView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -112,84 +114,137 @@ export default function LessonScreen() {
     router.replace("/(main)/course");
   };
 
+  const back = (
+    <Pressable accessibilityRole="button" onPress={() => router.back()}>
+      <Text style={[styles.back, { color: colors.mutedForeground }]}>Course</Text>
+    </Pressable>
+  );
+  const errorNotice = error === null ? null : <Notice>{error}</Notice>;
+  const ready = lesson !== null && problem !== null && token !== null;
+
+  const intro =
+    lesson === null || problem === null ? null : (
+      <>
+        <View style={styles.badges}>
+          <Badge label={`Week ${lesson.weekNumber}`} />
+          <Badge label={problem.topic} />
+          <Badge label={problem.difficulty} />
+          {lesson.skipped ? <Badge label="Skipped" /> : null}
+        </View>
+        <Title>{lesson.title}</Title>
+        <Body muted>{lesson.summary}</Body>
+      </>
+    );
+
+  const practice =
+    lesson === null || problem === null || token === null ? null : (
+      <>
+        {lesson.problems.length < 2 ? null : (
+          <View accessibilityRole="tablist" style={styles.switcher}>
+            {lesson.problems.map((item, index) => {
+              const selected = item.id === problem.id;
+              const status = exerciseStatus(item, lesson.skipped);
+              const label = statusLabel(status);
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityLabel={`${item.title}. ${label}`}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected }}
+                  onPress={() => setProblemId(item.id)}
+                  style={[
+                    styles.switch,
+                    {
+                      backgroundColor: selected ? colors.secondary : colors.card,
+                      borderColor: selected ? colors.foreground : colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.switchIndex, { color: colors.mutedForeground }]}>{index + 1}</Text>
+                  <Text style={[styles.switchTitle, { color: colors.foreground }]}>{item.title}</Text>
+                  <Text style={[styles.switchStatus, { color: colors.mutedForeground }]}>{label}</Text>
+                  <StatusMark label={label} status={status} />
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+        <GapExercise
+          key={problem.id}
+          lessonSkipped={lesson.skipped}
+          onFillsSaved={(fills) => {
+            rememberGapFills(problem.id, fills);
+          }}
+          onNextExercise={nextExercise === null ? null : openNextExercise}
+          onOpenGuide={() => setGuideOpen(true)}
+          onPassed={() => void load()}
+          problem={problem}
+          scrollToEnd={() => scrollToEnd.current()}
+          token={token}
+        />
+        <GuideSheet
+          lessonSlug={lesson.slug}
+          onClose={() => setGuideOpen(false)}
+          onSkipped={onSkipped}
+          problemId={problem.id}
+          token={token}
+          visible={guideOpen}
+        />
+      </>
+    );
+
+  const exerciseScroll = (node: ComponentRef<typeof ScrollView> | null) => {
+    scrollToEnd.current = () => {
+      node?.scrollToEnd({ animated: true });
+    };
+  };
+
+  // A full-width iPad reads on the left and practises on the right, each pane scrolling on its own.
+  if (layout.split) {
+    const paneInsets = { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 40 };
+    return (
+      <View style={[styles.split, { backgroundColor: colors.background }]}>
+        <ScrollView
+          contentContainerStyle={[styles.content, styles.pane, { paddingLeft: layout.gutter }, paneInsets]}
+          style={styles.readingPane}
+        >
+          {back}
+          {errorNotice}
+          {intro}
+          {lesson === null ? null : <Reading markdown={lesson.contentMd} />}
+        </ScrollView>
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        <ScrollView
+          ref={exerciseScroll}
+          contentContainerStyle={[styles.content, styles.pane, { paddingRight: layout.gutter }, paneInsets]}
+          style={styles.exercisePane}
+        >
+          {ready ? <Text style={[styles.paneKicker, { color: colors.mutedForeground }]}>Practice</Text> : null}
+          {practice}
+        </ScrollView>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
-      ref={(node) => {
-        scrollToEnd.current = () => {
-          node?.scrollToEnd({ animated: true });
-        };
-      }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 40 }]}
+      ref={exerciseScroll}
+      contentContainerStyle={[
+        styles.content,
+        frame(layout, measure.text),
+        { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 40 },
+      ]}
       style={{ backgroundColor: colors.background }}
     >
-      <Pressable accessibilityRole="button" onPress={() => router.back()}>
-        <Text style={[styles.back, { color: colors.mutedForeground }]}>Course</Text>
-      </Pressable>
-      {error === null ? null : <Notice>{error}</Notice>}
-      {lesson === null || problem === null || token === null ? null : (
+      {back}
+      {errorNotice}
+      {ready ? (
         <>
-          <View style={styles.badges}>
-            <Badge label={`Week ${lesson.weekNumber}`} />
-            <Badge label={problem.topic} />
-            <Badge label={problem.difficulty} />
-            {lesson.skipped ? <Badge label="Skipped" /> : null}
-          </View>
-          <Title>{lesson.title}</Title>
-          <Body muted>{lesson.summary}</Body>
+          {intro}
           <Reading markdown={lesson.contentMd} />
-          {lesson.problems.length < 2 ? null : (
-            <View accessibilityRole="tablist" style={styles.switcher}>
-              {lesson.problems.map((item, index) => {
-                const selected = item.id === problem.id;
-                const status = exerciseStatus(item, lesson.skipped);
-                const label = statusLabel(status);
-                return (
-                  <Pressable
-                    key={item.id}
-                    accessibilityLabel={`${item.title}. ${label}`}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected }}
-                    onPress={() => setProblemId(item.id)}
-                    style={[
-                      styles.switch,
-                      {
-                        backgroundColor: selected ? colors.secondary : colors.card,
-                        borderColor: selected ? colors.foreground : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.switchIndex, { color: colors.mutedForeground }]}>{index + 1}</Text>
-                    <Text style={[styles.switchTitle, { color: colors.foreground }]}>{item.title}</Text>
-                    <Text style={[styles.switchStatus, { color: colors.mutedForeground }]}>{label}</Text>
-                    <StatusMark label={label} status={status} />
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-          <GapExercise
-            key={problem.id}
-            lessonSkipped={lesson.skipped}
-            onFillsSaved={(fills) => {
-              rememberGapFills(problem.id, fills);
-            }}
-            onNextExercise={nextExercise === null ? null : openNextExercise}
-            onOpenGuide={() => setGuideOpen(true)}
-            onPassed={() => void load()}
-            problem={problem}
-            scrollToEnd={() => scrollToEnd.current()}
-            token={token}
-          />
-          <GuideSheet
-            lessonSlug={lesson.slug}
-            onClose={() => setGuideOpen(false)}
-            onSkipped={onSkipped}
-            problemId={problem.id}
-            token={token}
-            visible={guideOpen}
-          />
+          {practice}
         </>
-      )}
+      ) : null}
     </ScrollView>
   );
 }
@@ -197,7 +252,28 @@ export default function LessonScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 14,
-    paddingHorizontal: 24,
+  },
+  split: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  readingPane: {
+    flex: 11,
+  },
+  exercisePane: {
+    flex: 9,
+  },
+  pane: {
+    paddingHorizontal: 28,
+  },
+  divider: {
+    width: StyleSheet.hairlineWidth,
+  },
+  paneKicker: {
+    fontFamily: "Geist_500Medium",
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   back: {
     fontFamily: "Geist_500Medium",

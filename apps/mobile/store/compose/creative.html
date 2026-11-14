@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  The product page's Header (21:9) and Search Results (3:2) creatives, rendered
+  by compose.mjs at {{W}}×{{H}}. Sized in vh so the art scales with the canvas.
+  Key art stays in the centre: the App Store crops the edges on smaller screens.
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: "Fraunces"; font-weight: 500; src: url("{{SERIF}}"); }
+  @font-face { font-family: "Fraunces"; font-weight: 500; font-style: italic; src: url("{{SERIF_ITALIC}}"); }
+  @font-face { font-family: "Geist"; src: url("{{SANS}}"); }
+  @font-face { font-family: "Geist"; font-weight: 500; src: url("{{SANS_MEDIUM}}"); }
+  @font-face { font-family: "Geist"; font-weight: 600; src: url("{{SANS_SEMIBOLD}}"); }
+  @font-face { font-family: "JetBrains Mono"; src: url("{{MONO}}"); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: {{W}}px; height: {{H}}px; overflow: hidden; }
+  body { position: relative; font-family: "Geist", sans-serif; -webkit-font-smoothing: antialiased; color: #fafafa; }
+
+  .bg, .grid, .layer { position: absolute; inset: 0; }
+  .bg {
+    background:
+      radial-gradient(70vw 90vh at 8% -12%, rgba(74, 222, 128, 0.24) 0%, transparent 62%),
+      radial-gradient(70vw 100vh at 102% 112%, rgba(56, 189, 248, 0.22) 0%, transparent 60%),
+      radial-gradient(45vw 70vh at -8% 96%, rgba(250, 250, 250, 0.06) 0%, transparent 65%),
+      #0a0a0a;
+  }
+  .grid { background-image: linear-gradient(rgba(255, 255, 255, 0.045) 0.1vh, transparent 0.1vh), linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0.1vh, transparent 0.1vh);
+    background-size: 5vh 5vh; -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 45%, #000 0%, transparent 100%); }
+  .layer { pointer-events: none; }
+  .field-curves { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .chip { display: inline-flex; align-items: center; gap: calc(var(--chip) * 0.5); padding: calc(var(--chip) * 0.45) calc(var(--chip) * 1.05) calc(var(--chip) * 0.45) calc(var(--chip) * 0.6);
+    border-radius: 99vw; font-family: "Fraunces", serif; font-weight: 500; font-size: var(--chip); line-height: 1;
+    background: rgba(23, 23, 23, 0.8); border: 0.12vh solid rgba(255, 255, 255, 0.14); color: #fafafa; box-shadow: 0 1vh 3vh rgba(0, 0, 0, 0.4); }
+  .chip svg { width: calc(var(--chip) * 1.7); height: calc(var(--chip) * 1.7); }
+  h1 { font-family: "Fraunces", serif; font-weight: 500; font-size: var(--h1); line-height: 1.02; letter-spacing: -0.025em; text-wrap: balance; }
+  h1 em { font-style: italic; padding: 0 0.08em; margin: 0 -0.08em; -webkit-background-clip: text; background-clip: text; color: transparent; background-image: linear-gradient(90deg, #86efac, #7dd3fc); }
+  p { font-size: var(--sub); line-height: 1.35; color: rgba(250, 250, 250, 0.74); text-wrap: balance; }
+  .glow { position: absolute; left: 50%; top: 50%; width: 46vw; height: 70vh; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(74, 222, 128, 0.08); filter: blur(8vh); }
+
+  /* Header: headline in the centre, cards around it. */
+  .header { --chip: 3.4vh; --h1: 14vh; --sub: 4vh; --u: 1.85vh; }
+  .header .copy { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2.8vh; width: 42vw; }
+
+  /* Search Results: copy left, the app on the right. */
+  .search { --chip: 2.7vh; --h1: 11vh; --sub: 3.1vh; --u: 1.25vh; --hang: -30%; }
+  .search .copy { position: absolute; left: 14vw; top: 50%; transform: translateY(-50%); width: 36vw; display: flex; flex-direction: column; align-items: flex-start; gap: 2.6vh; }
+  .search h1 { width: 37vw; }
+  .search p { max-width: 28vw; }
+  .search .glow { left: 66vw; width: 44vw; height: 90vh; }
+  .device { position: absolute; left: 66vw; top: 8vh; transform: translateX(-50%) rotate(2deg); width: 39vh; padding: 0.95vh; border-radius: 6vh;
+    background: linear-gradient(145deg, #3d3d3f 0%, #141415 22%, #0b0b0c 60%, #2e2e30 100%);
+    box-shadow: inset 0 0 0 0.12vh rgba(255, 255, 255, 0.14), 0 4vh 10vh rgba(0, 0, 0, 0.55), 0 1.4vh 3vh rgba(0, 0, 0, 0.3); }
+  .device img.screen { display: block; width: 100%; border-radius: 5.05vh; }
+  .island { position: absolute; left: 50%; transform: translateX(-50%); top: calc(0.95vh + 1.25%); width: 25%; height: 2.7%; border-radius: 99vw; background: #000; }
+  .device .card { transform: rotate(calc(var(--rot) - 2deg)); }
+</style>
+<link rel="stylesheet" href="{{ART_CSS}}" />
+</head>
+<body class="{{KIND}} ink">
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="layer">{{FIELD}}</div>
+  <div class="glow"></div>
+  {{BODY}}
+</body>
+</html>

@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AppShowcase } from "@/components/app-showcase";
 import { LandingActions, LandingCloseCopy } from "@/components/landing-actions";
 import { PageMain } from "@/components/page-frame";
 import {
@@ -24,6 +25,7 @@ import {
 } from "@/lib/articles/categories";
 import {
   creatorName,
+  iosApp,
   siteDescription,
   siteDomain,
   siteName,
@@ -204,6 +206,11 @@ const faqs = [
       "The path covers complexity, arrays, hash maps, two pointers, sliding windows, linked lists, stacks, queues, recursion, binary search, merge sort, trees, binary search trees, heaps, graphs, greedy choices, backtracking, dynamic programming, and tries. The articles cover those terms. Quicksort, disjoint-set union, and directed acyclic graphs are extra reading, past the exercises.",
   },
   {
+    question: "Is there an app for iPhone and iPad?",
+    answer:
+      "Yes. DSA in TypeScript is free on the App Store for iPhone, iPad, and iPhone Duo. It follows the same four weeks, with gap exercises in place of the editor: drag a snippet into the function, then submit it against the same tests as the website. The lesson reading and the articles are in the app too. Sign in with Apple, Google, GitHub, or an email and password.",
+  },
+  {
     question: "Who is this data structures and algorithms course for?",
     answer:
       "It is for people who already write TypeScript and want the structures and algorithms used in interviews and production code, without a semester of theory first. The coding desk is meant for a laptop or desktop. The articles are reading pages, so you can open them without the desk.",
@@ -243,6 +250,19 @@ const structuredData = {
         "@type": "Person",
         name: creatorName,
         url: siteUrl,
+      },
+    },
+    {
+      "@type": "MobileApplication",
+      "@id": `${siteUrl}/#ios-app`,
+      name: iosApp.name,
+      operatingSystem: "iOS",
+      applicationCategory: "EducationalApplication",
+      installUrl: iosApp.appStoreUrl,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
       },
     },
     {
@@ -286,7 +306,12 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-3">
               <LandingActions />
             </div>
-            <p className="text-sm text-muted-foreground">{siteDomain}</p>
+            <p className="text-sm text-muted-foreground">
+              {siteDomain} ·{" "}
+              <a href="#app" className="underline underline-offset-4">
+                Also on iPhone and iPad
+              </a>
+            </p>
           </div>
           <Card>
             <CardHeader>
@@ -349,6 +374,8 @@ export default function HomePage() {
             })}
           </RevealGroup>
         </section>
+
+        <AppShowcase />
 
         <section className="mt-20" aria-labelledby="syllabus">
           <Reveal className="max-w-2xl space-y-3">

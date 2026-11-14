@@ -13,6 +13,7 @@ import { useTheme } from "@/theme/theme";
 import { UserAvatar } from "@/ui/avatar";
 import type { ThemePreference } from "@/theme/palette";
 import { Body, Button, Field, Notice, Title } from "@/ui/primitives";
+import { frame, measure, useLayout } from "@/ui/layout";
 
 const SUBMIT_COOLDOWN_MS = 2000;
 const NAME_MAX_LENGTH = 80;
@@ -51,6 +52,7 @@ export default function SettingsScreen() {
   const { colors, preference, setPreference } = useTheme();
   const badge = badgeLabel(centre?.unreadCount ?? 0);
   const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const [name, setName] = useState(user?.name ?? "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [nextPassword, setNextPassword] = useState("");
@@ -159,7 +161,11 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
+      contentContainerStyle={[
+        styles.content,
+        frame(layout, measure.form),
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 },
+      ]}
       style={{ backgroundColor: colors.background }}
     >
       {user === null ? null : (
@@ -200,7 +206,12 @@ export default function SettingsScreen() {
                 },
               ]}
             >
-              <Text style={{ color: selected ? colors.primaryForeground : colors.foreground, fontFamily: "Geist_500Medium" }}>
+              <Text
+                style={{
+                  color: selected ? colors.primaryForeground : colors.foreground,
+                  fontFamily: "Geist_500Medium",
+                }}
+              >
                 {item.label}
               </Text>
             </Pressable>
@@ -256,9 +267,7 @@ export default function SettingsScreen() {
         variant="secondary"
       />
       <Text style={[styles.section, { color: colors.foreground }]}>Account</Text>
-      <Body muted>
-        Deleting your account removes your profile and every piece of course data stored with it.
-      </Body>
+      <Body muted>Deleting your account removes your profile and every piece of course data stored with it.</Body>
       <DeleteAccount />
     </ScrollView>
   );
@@ -267,7 +276,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 14,
-    paddingHorizontal: 24,
   },
   identity: {
     alignItems: "center",

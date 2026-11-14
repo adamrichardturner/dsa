@@ -1,0 +1,67 @@
+/* Shared by template.html and creative.html: the generated art from art.mjs. */
+
+/* ---- Glyphs and curves ---- */
+.art-head { position: absolute; left: 0; right: 0; top: 0; height: var(--hh); pointer-events: none; }
+.backdrop { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.glyph { position: absolute; line-height: 1; white-space: nowrap; }
+.glyph.m { font-family: "JetBrains Mono", monospace; letter-spacing: -0.02em; }
+.glyph.s { font-family: "Fraunces", serif; font-style: italic; }
+.backdrop .c1 { opacity: 0.9; } .backdrop .c2 { opacity: 0.5; }
+
+.ink { --a1: #4ade80; --a2: #7dd3fc; --glyph: #e5e5e5; }
+.paper { --a1: #15803d; --a2: #2563eb; --glyph: #0a0a0a; }
+.dusk { --a1: #fbbf24; --a2: #f472b6; --glyph: #fafafa; }
+.glyph { color: var(--glyph); }
+.paper .glyph { opacity: 0.3; }
+
+/* ---- Cards, in the app's own light (or, on dark themes, dark) tokens ---- */
+.card { position: absolute; z-index: 2; font-size: var(--u); padding: 1.3em 1.5em; border-radius: 1.6em; min-width: 13em;
+  --card: #ffffff; --fg: #0a0a0a; --mfg: #737373; --muted: #f5f5f5; --border: #e5e5e5; --primary: #171717;
+  --success: #15803d; --key: #2563eb; --str: #b45309;
+  background: var(--card); color: var(--fg); border: 0.1em solid var(--border);
+  box-shadow: 0 2.4em 5em -1em rgba(0, 0, 0, 0.34), 0 0.6em 1.4em rgba(0, 0, 0, 0.12);
+  transform: rotate(var(--rot)); font-family: "Geist", sans-serif; }
+.ink .card, .dusk .card { --card: #171717; --fg: #fafafa; --mfg: #a1a1a1; --muted: #262626; --border: rgba(255, 255, 255, 0.12); --primary: #e5e5e5;
+  --success: #4ade80; --key: #7dd3fc; --str: #fbbf24;
+  box-shadow: 0 2.4em 5em -1em rgba(0, 0, 0, 0.7), 0 0 4em rgba(74, 222, 128, 0.1); }
+.card.left { left: var(--hang); } .card.right { right: var(--hang); }
+.card.free { translate: -50% -50%; }
+.card svg { display: block; }
+.card .row { display: flex; align-items: center; gap: 1em; }
+.card .t { font-weight: 600; font-size: 1.45em; letter-spacing: -0.02em; line-height: 1.15; }
+.card .s { margin-top: 0.25em; font-size: 1.05em; color: var(--mfg); }
+.card .eyebrow { font-size: 0.85em; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mfg); margin-bottom: 0.7em; }
+.card .badge { display: grid; place-items: center; width: 3.4em; height: 3.4em; border-radius: 1.05em; flex: none; color: #fff; }
+.card .badge svg { width: 55%; height: 55%; }
+.card .badge.ok { background: var(--success); box-shadow: 0 0.5em 1.2em color-mix(in oklch, var(--success) 45%, transparent); }
+.ink .card .badge.ok, .dusk .card .badge.ok { color: #052e16; }
+
+.card text { font-family: "Geist", sans-serif; fill: var(--fg); }
+.card text.mono { font-family: "JetBrains Mono", monospace; font-size: 13px; }
+.card text.mono.inv { fill: var(--card); font-weight: 600; }
+.card text.idx { font-family: "JetBrains Mono", monospace; font-size: 9px; fill: var(--mfg); }
+.card text.ptr { font-family: "JetBrains Mono", monospace; font-size: 9px; fill: var(--success); font-weight: 600; }
+.card text.lbl { font-family: "JetBrains Mono", monospace; font-size: 10px; fill: var(--mfg); }
+.card text.pct { font-size: 17px; font-weight: 600; }
+.card .ptr-line { stroke: var(--success); stroke-width: 1.6; }
+.card .cell { fill: var(--muted); stroke: var(--border); stroke-width: 1.2; }
+.card .cell.on { fill: color-mix(in oklch, var(--success) 16%, var(--card)); stroke: var(--success); stroke-width: 2; }
+.card .node { fill: var(--muted); stroke: var(--border); stroke-width: 1.4; }
+.card .node.on { fill: var(--fg); stroke: var(--fg); }
+.card .edge { stroke: var(--border); stroke-width: 2.4; }
+.card .edge.on { stroke: var(--fg); }
+.card .arrow { fill: none; stroke: var(--mfg); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.card .ax { stroke: var(--mfg); stroke-opacity: 0.5; stroke-width: 1.2; }
+.card .curve { fill: none; stroke-width: 2.6; stroke-linecap: round; }
+.card .c-n2 { stroke: #ef4444; } .card .c-n { stroke: var(--str); } .card .c-log { stroke: var(--key); } .card .c-1 { stroke: var(--success); }
+.card .ring-track { stroke: var(--muted); } .card .ring-fill { stroke: var(--success); }
+.w-array { width: 17em; } .w-tree { width: 14em; } .w-list { width: 17em; } .w-plot { width: 15em; } .w-ring { width: 5.4em; }
+
+.card .code { font-family: "JetBrains Mono", monospace; font-size: 1.3em; white-space: nowrap; display: flex; align-items: center; }
+.card .code .kw { color: var(--key); }
+.card .chip-gap { margin: 0 0.25em; padding: 0.3em 0.55em; border-radius: 0.5em; color: var(--fg);
+  border: 0.13em solid var(--success); background: color-mix(in oklch, var(--success) 12%, var(--card)); }
+
+.card .bucket { display: flex; align-items: center; gap: 0.7em; font-family: "JetBrains Mono", monospace; font-size: 1.1em; padding: 0.3em 0; }
+.card .bucket .k { display: grid; place-items: center; width: 1.8em; height: 1.8em; border-radius: 0.45em; background: var(--muted); color: var(--mfg); font-size: 0.9em; }
+.card .bucket .v { color: var(--fg); } .card .bucket .v.empty { color: var(--mfg); opacity: 0.6; }

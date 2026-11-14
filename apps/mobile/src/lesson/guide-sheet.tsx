@@ -152,7 +152,10 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheetWrap: {
+    alignSelf: "center",
     maxHeight: "88%",
+    maxWidth: 760,
+    width: "100%",
   },
   sheet: {
     borderTopLeftRadius: 20,

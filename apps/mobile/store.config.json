@@ -1,8 +1,12 @@
 {
   "configVersion": 0,
   "apple": {
+    "version": "1.1.0",
     "copyright": "2026 Adam Richard Turner",
-    "categories": ["EDUCATION", "DEVELOPER_TOOLS"],
+    "categories": [
+      "EDUCATION",
+      "DEVELOPER_TOOLS"
+    ],
     "release": {
       "automaticRelease": false
     },
@@ -28,26 +32,53 @@
     "info": {
       "en-US": {
         "title": "DSA in TypeScript",
-        "subtitle": "Free algorithms interview prep",
-        "promoText": "Free four-week TypeScript course. Fill in the missing lines, submit them against tests, and keep your progress. No trial and no card.",
-        "description": "Learn data structures and algorithms by writing TypeScript. The course is free. There is no trial, no card, and no paid tier.\n\nEach lesson is short. Read the idea, fill in the missing lines of a TypeScript function, and submit it. The same tests used on the website decide whether the exercise passes. A lesson is done when every exercise passes.\n\nThe phone is for practice, not a full editor. A function is shown with a few blanks and a set of snippets. Drag a snippet into a blank, or tap the blank and then the snippet. A correct blank is marked in green and a wrong one in red. After two misses you can open the written solution.\n\nYour account keeps the progress. Sign in with Apple, Google, GitHub, or an email and password. Lessons you finish on the phone stay with the phone. The website has the same course with a full editor when you are at a desk.\n\nThe path covers complexity, arrays, hash maps, two pointers, sliding windows, linked lists, stacks, queues, recursion, binary search, merge sort, trees, binary search trees, heaps, graphs, greedy choices, backtracking, dynamic programming, and tries. Articles explain the terms, and you can read them without finishing a lesson first.\n\nThis course is for people who already write TypeScript and want the structures and algorithms used in interviews and production code. It is for ages 16 and over.",
+        "subtitle": "Data structures & algorithms",
+        "promoText": "Now on iPad and iPhone Duo. A free four-week TypeScript course: read one idea, fill in the missing lines, and pass the same tests as the website. No trial, no card.",
+        "description": "Learn data structures and algorithms by writing TypeScript. The course is free. There is no trial, no card, and no paid tier.\n\nEach lesson is short. Read the idea, fill in the missing lines of a TypeScript function, and submit it. The same tests used on the website decide whether the exercise passes. A lesson is done when every exercise passes.\n\nThe phone is for practice, not a full editor. A function is shown with a few blanks and a set of snippets. Drag a snippet into a blank, or tap the blank and then the snippet. A correct blank is marked in green and a wrong one in red. After two misses you can open the written solution.\n\nMade for iPhone, iPad and iPhone Duo. On a wide screen the course opens in two columns, and on iPad the lesson reading sits beside the exercise, so you can read and practise at once.\n\nYour account keeps the progress. Sign in with Apple, Google, GitHub, or an email and password. Lessons you finish on the phone stay with the phone. The website has the same course with a full editor when you are at a desk.\n\nThe path covers complexity, arrays, hash maps, two pointers, sliding windows, linked lists, stacks, queues, recursion, binary search, merge sort, trees, binary search trees, heaps, graphs, greedy choices, backtracking, dynamic programming, and tries. Articles explain the terms, and you can read them without finishing a lesson first.\n\nThis course is for people who already write TypeScript and want the structures and algorithms used in interviews and production code. It is for ages 16 and over.",
         "keywords": [
-          "practice",
+          "interview",
           "coding",
-          "structures",
-          "big-o",
+          "big o",
           "arrays",
           "trees",
           "graphs",
           "recursion",
           "sorting",
           "hashmap",
-          "linked-list",
-          "dynamic"
+          "linked list",
+          "javascript",
+          "practice"
         ],
         "marketingUrl": "https://datastructuresandalgorithms.com",
         "supportUrl": "https://datastructuresandalgorithms.com",
-        "privacyPolicyUrl": "https://datastructuresandalgorithms.com/privacy"
+        "privacyPolicyUrl": "https://datastructuresandalgorithms.com/privacy",
+        "releaseNotes": "DSA in TypeScript now runs on iPad and iPhone Duo. Wide screens show the course in two columns, and on iPad the lesson reading sits beside the exercise.",
+        "screenshots": {
+          "APP_IPHONE_67": [
+            "./store/screenshots/iphone/01-course.png",
+            "./store/screenshots/iphone/02-lesson.png",
+            "./store/screenshots/iphone/03-practice.png",
+            "./store/screenshots/iphone/04-passed.png",
+            "./store/screenshots/iphone/05-progress.png",
+            "./store/screenshots/iphone/06-articles.png"
+          ],
+          "APP_IPHONE_61": [
+            "./store/screenshots/iphone-6.3/01-course.png",
+            "./store/screenshots/iphone-6.3/02-lesson.png",
+            "./store/screenshots/iphone-6.3/03-practice.png",
+            "./store/screenshots/iphone-6.3/04-passed.png",
+            "./store/screenshots/iphone-6.3/05-progress.png",
+            "./store/screenshots/iphone-6.3/06-articles.png"
+          ],
+          "APP_IPAD_PRO_3GEN_129": [
+            "./store/screenshots/ipad/01-course.png",
+            "./store/screenshots/ipad/02-lesson.png",
+            "./store/screenshots/ipad/03-practice.png",
+            "./store/screenshots/ipad/04-passed.png",
+            "./store/screenshots/ipad/05-progress.png",
+            "./store/screenshots/ipad/06-articles.png"
+          ]
+        }
       }
     }
   }
