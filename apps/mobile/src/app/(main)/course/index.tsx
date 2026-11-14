@@ -9,6 +9,8 @@ import { useSession } from "@/auth/session";
 import { Onboarding } from "@/components/onboarding";
 import { lessonStatus, StatusMark, statusLabel } from "@/course/status-mark";
 import { useTheme } from "@/theme/theme";
+import { Grid } from "@/ui/grid";
+import { frame, measure, useLayout } from "@/ui/layout";
 import { Body, Notice, Title } from "@/ui/primitives";
 
 const completedCount = (lessons: readonly LessonSummary[]): number => {
@@ -34,6 +36,7 @@ export default function CourseScreen() {
   const auditMode = user?.auditMode ?? false;
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const [modules, setModules] = useState<readonly ModuleView[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,7 +74,11 @@ export default function CourseScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
+      contentContainerStyle={[
+        styles.content,
+        frame(layout, layout.columns > 1 ? measure.wide : measure.text),
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 },
+      ]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -94,9 +101,7 @@ export default function CourseScreen() {
         <View key={module.id} style={styles.week}>
           <View style={styles.weekHeading}>
             <View style={styles.weekCopy}>
-              <Text style={[styles.weekKicker, { color: colors.mutedForeground }]}>
-                Week {module.weekNumber}
-              </Text>
+              <Text style={[styles.weekKicker, { color: colors.mutedForeground }]}>Week {module.weekNumber}</Text>
               <Text style={[styles.weekTitle, { color: colors.foreground }]}>{module.title}</Text>
             </View>
             <Text style={[styles.weekCount, { color: colors.mutedForeground }]}>
@@ -104,35 +109,40 @@ export default function CourseScreen() {
             </Text>
           </View>
           <Body muted>{module.summary}</Body>
-          {module.lessons.map((lesson, index) => {
-            const status = lessonStatus(lesson);
-            const label = statusLabel(status);
-            return (
-              <Pressable
-                key={lesson.id}
-                accessibilityLabel={`${lesson.title}. ${label}`}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: !lesson.available }}
-                disabled={!lesson.available}
-                onPress={() => router.push({ pathname: "/course/[slug]", params: { slug: lesson.slug } })}
-                style={[
-                  styles.lesson,
-                  {
-                    borderColor: colors.border,
-                    backgroundColor: colors.card,
-                    opacity: lesson.available ? 1 : 0.55,
-                  },
-                ]}
-              >
-                <StatusMark label={label} status={status} />
-                <Text style={[styles.lessonIndex, { color: colors.mutedForeground }]}>{lessonNumber(index)}</Text>
-                <View style={styles.lessonCopy}>
-                  <Text style={[styles.lessonTitle, { color: colors.foreground }]}>{lesson.title}</Text>
-                  <Text style={[styles.lessonSummary, { color: colors.mutedForeground }]}>{lesson.summary}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
+          <Grid
+            columns={layout.columns}
+            gap={10}
+            items={module.lessons}
+            keyOf={(lesson) => lesson.id}
+            render={(lesson, index) => {
+              const status = lessonStatus(lesson);
+              const label = statusLabel(status);
+              return (
+                <Pressable
+                  accessibilityLabel={`${lesson.title}. ${label}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !lesson.available }}
+                  disabled={!lesson.available}
+                  onPress={() => router.push({ pathname: "/course/[slug]", params: { slug: lesson.slug } })}
+                  style={[
+                    styles.lesson,
+                    {
+                      borderColor: colors.border,
+                      backgroundColor: colors.card,
+                      opacity: lesson.available ? 1 : 0.55,
+                    },
+                  ]}
+                >
+                  <StatusMark label={label} status={status} />
+                  <Text style={[styles.lessonIndex, { color: colors.mutedForeground }]}>{lessonNumber(index)}</Text>
+                  <View style={styles.lessonCopy}>
+                    <Text style={[styles.lessonTitle, { color: colors.foreground }]}>{lesson.title}</Text>
+                    <Text style={[styles.lessonSummary, { color: colors.mutedForeground }]}>{lesson.summary}</Text>
+                  </View>
+                </Pressable>
+              );
+            }}
+          />
         </View>
       ))}
       <Onboarding />
@@ -143,7 +153,6 @@ export default function CourseScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 16,
-    paddingHorizontal: 24,
   },
   wordmark: {
     fontFamily: "Fraunces_500Medium",
@@ -181,6 +190,7 @@ const styles = StyleSheet.create({
   },
   lesson: {
     alignItems: "flex-start",
+    flexGrow: 1,
     borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",

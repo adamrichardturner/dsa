@@ -156,10 +156,13 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   card: {
+    alignSelf: "center",
     borderRadius: 20,
     borderWidth: 1,
     gap: 16,
+    maxWidth: 520,
     padding: 20,
+    width: "100%",
   },
   alert: {
     borderRadius: 12,

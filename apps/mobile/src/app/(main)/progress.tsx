@@ -7,11 +7,13 @@ import type { AnalyticsView } from "@/api/types";
 import { useSession } from "@/auth/session";
 import { useTheme } from "@/theme/theme";
 import { Body, Card, Notice, Title } from "@/ui/primitives";
+import { frame, measure, useLayout } from "@/ui/layout";
 
 export default function ProgressScreen() {
   const { token } = useSession();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const [analytics, setAnalytics] = useState<AnalyticsView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -40,7 +42,11 @@ export default function ProgressScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
+      contentContainerStyle={[
+        styles.content,
+        frame(layout, measure.text),
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 },
+      ]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -88,7 +94,9 @@ export default function ProgressScreen() {
                   {topic.topic} · {topic.solved}/{topic.total}
                 </Text>
                 <View style={[styles.track, { backgroundColor: colors.secondary }]}>
-                  <View style={[styles.fill, { backgroundColor: colors.primary, width: `${Math.round(width * 100)}%` }]} />
+                  <View
+                    style={[styles.fill, { backgroundColor: colors.primary, width: `${Math.round(width * 100)}%` }]}
+                  />
                 </View>
               </View>
             );
@@ -112,7 +120,6 @@ export default function ProgressScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 16,
-    paddingHorizontal: 24,
   },
   stats: {
     flexDirection: "row",

@@ -7,6 +7,7 @@ import { VERIFY_EMAIL } from "@/api/operations";
 import { readAuthPayload, useSession } from "@/auth/session";
 import { useTheme } from "@/theme/theme";
 import { Body, Button, Notice, Title } from "@/ui/primitives";
+import { frame, measure, useLayout } from "@/ui/layout";
 
 export default function VerifyEmailScreen() {
   const params = useLocalSearchParams<{ token?: string }>();
@@ -14,6 +15,7 @@ export default function VerifyEmailScreen() {
   const { accept } = useSession();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,15 +45,15 @@ export default function VerifyEmailScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 }]}
+      contentContainerStyle={[
+        styles.content,
+        frame(layout, measure.form),
+        { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 },
+      ]}
       style={{ backgroundColor: colors.background }}
     >
       <Title>Verify your email</Title>
-      <Body muted>
-        {token.length < 20
-          ? "Open the link in the email, then sign in here."
-          : "Checking that link…"}
-      </Body>
+      <Body muted>{token.length < 20 ? "Open the link in the email, then sign in here." : "Checking that link…"}</Body>
       {error === null ? null : <Notice>{error}</Notice>}
       <Button label="Sign in" onPress={() => router.replace("/sign-in")} variant="secondary" />
     </ScrollView>
@@ -61,6 +63,5 @@ export default function VerifyEmailScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 16,
-    paddingHorizontal: 24,
   },
 });

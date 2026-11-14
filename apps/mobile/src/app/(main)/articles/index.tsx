@@ -4,15 +4,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { articleGroups } from "../../../../../api/src/content/articles";
 import { useTheme } from "@/theme/theme";
 import { Body, Title } from "@/ui/primitives";
+import { frame, measure, useLayout } from "@/ui/layout";
 
 export default function ArticlesScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const groups = articleGroups();
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
+      contentContainerStyle={[
+        styles.content,
+        frame(layout, measure.text),
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 },
+      ]}
       style={{ backgroundColor: colors.background }}
     >
       <Title>Articles</Title>
@@ -40,7 +46,6 @@ export default function ArticlesScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 16,
-    paddingHorizontal: 24,
   },
   group: {
     gap: 4,

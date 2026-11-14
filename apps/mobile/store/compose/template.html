@@ -1,0 +1,116 @@
+<!doctype html>
+<!--
+  One App Store screenshot, rendered by compose.mjs at {{W}}×{{H}}. Sizes are in
+  vw, so one design scales to every device. Colours are the app's palette
+  (src/theme/palette.ts): ink and paper, with the code window's greens and blues
+  as the only accents.
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: "Fraunces"; font-weight: 500; src: url("{{SERIF}}"); }
+  @font-face { font-family: "Fraunces"; font-weight: 500; font-style: italic; src: url("{{SERIF_ITALIC}}"); }
+  @font-face { font-family: "Geist"; src: url("{{SANS}}"); }
+  @font-face { font-family: "Geist"; font-weight: 500; src: url("{{SANS_MEDIUM}}"); }
+  @font-face { font-family: "Geist"; font-weight: 600; src: url("{{SANS_SEMIBOLD}}"); }
+  @font-face { font-family: "JetBrains Mono"; src: url("{{MONO}}"); }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: {{W}}px; height: {{H}}px; overflow: hidden; }
+  body { position: relative; font-family: "Geist", sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* ---- Backgrounds ---- */
+  .bg, .grid { position: absolute; inset: 0; }
+  .ink .bg {
+    background:
+      radial-gradient(100vw 80vw at 10% -8%, rgba(74, 222, 128, 0.22) 0%, transparent 60%),
+      radial-gradient(90vw 90vw at 108% 104%, rgba(56, 189, 248, 0.2) 0%, transparent 60%),
+      radial-gradient(60vw 50vw at -8% 78%, rgba(250, 250, 250, 0.06) 0%, transparent 65%),
+      #0a0a0a;
+  }
+  .paper .bg {
+    background:
+      radial-gradient(90vw 70vw at 6% -6%, rgba(21, 128, 61, 0.12) 0%, transparent 65%),
+      radial-gradient(80vw 70vw at 104% 28%, rgba(37, 99, 235, 0.1) 0%, transparent 65%),
+      radial-gradient(100vw 80vw at 60% 112%, rgba(10, 10, 10, 0.08) 0%, transparent 65%),
+      #fafafa;
+  }
+  .dusk .bg {
+    background:
+      radial-gradient(100vw 80vw at 14% -6%, rgba(251, 191, 36, 0.2) 0%, transparent 60%),
+      radial-gradient(90vw 80vw at 106% 106%, rgba(244, 114, 182, 0.2) 0%, transparent 62%),
+      linear-gradient(170deg, #171717 0%, #0a0a0a 70%);
+  }
+  /* The editor's ruled paper: a faint grid fading out under the device. */
+  .grid { background-size: 4vw 4vw; -webkit-mask-image: radial-gradient(ellipse 90% 48% at 50% 0%, #000 0%, transparent 100%); }
+  .ink .grid, .dusk .grid { background-image: linear-gradient(rgba(255, 255, 255, 0.05) 0.1vw, transparent 0.1vw), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0.1vw, transparent 0.1vw); }
+  .paper .grid { background-image: linear-gradient(rgba(10, 10, 10, 0.05) 0.1vw, transparent 0.1vw), linear-gradient(90deg, rgba(10, 10, 10, 0.05) 0.1vw, transparent 0.1vw); }
+
+  /* ---- Headline ---- */
+  header { position: absolute; left: 0; right: 0; top: var(--top); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 7vw; }
+  /* The site's wordmark: the infinity mark, then the name in Fraunces. */
+  .chip { display: inline-flex; align-items: center; gap: calc(var(--chip) * 0.5); padding: calc(var(--chip) * 0.45) calc(var(--chip) * 1.05) calc(var(--chip) * 0.45) calc(var(--chip) * 0.6);
+    border-radius: 99vw; font-family: "Fraunces", serif; font-weight: 500; font-size: var(--chip); letter-spacing: -0.01em; line-height: 1; }
+  .chip svg { width: calc(var(--chip) * 1.7); height: calc(var(--chip) * 1.7); }
+  .ink .chip, .dusk .chip { background: rgba(23, 23, 23, 0.78); border: 0.12vw solid rgba(255, 255, 255, 0.12); color: #fafafa; box-shadow: 0 0.6vw 2vw rgba(0, 0, 0, 0.4); }
+  .paper .chip { background: rgba(255, 255, 255, 0.92); border: 0.12vw solid #e5e5e5; color: #0a0a0a; box-shadow: 0 0.6vw 2vw rgba(0, 0, 0, 0.08); }
+  h1 { max-width: var(--h1max, 86vw); margin-top: var(--gap); font-family: "Fraunces", serif; font-weight: 500; font-size: var(--h1); line-height: 1.04; letter-spacing: -0.025em; text-wrap: balance; }
+  h1 em { font-style: italic; padding: 0 0.08em; margin: 0 -0.08em; -webkit-background-clip: text; background-clip: text; color: transparent; }
+  p { margin-top: calc(var(--gap) * 0.8); font-size: var(--sub); line-height: 1.35; text-wrap: balance; }
+
+  .ink, .dusk { color: #fafafa; }
+  .ink h1 em { background-image: linear-gradient(90deg, #86efac, #7dd3fc); }
+  .dusk h1 em { background-image: linear-gradient(90deg, #fcd34d, #f9a8d4); }
+  .ink p, .dusk p { color: rgba(250, 250, 250, 0.72); }
+  .paper { color: #0a0a0a; }
+  .paper h1 em { background-image: linear-gradient(90deg, #15803d, #2563eb); }
+  .paper p { color: #525252; }
+
+  /* ---- Devices ---- */
+  .device { position: absolute; left: 50%; transform: translateX(-50%); padding: var(--bezel); border-radius: var(--r);
+    background: linear-gradient(145deg, #3d3d3f 0%, #141415 22%, #0b0b0c 60%, #2e2e30 100%);
+    box-shadow: inset 0 0 0 0.18vw rgba(255, 255, 255, 0.14), 0 3vw 8vw rgba(0, 0, 0, 0.45), 0 1vw 2.4vw rgba(0, 0, 0, 0.25); }
+  .paper .device { box-shadow: inset 0 0 0 0.18vw rgba(255, 255, 255, 0.14), 0 3vw 8vw rgba(0, 0, 0, 0.22), 0 1vw 2.4vw rgba(0, 0, 0, 0.12); }
+  .device img.screen { display: block; width: 100%; border-radius: calc(var(--r) - var(--bezel)); }
+  .island { position: absolute; left: 50%; transform: translateX(-50%); top: calc(var(--bezel) + 1.25%); width: 25%; height: 2.7%; border-radius: 99vw; background: #000; }
+  /* The Duo's hinge, a faint seam down the middle of the open display. */
+  .hinge { display: none; position: absolute; top: var(--bezel); bottom: var(--bezel); left: 50%; width: 0.25vw; transform: translateX(-50%);
+    background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.08) 12%, rgba(0, 0, 0, 0.1) 50%, rgba(255, 255, 255, 0.08) 88%, transparent); }
+  .halo { position: absolute; left: 50%; transform: translateX(-50%); width: 110vw; height: 70vw; bottom: -22vw; border-radius: 50%; filter: blur(6vw); }
+  .ink .halo { background: rgba(74, 222, 128, 0.1); }
+  .dusk .halo { background: rgba(251, 191, 36, 0.1); }
+  .paper .halo { background: rgba(10, 10, 10, 0.06); }
+
+  .phone { --hh: 54.5vw; --gs: 1vw; --u: 2vw; --hang: -13%; --h1max: 82vw; --top: 6.5vw; --chip: 3.3vw; --h1: 10.4vw; --sub: 3.7vw; --gap: 2.4vw; }
+  .phone .device { width: 72.5vw; top: 54.5vw; --bezel: 1.7vw; --r: 10.6vw; }
+
+  .tablet { --hh: 28.5vw; --gs: 0.55vw; --u: 1.15vw; --hang: -9%; --top: 4.6vw; --chip: 2vw; --h1: 6.2vw; --sub: 2.3vw; --gap: 1.6vw; }
+  .tablet .device { width: 77vw; top: 28.5vw; --bezel: 1.5vw; --r: 3.6vw; }
+
+  .duo { --hh: 36vw; --gs: 0.75vw; --u: 1.55vw; --hang: -11%; --top: 5.6vw; --chip: 2.7vw; --h1: 7.6vw; --sub: 2.9vw; --gap: 2vw; }
+  .duo .device { width: 72vw; top: 36vw; --bezel: 1.4vw; --r: 5vw; }
+  .duo.open .hinge { display: block; }
+
+  .tablet .island, .duo .island { display: none; }
+</style>
+<link rel="stylesheet" href="{{ART_CSS}}" />
+</head>
+<body class="{{FRAME}} {{THEME}}">
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="halo"></div>
+  <div class="art-head">{{BACKDROP}}</div>
+  <header>
+    <span class="chip">{{MARK}}<span>DSA in TypeScript</span></span>
+    <h1>{{TITLE}}</h1>
+    <p>{{SUB}}</p>
+  </header>
+  <div class="device">
+    <img class="screen" src="{{SCREEN}}" alt="" />
+    <div class="island"></div>
+    <div class="hinge"></div>
+    {{CARDS}}
+  </div>
+</body>
+</html>

@@ -2,17 +2,23 @@
   "expo": {
     "name": "DSA in TypeScript",
     "slug": "dsa",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "dsa",
     "userInterfaceStyle": "automatic",
     "ios": {
       "infoPlist": {
-        "CFBundleDisplayName": "DSA"
+        "CFBundleDisplayName": "DSA",
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       },
       "bundleIdentifier": "com.datastructuresandalgorithms.app",
-      "supportsTablet": false,
+      "supportsTablet": true,
       "usesAppleSignIn": true,
       "config": {
         "usesNonExemptEncryption": false

@@ -45,3 +45,25 @@ The first run generates the native project, compiles it with Xcode, and installs
 Sign in with Apple’s entitlement makes Xcode require a development certificate, including on the simulator. Local `expo run:ios` builds omit that entitlement so they can compile without one. EAS builds still include it. `npm run dev:ios:device` installs on a plugged-in iPhone and needs that certificate.
 
 Sign in with Apple and the drag-and-drop gestures need this development build, because they use native modules.
+
+## iPhone, iPad and iPhone Duo
+
+The app runs on iPhone, iPad, and the iPhone Duo, folded or open. `src/ui/layout.ts` sorts the window width into three classes:
+
+| Class | Width | Devices | Layout |
+| --- | --- | --- | --- |
+| compact | under 600 pt | iPhone, the Duo folded | One column, 24 pt gutter |
+| regular | 600 to 899 pt | the Duo open, iPad in Split View, iPad mini | Two columns of lessons, 40 pt gutter |
+| expansive | 900 pt and over | iPad full screen | A lesson's reading and its exercise side by side |
+
+Screens put their content in `frame(layout, measure.*)`, a centred column capped at a readable width, so lines stay short on a 13-inch iPad. Sheets and dialogs are capped too. iPhone stays portrait; iPad turns to any orientation (`UISupportedInterfaceOrientations~ipad` in `app.json`).
+
+## App Store listing
+
+`store.config.json` holds the name, subtitle, promotional text, description, keywords and release notes for EAS Metadata:
+
+```bash
+npx eas-cli@latest metadata:push --profile production
+```
+
+The screenshots and the product page's Header and Search Results creatives are real simulator captures, set in device frames by `store/compose/compose.mjs`. They are uploaded through App Store Connect's asset library, which also covers the iPhone Duo slot that EAS Metadata does not know. See `store/README.md`.

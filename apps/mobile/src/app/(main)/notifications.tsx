@@ -6,6 +6,7 @@ import type { NotificationCentre, StudyNotification } from "@/api/types";
 import { useNotifications } from "@/notifications/centre";
 import { useTheme } from "@/theme/theme";
 import { Body, Button, Notice, Title } from "@/ui/primitives";
+import { frame, measure, useLayout } from "@/ui/layout";
 
 const formatWhen = (iso: string, now: Date): string => {
   const parsed = Date.parse(iso);
@@ -110,7 +111,9 @@ function NotificationRow({
       <Text style={[styles.cardTitle, { color: colors.foreground }]}>{item.title}</Text>
       <Body muted>{item.body}</Body>
       <View style={styles.actions}>
-        {href === null ? <View /> : (
+        {href === null ? (
+          <View />
+        ) : (
           <Pressable accessibilityRole="button" onPress={() => openHref(href)}>
             <Text style={[styles.action, { color: colors.foreground }]}>{hrefLabel(href)}</Text>
           </Pressable>
@@ -121,9 +124,7 @@ function NotificationRow({
           disabled={pending}
           onPress={() => onDismiss(item.id)}
         >
-          <Text style={[styles.action, { color: colors.mutedForeground, opacity: pending ? 0.45 : 1 }]}>
-            Dismiss
-          </Text>
+          <Text style={[styles.action, { color: colors.mutedForeground, opacity: pending ? 0.45 : 1 }]}>Dismiss</Text>
         </Pressable>
       </View>
     </View>
@@ -133,6 +134,7 @@ function NotificationRow({
 export default function NotificationsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const { centre, error, refresh, dismiss, clear, markRead } = useNotifications();
   const [freshIds, setFreshIds] = useState<Record<string, true>>({});
   const [refreshing, setRefreshing] = useState(false);
@@ -188,7 +190,11 @@ export default function NotificationsScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 }]}
+      contentContainerStyle={[
+        styles.content,
+        frame(layout, measure.text),
+        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 32 },
+      ]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -236,7 +242,6 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   content: {
     gap: 14,
-    paddingHorizontal: 24,
   },
   header: {
     gap: 16,
