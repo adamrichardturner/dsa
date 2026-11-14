@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { AppShowcase } from "@/components/app-showcase";
 import { LandingActions, LandingCloseCopy } from "@/components/landing-actions";
+import { AppStorePill } from "@/components/app-store-pill";
 import { PageMain } from "@/components/page-frame";
 import {
   LandingMotion,
@@ -306,12 +307,8 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-3">
               <LandingActions />
             </div>
-            <p className="text-sm text-muted-foreground">
-              {siteDomain} ·{" "}
-              <a href="#app" className="underline underline-offset-4">
-                Also on iPhone and iPad
-              </a>
-            </p>
+            <AppStorePill />
+            <p className="text-sm text-muted-foreground">{siteDomain}</p>
           </div>
           <Card>
             <CardHeader>
